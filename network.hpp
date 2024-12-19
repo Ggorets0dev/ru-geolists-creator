@@ -6,7 +6,11 @@
 #include <fstream>
 #include <curl/curl.h>
 
-bool
+#include "log.hpp"
+
+#define DOWNLOAD_TRY_DELAY_SEC      1u
+
+extern bool
 downloadFile(const std::string& url, const std::string& filePath);
 
 #endif // NETWORK_HPP

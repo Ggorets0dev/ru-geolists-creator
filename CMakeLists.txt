@@ -11,6 +11,10 @@ find_package(CURL REQUIRED)
 # Поиск библиотеки libjsoncpp
 find_package(jsoncpp REQUIRED)
 
+# Ищем библиотеку libarchive
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
+
 add_executable(RuGeolistsCreator main.cpp
     filter.hpp
     filter.cpp
@@ -18,7 +22,15 @@ add_executable(RuGeolistsCreator main.cpp
     extract.cpp
     network.hpp
     network.cpp
-    log.hpp)
+    log.hpp
+    log.cpp
+    dlc_toolchain.hpp
+    dlc_toolchain.cpp
+    json_io.hpp
+    json_io.cpp
+    archive.hpp
+    archive.cpp)
 
-# Подключаем libcurl к целевому исполняемому файлу
-target_link_libraries(RuGeolistsCreator CURL::libcurl jsoncpp_lib)
+target_link_libraries(RuGeolistsCreator CURL::libcurl jsoncpp_lib ${LIBARCHIVE_LIBRARIES})
+
+target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS})

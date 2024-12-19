@@ -23,7 +23,7 @@ downloadFile(const std::string& url, const std::string& filePath) {
     // Открываем файл для записи
     std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile.is_open()) {
-        std::cerr << "Failed to open file for writing." << std::endl;
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + filePath);
         return false;
     }
 
@@ -37,6 +37,8 @@ downloadFile(const std::string& url, const std::string& filePath) {
         // Настраиваем обратный вызов для записи данных
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
+
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); // Следовать за редиректами
 
         // Выполняем запрос
         res = curl_easy_perform(curl);

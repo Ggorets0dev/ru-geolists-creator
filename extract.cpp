@@ -8,23 +8,21 @@
 
 #define TEMP_FILE_NAME          "rgc_temp.txt"
 
-void
+bool
 extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath) {
     std::ifstream inputFile(inputFilePath); // Открываем файл
 
     if (!inputFile.is_open()) {
-        std::cerr << FILE_OPEN_ERROR_MSG << inputFilePath << std::endl;
-        return;
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + inputFilePath);
+        return false;
     }
 
     std::ofstream outputFile(outputFilePath); // Открываем файл
 
     if (!outputFile.is_open()) {
-        std::cerr << FILE_OPEN_ERROR_MSG << outputFilePath << std::endl;
-        return;
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + outputFilePath);
+        return false;
     }
-
-    uint64_t max_size(0);
 
     std::string currentDomain;
     std::string lastFoundDomain = "";
@@ -70,13 +68,13 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
             outputFile << currentDomain << std::endl;
 
             lastFoundDomain = std::move(currentDomain);
-
-            max_size = std::max(max_size, lastFoundDomain.size());
         }
     }
 
     inputFile.close();
     outputFile.close();
+
+    return true;
 }
 
 bool
@@ -86,7 +84,7 @@ removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPat
 
     std::ifstream fileB(fileBPath);
     if (!fileB.is_open()) {
-        std::cerr << FILE_OPEN_ERROR_MSG << fileBPath << std::endl;
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + fileBPath);
         return false;
     }
 
@@ -99,14 +97,17 @@ removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPat
     // Открываем файл A и фильтруем строки
     std::ifstream fileA(fileAPath);
     if (!fileA.is_open()) {
-        std::cerr << FILE_OPEN_ERROR_MSG << fileAPath << std::endl;
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + fileAPath);
         return false;
     }
 
     std::ofstream tempFileA(TEMP_FILE_NAME);
     if (!tempFileA.is_open()) {
-            std::cerr << FILE_OPEN_ERROR_MSG << std::endl;
-            return false;
+        std::string logMsg = FILE_OPEN_ERROR_MSG;
+        logMsg += TEMP_FILE_NAME;
+
+        LOG_ERROR(logMsg);
+        return false;
     }
 
     while (std::getline(fileA, line)) {
@@ -121,7 +122,7 @@ removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPat
     return true;
 }
 
-void
+bool
 removeDuplicateDomains(const std::string& filePath) {
-
+    return true;
 }

@@ -7,6 +7,6 @@
 extern const std::vector<std::string> kKeywordWhitelist;
 
 bool
-checkKeywordWhitelist(std::string_view domain);
+checkKeywordBlacklist(std::string_view domain);
 
 #endif // FILTER_H
