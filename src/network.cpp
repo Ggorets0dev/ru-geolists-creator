@@ -45,10 +45,8 @@ downloadFile(const std::string& url, const std::string& filePath) {
 
         // Проверяем на ошибки
         if (res != CURLE_OK) {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            log(LogType::ERROR, "Failed to download file because of error:", curl_easy_strerror(res));
             return false;
-        } else {
-            std::cout << "File downloaded successfully." << std::endl;
         }
 
         // Освобождаем ресурсы

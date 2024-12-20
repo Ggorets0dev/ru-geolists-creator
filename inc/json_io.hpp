@@ -9,4 +9,8 @@
 extern bool
 readJsonFromFile(const std::string& filePath, Json::Value& outValue);
 
+template<typename Type>
+extern bool
+updateJsonValue(const std::string& filePath, const std::string& key, Type value);
+
 #endif // JSON_IO_HPP

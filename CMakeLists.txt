@@ -15,22 +15,12 @@ find_package(jsoncpp REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 
-add_executable(RuGeolistsCreator main.cpp
-    filter.hpp
-    filter.cpp
-    extract.hpp
-    extract.cpp
-    network.hpp
-    network.cpp
-    log.hpp
-    log.cpp
-    dlc_toolchain.hpp
-    dlc_toolchain.cpp
-    json_io.hpp
-    json_io.cpp
-    archive.hpp
-    archive.cpp)
+# Поиск всех файлов в папках src и inc
+file(GLOB SRC_FILES "src/*.cpp" "src/*.c")
+file(GLOB INC_FILES "inc/*.h" "inc/*.hpp")
+
+add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES})
 
 target_link_libraries(RuGeolistsCreator CURL::libcurl jsoncpp_lib ${LIBARCHIVE_LIBRARIES})
 
-target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS})
+target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} "src/" "inc/")

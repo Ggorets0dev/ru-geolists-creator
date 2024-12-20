@@ -4,11 +4,15 @@
 #include <thread>
 #include <chrono>
 #include <filesystem>
+#include <optional>
 
 #include "json_io.hpp"
 #include "network.hpp"
 
-bool
+#define DLC_SRC_FILE_NAME           "dlc_src.tar.gz"
+#define DLC_RELEASE_REQ_FILE_NAME   "dlc_req.json"
+
+std::optional<std::string>
 downloadDlcSourceCode();
 
 bool

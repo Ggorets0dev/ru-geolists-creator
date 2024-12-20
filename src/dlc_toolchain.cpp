@@ -1,12 +1,10 @@
 #include "dlc_toolchain.hpp"
 
 #define DLC_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/domain-list-community/releases/latest"
-#define DLC_SRC_FILE_NAME           "dlc_src.tar.gz"
-#define DLC_RELEASE_REQ_FILE_NAME   "dlc_req.json"
 
 namespace fs = std::filesystem;
 
-bool
+std::optional<std::string>
 downloadDlcSourceCode() {
     bool status = 1;
     const uint8_t attempt_cnt = 5;
@@ -15,7 +13,7 @@ downloadDlcSourceCode() {
 
     if (!status) {
         LOG_ERROR("Failed to get data on the DLC repository. Check your internet connection");
-        return false;
+        return std::nullopt;
     }
 
     Json::Value request;
@@ -23,8 +21,9 @@ downloadDlcSourceCode() {
 
     if (!status) {
         LOG_ERROR("Deserialization of the repository request failed");
-        return false;
+        return std::nullopt;
     }
+    fs::remove(DLC_RELEASE_REQ_FILE_NAME);
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
@@ -43,10 +42,10 @@ downloadDlcSourceCode() {
 
     if (!status) {
         LOG_ERROR("DLC source code could not be downloaded after several attempts. Check your internet connection");
-        return false;
+        return std::nullopt;
     }
 
-    return true;
+    return DLC_SRC_FILE_NAME;
 }
 
 bool

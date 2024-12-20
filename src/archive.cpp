@@ -64,5 +64,7 @@ extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
 
     archive_read_free(a);  // Освобождаем ресурсы
 
+    LOG_INFO("Successfully extracted the archive to the path: " + rootDirPath);
+
     return rootDirPath;
 }
