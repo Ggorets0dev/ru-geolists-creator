@@ -2,7 +2,6 @@
 
 #define USER_AGENT "C++ App"
 
-// Функция обратного вызова для записи данных в файл
 static size_t
 writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
@@ -79,6 +78,19 @@ parsePublishTime(const Json::Value& value) {
 }
 
 bool
-downloadGithubReleaseAsset(const Json::Value& value, const std::vector<std::string> fileNames) {
+downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
+    bool status = false;
 
+    if (value.isMember("assets") && value["assets"].isArray()) {
+        const Json::Value& assets = value["assets"];
+        for (const auto& asset : assets) {
+            if (std::find(fileNames.begin(), fileNames.end(), asset["name"].asString()) == fileNames.end()) {
+                continue;
+            }
+
+            status = downloadFile(asset["browser_download_url"].asString(), asset["name"].asString());
+        }
+    }
+
+    return status;
 }

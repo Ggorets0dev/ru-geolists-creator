@@ -8,14 +8,14 @@
 
 bool
 extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath) {
-    std::ifstream inputFile(inputFilePath); // Открываем файл
+    std::ifstream inputFile(inputFilePath);
 
     if (!inputFile.is_open()) {
         LOG_ERROR(FILE_OPEN_ERROR_MSG + inputFilePath);
         return false;
     }
 
-    std::ofstream outputFile(outputFilePath); // Открываем файл
+    std::ofstream outputFile(outputFilePath);
 
     if (!outputFile.is_open()) {
         LOG_ERROR(FILE_OPEN_ERROR_MSG + outputFilePath);
@@ -73,4 +73,26 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
     outputFile.close();
 
     return true;
+}
+
+bool
+parseRuadlistVersion(const std::string& inputFilePath, std::string& versionOut) {
+    std::string buffer;
+    std::ifstream inputFile(inputFilePath);
+
+    versionOut.reserve(RUADLIST_VERSION_SIZE);
+
+    if (!inputFile.is_open()) {
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + inputFilePath);
+        return false;
+    }
+
+    while (std::getline(inputFile, buffer)) {
+        if (buffer.find("Version") != std::string::npos) {
+            versionOut = buffer.substr(buffer.size() - RUADLIST_VERSION_SIZE, RUADLIST_VERSION_SIZE);
+            return true;
+        }
+    }
+
+    return false;
 }

@@ -1,7 +1,5 @@
 #include "handlers.hpp"
 
-#define TEMP_DIR_PATH   "./temp"
-
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
         LOG_ERROR(SOFTWARE_INIT_FAIL_MSG); \
@@ -12,6 +10,12 @@
     if (!condition) { \
         LOG_ERROR(CHECK_UPDATES_FAIL_MSG); \
         return std::make_tuple(false, false); \
+    }
+
+#define VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(condition) \
+    if (!condition) { \
+        LOG_ERROR(DOWNLOAD_UPDATES_FAIL_MSG); \
+        return false; \
     }
 
 void
@@ -64,20 +68,12 @@ initSoftware() {
 }
 
 std::tuple<bool, bool>
-checkForUpdates() {
+checkForUpdates(const RgcConfig& config) {
     bool status;
     bool isUpdateFound;
     Json::Value value;
-    RgcConfig config;
+    std::string ruadlistVersion;
     std::optional<std::time_t> lastReleaseTime;
-
-    status = readConfig(config);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    if (!fs::exists(TEMP_DIR_PATH)) {
-        mkdir(TEMP_DIR_PATH, 0755);
-    }
-    chdir(TEMP_DIR_PATH);
 
     // SECTION - Check ReFilter for updates
     status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
@@ -122,7 +118,72 @@ checkForUpdates() {
     // SECTION - Check RUADLIST for updates
     status = downloadFile(RUADLIST_URL, RUADLIST_FILE_NAME);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
+
+    status = parseRuadlistVersion(RUADLIST_FILE_NAME, ruadlistVersion);
+    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
+
+    isUpdateFound = config.ruadlistVersion != ruadlistVersion;
+
+    std::cout << ruadlistVersion;
+
+    if (isUpdateFound) {
+        LOG_INFO("An update to the RUADLIST has been detected");
+        return std::make_tuple(status, isUpdateFound);
+    }
     // !SECTION
 
     return std::make_tuple(status, isUpdateFound);
+}
+
+bool
+downloadNewestSources(RgcConfig& config) {
+    bool status;
+    Json::Value value;
+    std::optional<std::time_t> lastReleaseTime;
+    std::string ruadlistVersion;
+    std::vector<std::string> assetsNames;
+
+    // SECTION - Download newest ReFilter rules
+    status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    lastReleaseTime = parsePublishTime(value);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(lastReleaseTime);
+    config.refilterTime = *lastReleaseTime;
+
+    assetsNames = {"domains_all.lst", "ipsum.lst"};
+    status = downloadGithubReleaseAssets(value, assetsNames);\
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    // !SECTION
+
+    // SECTION - Download newest XRay rules
+    status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    lastReleaseTime = parsePublishTime(value);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(lastReleaseTime);
+    config.v2rayTime = *lastReleaseTime;
+
+    assetsNames = {"reject-list.txt"};
+    status = downloadGithubReleaseAssets(value, assetsNames);\
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    // !SECTION
+
+    // SECTION - Download newest RUADLIST rules
+    status = downloadFile(RUADLIST_URL, RUADLIST_FILE_NAME);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    status = parseRuadlistVersion(RUADLIST_FILE_NAME, ruadlistVersion);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    config.ruadlistVersion = std::move(ruadlistVersion);
+    // !SECTION
+
+    return status;
 }

@@ -16,4 +16,7 @@ extern void
 initSoftware();
 
 extern std::tuple<bool, bool>
-checkForUpdates();
+checkForUpdates(const RgcConfig& config);
+
+extern bool
+downloadNewestSources(RgcConfig& config);
