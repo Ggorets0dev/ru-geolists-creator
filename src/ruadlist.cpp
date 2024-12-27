@@ -1,12 +1,10 @@
-#include "extract.hpp"
+#include "ruadlist.hpp"
 
 #define MAX_DOMAIN_SIZE         56
 #define DOMAIN_REGEX            R"((?:[a-zA-Z0-9-]+\.)+(?:by|ru|ua|info|sex|su|life|com|ml|best|net|site|biz|xyz))"
 
 #define START_SEGMENT_MARK      "! *** advblock/first_level.txt ***"
 #define STOP_SEGMENT_MARK       "! *** advblock/specific_hide.txt ***"
-
-#define TEMP_FILE_NAME          "rgc_temp.txt"
 
 bool
 extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath) {
@@ -74,55 +72,5 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
     inputFile.close();
     outputFile.close();
 
-    return true;
-}
-
-bool
-removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPath) {
-    // Открываем файл B и читаем строки в множество
-    std::unordered_set<std::string> linesInB;
-
-    std::ifstream fileB(fileBPath);
-    if (!fileB.is_open()) {
-        LOG_ERROR(FILE_OPEN_ERROR_MSG + fileBPath);
-        return false;
-    }
-
-    std::string line;
-    while (std::getline(fileB, line)) {
-        linesInB.insert(line);
-    }
-    fileB.close();
-
-    // Открываем файл A и фильтруем строки
-    std::ifstream fileA(fileAPath);
-    if (!fileA.is_open()) {
-        LOG_ERROR(FILE_OPEN_ERROR_MSG + fileAPath);
-        return false;
-    }
-
-    std::ofstream tempFileA(TEMP_FILE_NAME);
-    if (!tempFileA.is_open()) {
-        std::string logMsg = FILE_OPEN_ERROR_MSG;
-        logMsg += TEMP_FILE_NAME;
-
-        LOG_ERROR(logMsg);
-        return false;
-    }
-
-    while (std::getline(fileA, line)) {
-        if (linesInB.find(line) == linesInB.end()) {
-            tempFileA << line << "\n";
-        }
-    }
-
-    tempFileA.close();
-    fileA.close();
-
-    return true;
-}
-
-bool
-removeDuplicateDomains(const std::string& filePath) {
     return true;
 }

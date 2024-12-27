@@ -26,6 +26,23 @@ readJsonFromFile(const std::string& filePath, Json::Value& outValue) {
     return true;
 }
 
+bool
+writeJsonToFile(const std::string& filePath, const Json::Value& value) {
+    std::ofstream fileOut(filePath, std::ofstream::binary);
+    if (!fileOut.is_open()) {
+        LOG_ERROR(FILE_OPEN_ERROR_MSG + filePath);
+        return false;
+    }
+
+    Json::StreamWriterBuilder writerBuilder;
+    writerBuilder["indentation"] = "  ";
+    std::unique_ptr<Json::StreamWriter> writer(writerBuilder.newStreamWriter());
+    writer->write(value, &fileOut);
+    fileOut.close();
+
+    return true;
+}
+
 template<typename Type>
 bool
 updateJsonValue(const std::string& filePath, const std::string& key, Type value) {
@@ -47,7 +64,7 @@ updateJsonValue(const std::string& filePath, const std::string& key, Type value)
     }
 
     Json::StreamWriterBuilder writerBuilder;
-    writerBuilder["indentation"] = "  "; // Красивый формат с отступами
+    writerBuilder["indentation"] = "  ";
     std::unique_ptr<Json::StreamWriter> writer(writerBuilder.newStreamWriter());
     writer->write(outValue, &fileOut);
     fileOut.close();

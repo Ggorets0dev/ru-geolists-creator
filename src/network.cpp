@@ -60,3 +60,25 @@ downloadFile(const std::string& url, const std::string& filePath) {
 
     return true;
 }
+
+std::optional<std::time_t>
+parsePublishTime(const Json::Value& value) {
+    std::tm tm = {};
+    std::istringstream ss(value["published_at"].asString());
+
+    // Парсим строку в формате ISO 8601 (например, 2024-12-20T14:11:25Z)
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+
+    if (ss.fail()) {
+        LOG_ERROR("Failed to parse publish time from release");
+        return std::nullopt;
+    }
+
+    // Конвертируем в time_t (UNIX-время)
+    return std::mktime(&tm);
+}
+
+bool
+downloadGithubReleaseAsset(const Json::Value& value, const std::vector<std::string> fileNames) {
+
+}
