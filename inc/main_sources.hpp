@@ -1,8 +1,6 @@
 #ifndef MAIN_SOURCES_HPP
 #define MAIN_SOURCES_HPP
 
-#include "network.hpp"
-
 #define REFILTER_API_LAST_RELEASE_URL       "https://api.github.com/repos/1andrevich/Re-filter-lists/releases/latest"
 #define REFILTER_RELEASE_REQ_FILE_NAME      "refilter_github_release_api_req.json"
 

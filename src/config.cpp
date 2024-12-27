@@ -10,13 +10,20 @@ writeConfig(const RgcConfig& config) {
 
     value["refilterTime"] = config.refilterTime;
     value["v2rayTime"] = config.v2rayTime;
-    value["ruadlistVersion"] = config.ruadlistVersion;
+
+    if (!config.ruadlistVersion.empty()) {
+        value["ruadlistVersion"] = config.ruadlistVersion;
+    } else {
+        value["ruadlistVersion"] = Json::nullValue;
+    }
 
     status = writeJsonToFile(RGC_CONFIG_PATH, value);
 
     if (!status) {
         LOG_ERROR("Configuration file could not be written due to an error");
     }
+
+    // TODO: Write extra
 
     return status;
 }
@@ -39,6 +46,8 @@ readConfig(RgcConfig& config) {
     config.refilterTime = value["refilterTime"].asInt64();
     config.v2rayTime = value["v2rayTime"].asInt64();
     config.ruadlistVersion = value["ruadlistVersion"].asString();
+
+    // TODO: Read extra
 
     return true;
 }

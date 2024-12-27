@@ -5,6 +5,7 @@
 #include <ctime>
 
 #include "json_io.hpp"
+#include "extra_sources.hpp"
 
 #define RGC_CONFIG_PATH     "./rgc_config.json"
 
@@ -15,6 +16,8 @@ struct RgcConfig {
     std::time_t refilterTime;
     std::time_t v2rayTime;
     std::string ruadlistVersion;
+
+    std::vector<ExtraSource> extraSources;
 };
 
 extern bool

@@ -72,7 +72,7 @@ checkForUpdates(const RgcConfig& config) {
     bool status;
     bool isUpdateFound;
     Json::Value value;
-    std::string ruadlistVersion;
+    std::string ruadlistVersion; 
     std::optional<std::time_t> lastReleaseTime;
 
     // SECTION - Check ReFilter for updates
@@ -124,8 +124,6 @@ checkForUpdates(const RgcConfig& config) {
 
     isUpdateFound = config.ruadlistVersion != ruadlistVersion;
 
-    std::cout << ruadlistVersion;
-
     if (isUpdateFound) {
         LOG_INFO("An update to the RUADLIST has been detected");
         return std::make_tuple(status, isUpdateFound);
@@ -136,12 +134,14 @@ checkForUpdates(const RgcConfig& config) {
 }
 
 bool
-downloadNewestSources(RgcConfig& config) {
+downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::path>& downloadedFiles) {
     bool status;
     Json::Value value;
     std::optional<std::time_t> lastReleaseTime;
     std::string ruadlistVersion;
     std::vector<std::string> assetsNames;
+
+    const fs::path kCurrentDir = fs::current_path();
 
     // SECTION - Download newest ReFilter rules
     status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
@@ -157,6 +157,10 @@ downloadNewestSources(RgcConfig& config) {
     assetsNames = {"domains_all.lst", "ipsum.lst"};
     status = downloadGithubReleaseAssets(value, assetsNames);\
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    for (const auto& fileName : assetsNames) {
+        downloadedFiles.push_back(kCurrentDir / fileName);
+    }
     // !SECTION
 
     // SECTION - Download newest XRay rules
@@ -173,6 +177,10 @@ downloadNewestSources(RgcConfig& config) {
     assetsNames = {"reject-list.txt"};
     status = downloadGithubReleaseAssets(value, assetsNames);\
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    for (const auto& fileName : assetsNames) {
+        downloadedFiles.push_back(kCurrentDir / fileName);
+    }
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
@@ -183,7 +191,13 @@ downloadNewestSources(RgcConfig& config) {
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     config.ruadlistVersion = std::move(ruadlistVersion);
+    downloadedFiles.push_back(kCurrentDir / RUADLIST_FILE_NAME);
+    // !SECTION
+
+    // SECTION - Download extra sources
+
     // !SECTION
 
     return status;
 }
+

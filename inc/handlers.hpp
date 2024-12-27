@@ -19,4 +19,4 @@ extern std::tuple<bool, bool>
 checkForUpdates(const RgcConfig& config);
 
 extern bool
-downloadNewestSources(RgcConfig& config);
+downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::path>& downloadedFiles);

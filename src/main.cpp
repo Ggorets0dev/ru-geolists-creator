@@ -6,6 +6,7 @@
 int main() {
     bool status;
     RgcConfig config;
+    std::vector<fs::path> downloadedSources;
 
     if (!fs::exists(RGC_CONFIG_PATH)) {
         LOG_WARNING("Configuration file is not detected, initialization is performed");
@@ -36,7 +37,7 @@ int main() {
     }
 
     LOG_INFO("Process of downloading the latest versions of the sources begins");
-    status = downloadNewestSources(config);
+    status = downloadNewestSources(config, true, downloadedSources);
 
     if (!status) {
         // An additional log can be posted here
