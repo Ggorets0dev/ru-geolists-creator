@@ -47,3 +47,22 @@ downloadV2ipSourceCode() {
 
     return V2IP_SRC_FILE_NAME;
 }
+
+bool
+runToolchain(const std::string& rootPath) {
+    const fs::path kCurrentDir = fs::current_path();
+
+    fs::current_path(rootPath.c_str());
+
+    int result = std::system("go run ./");
+
+    if (result == 0) {
+        LOG_INFO("IP address list building with XRay tools has been successfully completed");
+    } else {
+        LOG_ERROR("Failed to build IP address list using XRay tools");
+    }
+
+    fs::current_path(kCurrentDir);
+
+    return !result;
+}

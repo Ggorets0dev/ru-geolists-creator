@@ -1,6 +1,4 @@
 #include <filesystem>
-#include <unistd.h>
-#include <sys/stat.h>
 
 #include "log.hpp"
 #include "config.hpp"

@@ -1,3 +1,6 @@
+#ifndef RUADLIST_HPP
+#define RUADLIST_HPP
+
 #include <filesystem>
 #include <fstream>
 #include <regex>
@@ -14,3 +17,5 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
 
 extern bool
 parseRuadlistVersion(const std::string& inputFilePath, std::string& versionOut);
+
+#endif /* RUADLIST_HPP */

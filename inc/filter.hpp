@@ -1,5 +1,5 @@
-#ifndef FILTER_H
-#define FILTER_H
+#ifndef FILTER_HPP
+#define FILTER_HPP
 
 #include <string>
 #include <vector>
@@ -19,4 +19,4 @@ checkKeywordBlacklist(std::string_view domain);
 extern bool
 removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPath);
 
-#endif // FILTER_H
+#endif // FILTER_HPP

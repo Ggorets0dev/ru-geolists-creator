@@ -4,6 +4,7 @@ bool
 writeConfig(const RgcConfig& config) {
     bool status;
     Json::Value value;
+    Json::Value extraArray(Json::arrayValue);
 
     value["dlcRootPath"] = config.dlcRootPath;
     value["v2ipRootPath"] = config.v2ipRootPath;
@@ -17,13 +18,24 @@ writeConfig(const RgcConfig& config) {
         value["ruadlistVersion"] = Json::nullValue;
     }
 
+    for (const auto& source : config.extraSources) {
+        Json::Value obj;
+
+        obj["type"] = extraTypeToString(source.type);
+        obj["operation"] = extraOperationToString(source.operation);
+        obj["url"] = source.url;
+        obj["section"] = source.section;
+
+        extraArray.append(obj);
+    }
+
+    value["extra"] = extraArray;
+
     status = writeJsonToFile(RGC_CONFIG_PATH, value);
 
     if (!status) {
         LOG_ERROR("Configuration file could not be written due to an error");
     }
-
-    // TODO: Write extra
 
     return status;
 }
@@ -47,7 +59,12 @@ readConfig(RgcConfig& config) {
     config.v2rayTime = value["v2rayTime"].asInt64();
     config.ruadlistVersion = value["ruadlistVersion"].asString();
 
-    // TODO: Read extra
+    if (value["extra"].isArray() && !value["extra"].isNull()) {
+        const Json::Value& sources = value["extra"];
+        for (const auto& source : sources) {
+            config.extraSources.push_back(ExtraSource(source));
+        }
+    }
 
     return true;
 }

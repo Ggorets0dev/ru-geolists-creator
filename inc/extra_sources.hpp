@@ -22,3 +22,17 @@ public:
     std::string url;
 	std::string section;
 };
+
+std::string
+extraTypeToString(ExtraSource::Type type);
+
+ExtraSource::Type
+extraStringToType(std::string_view str);
+
+std::string
+extraOperationToString(ExtraSource::Operation type);
+
+ExtraSource::Operation
+extraStringToOperation(std::string_view str);
+
+

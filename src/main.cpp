@@ -1,7 +1,7 @@
 #include "handlers.hpp"
 #include "config.hpp"
 
-#define TEMP_DIR_PATH   "./temp"
+#include "temp.hpp"
 
 int main() {
     bool status;
@@ -19,10 +19,8 @@ int main() {
         return 1;
     }
 
-    if (!fs::exists(TEMP_DIR_PATH)) {
-        mkdir(TEMP_DIR_PATH, 0755);
-    }
-    chdir(TEMP_DIR_PATH);
+    CREATE_TEMP_DIR();
+    ENTER_TEMP_DIR();
 
     auto [checkStatus, isUpdateFound] = checkForUpdates(config);
 
@@ -46,7 +44,8 @@ int main() {
 
     LOG_INFO("Successfully downloaded all sources");
 
-    chdir("..");
+    EXIT_TEMP_DIR();
+
     writeConfig(config);
 
     return 0;
