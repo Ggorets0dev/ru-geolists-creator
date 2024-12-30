@@ -21,8 +21,7 @@ writeConfig(const RgcConfig& config) {
     for (const auto& source : config.extraSources) {
         Json::Value obj;
 
-        obj["type"] = extraTypeToString(source.type);
-        obj["operation"] = extraOperationToString(source.operation);
+        obj["type"] = sourceTypeToString(source.type);
         obj["url"] = source.url;
         obj["section"] = source.section;
 

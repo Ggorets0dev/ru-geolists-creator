@@ -1,12 +1,23 @@
 #include "handlers.hpp"
 #include "config.hpp"
-
 #include "temp.hpp"
+#include "main_sources.hpp"
+
+static void
+printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources) {
+    std::cout << "---" << std::endl;
+
+    for (const auto& source : downloadedSources) {
+        source.first.print();
+        std::cout << "Path: " << source.second << std::endl;
+        std::cout << "---" << std::endl;
+    }
+}
 
 int main() {
     bool status;
     RgcConfig config;
-    std::vector<fs::path> downloadedSources;
+    std::vector<DownloadedSourcePair> downloadedSources;
 
     if (!fs::exists(RGC_CONFIG_PATH)) {
         LOG_WARNING("Configuration file is not detected, initialization is performed");
@@ -42,9 +53,10 @@ int main() {
         return 1; // Failed to download newest releases. Exit
     }
 
-    LOG_INFO("Successfully downloaded all sources");
-
     EXIT_TEMP_DIR();
+
+    LOG_INFO("Successfully downloaded all sources: \n");
+    printDownloadedSources(downloadedSources);
 
     writeConfig(config);
 

@@ -1,38 +1,12 @@
 #include <string>
 
 #include "json_io.hpp"
+#include "main_sources.hpp"
 
-struct ExtraSource {
-    enum Type {
-        DOMAIN,
-        IP
-    };
-
-    enum Operation {
-        BLOCK,
-        PROXY,
-        DIRECT
-    };
-
-    ExtraSource(const Json::Value& value);
+class ExtraSource : public Source {
 
 public:
-    Type type;
-    Operation operation;
+    ExtraSource(const Json::Value& value);
+
     std::string url;
-	std::string section;
 };
-
-std::string
-extraTypeToString(ExtraSource::Type type);
-
-ExtraSource::Type
-extraStringToType(std::string_view str);
-
-std::string
-extraOperationToString(ExtraSource::Operation type);
-
-ExtraSource::Operation
-extraStringToOperation(std::string_view str);
-
-

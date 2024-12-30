@@ -10,6 +10,8 @@
 
 namespace fs = std::filesystem;
 
+using DownloadedSourcePair = std::pair<Source, fs::path>;
+
 extern void
 initSoftware();
 
@@ -17,4 +19,4 @@ extern std::tuple<bool, bool>
 checkForUpdates(const RgcConfig& config);
 
 extern bool
-downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::path>& downloadedFiles);
+downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles);

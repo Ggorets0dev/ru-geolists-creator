@@ -107,7 +107,7 @@ checkForUpdates(const RgcConfig& config) {
     lastReleaseTime = parsePublishTime(value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(lastReleaseTime);
 
-    isUpdateFound = config.refilterTime < *lastReleaseTime;
+    isUpdateFound = config.v2rayTime < *lastReleaseTime;
 
     if (isUpdateFound) {
         LOG_INFO("An update to the XRAY rules has been detected");
@@ -134,7 +134,7 @@ checkForUpdates(const RgcConfig& config) {
 }
 
 bool
-downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::path>& downloadedFiles) {
+downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles) {
     bool status;
     Json::Value value;
     std::optional<std::time_t> lastReleaseTime;
@@ -158,9 +158,8 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::p
     status = downloadGithubReleaseAssets(value, assetsNames);\
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    for (const auto& fileName : assetsNames) {
-        downloadedFiles.push_back(kCurrentDir / fileName);
-    }
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[0]));
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::IP, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[1]));
     // !SECTION
 
     // SECTION - Download newest XRay rules
@@ -178,9 +177,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::p
     status = downloadGithubReleaseAssets(value, assetsNames);\
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    for (const auto& fileName : assetsNames) {
-        downloadedFiles.push_back(kCurrentDir / fileName);
-    }
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, "xray_reject"), kCurrentDir / assetsNames[0]));
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
@@ -191,11 +188,15 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<fs::p
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     config.ruadlistVersion = std::move(ruadlistVersion);
-    downloadedFiles.push_back(kCurrentDir / RUADLIST_FILE_NAME);
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::IP, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_FILE_NAME));
     // !SECTION
 
     // SECTION - Download extra sources
-
+    for (const auto& source : config.extraSources) {
+        status = downloadFile(source.url, source.section);
+        VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+        downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / source.section));
+    }
     // !SECTION
 
     return status;

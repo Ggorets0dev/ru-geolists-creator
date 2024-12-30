@@ -38,6 +38,7 @@ downloadFile(const std::string& url, const std::string& filePath) {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
 
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); // Следовать за редиректами
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
 
         // Выполняем запрос
         res = curl_easy_perform(curl);
