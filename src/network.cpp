@@ -1,6 +1,6 @@
 #include "network.hpp"
 
-#define USER_AGENT "C++ App"
+#define USER_AGENT "ru-geolists-creator"
 
 static size_t
 writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -15,7 +15,7 @@ writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
 }
 
 bool
-downloadFile(const std::string& url, const std::string& filePath) {
+downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
     CURL* curl;
     CURLcode res;
 
@@ -37,8 +37,12 @@ downloadFile(const std::string& url, const std::string& filePath) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
 
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); // Следовать за редиректами
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); // Следовать за редиректами
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
+
+        if (httpHeader != nullptr && strlen(httpHeader) > 0) {
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, httpHeader);
+        }
 
         // Выполняем запрос
         res = curl_easy_perform(curl);
@@ -52,7 +56,7 @@ downloadFile(const std::string& url, const std::string& filePath) {
         // Освобождаем ресурсы
         curl_easy_cleanup(curl);
     } else {
-        std::cerr << "Failed to initialize CURL." << std::endl;
+        std::cerr << "Failed to initialize CURL" << std::endl;
         return false;
     }
 

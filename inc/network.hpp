@@ -16,7 +16,7 @@
 #define DOWNLOAD_TRY_DELAY_SEC      1u
 
 extern bool
-downloadFile(const std::string& url, const std::string& filePath);
+downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
 extern std::optional<std::time_t>
 parsePublishTime(const Json::Value& value);

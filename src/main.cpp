@@ -5,12 +5,12 @@
 
 static void
 printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources) {
-    std::cout << "---" << std::endl;
+    std::cout << "---------" << std::endl;
 
     for (const auto& source : downloadedSources) {
         source.first.print();
         std::cout << "Path: " << source.second << std::endl;
-        std::cout << "---" << std::endl;
+        std::cout << "---------" << std::endl;
     }
 }
 
@@ -22,6 +22,9 @@ int main() {
     if (!fs::exists(RGC_CONFIG_PATH)) {
         LOG_WARNING("Configuration file is not detected, initialization is performed");
         initSoftware(); // Download all toolchains and create config
+
+        LOG_INFO("You can add a GitHub API access key before running the software. Restart the application with the token added if desired");
+        return 0;
     }
 
     status = readConfig(config);

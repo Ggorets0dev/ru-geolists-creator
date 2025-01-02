@@ -12,7 +12,7 @@ downloadV2ipSourceCode() {
     status = downloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME);
 
     if (!status) {
-        LOG_ERROR("Failed to get data on the DLC repository. Check your internet connection");
+        LOG_ERROR("Failed to get data on the V2IP repository. Check your internet connection");
         return std::nullopt;
     }
 
@@ -31,17 +31,17 @@ downloadV2ipSourceCode() {
         status = downloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME);
 
         if (status) {
-            LOG_INFO("DLC source code was successfully downloaded");
+            LOG_INFO("V2IP source code was successfully downloaded");
             break;
         } else {
-            LOG_ERROR("Failed to download the DLC source code, performing another attempt...");
+            LOG_ERROR("Failed to download the V2IP source code, performing another attempt...");
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_TRY_DELAY_SEC));
     }
 
     if (!status) {
-        LOG_ERROR("DLC source code could not be downloaded after several attempts. Check your internet connection");
+        LOG_ERROR("V2IP source code could not be downloaded after several attempts. Check your internet connection");
         return std::nullopt;
     }
 

@@ -51,9 +51,10 @@ initSoftware() {
     config.dlcRootPath = std::move(*dlcRootPath);
     config.v2ipRootPath = std::move(*v2ipRootPath);
 
-    config.refilterTime = 0u;
-    config.v2rayTime = 0u;
-    config.ruadlistVersion = "";
+    config.refilterTime = CFG_DEFAULT_NUM_VALUE;
+    config.v2rayTime = CFG_DEFAULT_NUM_VALUE;
+    config.ruadlistVersion = CFG_DEFAULT_STR_VALUE;
+    config.apiToken = CFG_DEFAULT_STR_VALUE;
 
     status = writeConfig(config);
     VALIDATE_INIT_PART_RESULT(status);
@@ -75,8 +76,14 @@ checkForUpdates(const RgcConfig& config) {
     std::string ruadlistVersion; 
     std::optional<std::time_t> lastReleaseTime;
 
+    std::string gitHttpHeader = "Authorization: token " + config.apiToken;
+
     // SECTION - Check ReFilter for updates
-    status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    if (!config.apiToken.empty()) {
+        status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
+    } else {
+        status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    }
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
     status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
@@ -96,7 +103,11 @@ checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check XRAY rules for updates
-    status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    if (!config.apiToken.empty()) {
+        status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
+    } else {
+        status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    }
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
     status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
