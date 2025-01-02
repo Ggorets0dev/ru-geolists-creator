@@ -2,8 +2,6 @@
 
 #define DLC_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/domain-list-community/releases/latest"
 
-namespace fs = std::filesystem;
-
 std::optional<std::string>
 downloadDlcSourceCode() {
     bool status = 1;
@@ -66,6 +64,20 @@ clearDlcDataSection(std::string dlcRootPath) {
             LOG_ERROR("Failed to clear DLC data section. Path is not a directory or does not exist: " + dlcRootPath);
             return false;
         }
+    } catch (const fs::filesystem_error& e) {
+        log(LogType::ERROR, "Filesystem error:", e.what());
+        return false;
+    }
+
+    return true;
+}
+
+bool
+addDomainSource(std::string dlcRootPath, const fs::path& sourceFilePath) {
+    dlcRootPath += "/data"; // Now it points to data section
+
+    try {
+        fs::copy(sourceFilePath, dlcRootPath / sourceFilePath.filename());
     } catch (const fs::filesystem_error& e) {
         log(LogType::ERROR, "Filesystem error:", e.what());
         return false;

@@ -41,7 +41,9 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
 
         if (httpHeader != nullptr && strlen(httpHeader) > 0) {
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, httpHeader);
+            struct curl_slist *header = nullptr;
+            header = curl_slist_append(header, httpHeader);
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
         }
 
         // Выполняем запрос

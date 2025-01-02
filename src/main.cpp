@@ -48,7 +48,7 @@ int main() {
         return 0;
     }
 
-    LOG_INFO("Process of downloading the latest versions of the sources begins");
+    LOG_INFO("Process of downloading the latest versions of the sources begins...");
     status = downloadNewestSources(config, true, downloadedSources);
 
     if (!status) {
@@ -62,6 +62,26 @@ int main() {
     printDownloadedSources(downloadedSources);
 
     writeConfig(config);
+
+    // SECTION - Move sources to toolchains
+    std::vector<std::string> v2ipSections;
+    Json::Value v2ipInputRules;
+
+    for (const auto& source : downloadedSources) {
+        if (source.first.type == Source::Type::DOMAIN) {
+            status &= addDomainSource(config.dlcRootPath, source.second);
+        } else { // IP
+            addIPSource(source, v2ipInputRules);
+        }
+    }
+
+    status &= saveIPSources(config.v2ipRootPath, v2ipInputRules, v2ipSections);
+
+    if (!status) {
+        LOG_ERROR("Failed to correctly place sources in toolchains");
+        return 1;
+    }
+    // !SECTION
 
     return 0;
 }

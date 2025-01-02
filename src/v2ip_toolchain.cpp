@@ -2,7 +2,34 @@
 
 #define V2IP_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/geoip/releases/latest"
 
-namespace fs = std::filesystem;
+static void
+createOutputArray(Json::Value& outputArray, const std::vector<std::string>& usedSections) {
+    // {
+    //     "type": "v2rayGeoIPDat",
+    //     "action": "output",
+    //     "args": {
+    //     "outputDir": "./output",
+    //     "outputName": "geoip-only-cn-private.dat",
+    //     "wantedList": ["cn", "private"]
+    //     }
+    // }
+    Json::Value wantedList(Json::arrayValue);
+    Json::Value outputObj, argsObj;
+
+    for (const auto& section : usedSections) {
+        wantedList.append(section);
+    }
+
+    argsObj["outputDir"] = "./output";
+    argsObj["outputName"] = "geoip.dat";
+    argsObj["wantedList"] = wantedList;
+
+    outputObj["type"] = "v2rayGeoIPDat";
+    outputObj["action"] = "output";
+    outputObj["args"] = argsObj;
+
+    outputArray.append(outputObj);
+}
 
 std::optional<std::string>
 downloadV2ipSourceCode() {
@@ -65,4 +92,31 @@ runToolchain(const std::string& rootPath) {
     fs::current_path(kCurrentDir);
 
     return !result;
+}
+
+void
+addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
+    Json::Value objRoot, objArgs;
+
+    objArgs["name"] = source.first.section;
+    objArgs["uri"] = source.second.string();
+
+    objRoot["type"] = "text";
+    objRoot["action"] = "add";
+    objRoot["args"] = objArgs;
+}
+
+bool
+saveIPSources(const std::string& v2ipRootPath, const Json::Value& v2ipInputArray, const std::vector<std::string>& usedSections) {
+    Json::Value configObj;
+    Json::Value outputArray(Json::arrayValue);
+    fs::path configPath;
+    bool status;
+
+    configPath = v2ipRootPath;
+    configPath = configPath / "config.json";
+
+    status = writeJsonToFile(configPath.string(), configObj);
+
+    return status;
 }

@@ -1,3 +1,6 @@
+#ifndef HANDLERS_HPP
+#define HANDLERS_HPP
+
 #include <filesystem>
 
 #include "log.hpp"
@@ -10,8 +13,6 @@
 
 namespace fs = std::filesystem;
 
-using DownloadedSourcePair = std::pair<Source, fs::path>;
-
 extern void
 initSoftware();
 
@@ -20,3 +21,5 @@ checkForUpdates(const RgcConfig& config);
 
 extern bool
 downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles);
+
+#endif // HANDLERS_HPP

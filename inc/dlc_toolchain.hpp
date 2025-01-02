@@ -12,10 +12,15 @@
 #define DLC_SRC_FILE_NAME           "dlc_src.tar.gz"
 #define DLC_RELEASE_REQ_FILE_NAME   "dlc_req.json"
 
+namespace fs = std::filesystem;
+
 extern std::optional<std::string>
 downloadDlcSourceCode();
 
 extern bool
 clearDlcDataSection(std::string dlcRootPath);
+
+extern bool
+addDomainSource(std::string dlcRootPath, const fs::path& sourceFilePath);
 
 #endif // DLC_TOOLCHAIN_HPP

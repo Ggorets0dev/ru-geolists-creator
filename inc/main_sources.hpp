@@ -1,9 +1,6 @@
 #ifndef MAIN_SOURCES_HPP
 #define MAIN_SOURCES_HPP
 
-#include <string>
-#include <iostream>
-
 #define REFILTER_SECTION_NAME               "refilter"
 #define REFILTER_API_LAST_RELEASE_URL       "https://api.github.com/repos/1andrevich/Re-filter-lists/releases/latest"
 #define REFILTER_RELEASE_REQ_FILE_NAME      "refilter_github_release_api_req.json"
@@ -15,6 +12,10 @@
 #define RUADLIST_URL                        "https://easylist-downloads.adblockplus.org/ruadlist.txt"
 #define RUADLIST_FILE_NAME                  "ruadlist.txt"
 #define RUADLIST_EXTRACTED_FILE_NAME        "ruadlist_extracted.txt"
+
+#include <string>
+#include <iostream>
+#include <filesystem>
 
 class Source {
 
@@ -30,6 +31,9 @@ public:
     std::string section;
     Source::Type type;
 };
+
+namespace fs = std::filesystem;
+using DownloadedSourcePair = std::pair<Source, fs::path>;
 
 extern std::string
 sourceTypeToString(Source::Type type);
