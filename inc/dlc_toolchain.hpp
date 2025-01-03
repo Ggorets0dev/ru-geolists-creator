@@ -21,6 +21,9 @@ extern bool
 clearDlcDataSection(std::string dlcRootPath);
 
 extern bool
-addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath);
+addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath, const std::string& section);
+
+extern std::optional<fs::path>
+runDlcToolchain(const std::string& rootPath);
 
 #endif // DLC_TOOLCHAIN_HPP

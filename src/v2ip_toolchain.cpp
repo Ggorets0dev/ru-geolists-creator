@@ -75,23 +75,26 @@ downloadV2ipSourceCode() {
     return V2IP_SRC_FILE_NAME;
 }
 
-bool
+std::optional<fs::path>
 runV2ipToolchain(const std::string& rootPath) {
     const fs::path kCurrentDir = fs::current_path();
+    std::optional<fs::path> outFilePath;
 
     fs::current_path(rootPath.c_str());
 
     int result = std::system("go run ./");
 
     if (result == 0) {
+        outFilePath = fs::current_path() / "output" / "geoip.dat";
         LOG_INFO("IP address list building with XRay tools has been successfully completed");
     } else {
+        outFilePath = std::nullopt;
         LOG_ERROR("Failed to build IP address list using XRay tools");
     }
 
     fs::current_path(kCurrentDir);
 
-    return !result;
+    return outFilePath;
 }
 
 void

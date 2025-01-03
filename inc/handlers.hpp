@@ -2,6 +2,8 @@
 #define HANDLERS_HPP
 
 #include <filesystem>
+#include <string>
+#include <sstream>
 
 #include "log.hpp"
 #include "config.hpp"

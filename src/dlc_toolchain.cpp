@@ -73,11 +73,11 @@ clearDlcDataSection(std::string dlcRootPath) {
 }
 
 bool
-addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath) {
+addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath, const std::string& section) {
     fs::path newFilePath = dlcRootPath;
 
     newFilePath /= "data";
-    newFilePath /= sourceFilePath.filename();
+    newFilePath /= section;
     newFilePath.replace_extension("");
 
     try {
@@ -88,4 +88,26 @@ addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath) 
     }
 
     return true;
+}
+
+std::optional<fs::path>
+runDlcToolchain(const std::string& rootPath) {
+    const fs::path kCurrentDir = fs::current_path();
+    std::optional<fs::path> outFilePath;
+
+    fs::current_path(rootPath.c_str());
+
+    int result = std::system("go run ./");
+
+    if (result == 0) {
+        outFilePath = fs::current_path() / "dlc.dat";
+        LOG_INFO("Domain address list building with XRay tools has been successfully completed");
+    } else {
+        outFilePath = std::nullopt;
+        LOG_ERROR("Failed to build Domain address list using XRay tools");
+    }
+
+    fs::current_path(kCurrentDir);
+
+    return outFilePath;
 }

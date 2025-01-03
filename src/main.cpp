@@ -3,12 +3,36 @@
 #include "temp.hpp"
 #include "main_sources.hpp"
 
-int main() {
+#define RGC_VERSION         "0.1.0"
+#define RGC_DEVELOPER       "Ggorets0dev"
+#define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"
+#define RGC_LICENSE         "MIT"
+
+#define GEOSITE_FILE_NAME   "geosite.dat"
+#define GEOIP_FILE_NAME     "geoip.dat"
+
+static const fs::path gkGeositeDestPath = fs::current_path() / GEOSITE_FILE_NAME;
+static const fs::path gkGeoipDestPath = fs::current_path() / GEOIP_FILE_NAME;
+
+static void
+printSoftwareInfo() {
+    std::cout << "ru-geolists-creator v" << RGC_VERSION << std::endl;
+    std::cout << "Developer: " << RGC_DEVELOPER << std::endl;
+    std::cout << "License: " << RGC_LICENSE << std::endl;
+    std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
+}
+
+int
+main() {
     bool status;
     RgcConfig config;
     std::vector<std::string> v2ipSections;
     Json::Value v2ipInputRules(Json::arrayValue);
     std::vector<DownloadedSourcePair> downloadedSources;
+    std::optional<fs::path> outGeoipPath, outGeositePath;
+
+    printSoftwareInfo();
+    std::cout << std::endl;
 
     if (!fs::exists(RGC_CONFIG_PATH)) {
         LOG_WARNING("Configuration file is not detected, initialization is performed");
@@ -61,7 +85,7 @@ int main() {
 
     for (const auto& source : downloadedSources) {
         if (source.first.type == Source::Type::DOMAIN) {
-            status &= addDomainSource(config.dlcRootPath, source.second);
+            status &= addDomainSource(config.dlcRootPath, source.second, source.first.section);
         } else { // IP
             addIPSource(source, v2ipInputRules);
             v2ipSections.push_back(source.first.section);
@@ -76,6 +100,32 @@ int main() {
     }
 
     LOG_INFO("Successfully deployed source files to toolchain environments");
+    // !SECTION
+
+    // SECTION - Run toolchains to create lists
+    LOG_INFO("Build process of Domain lists is started using DLC...");
+    outGeositePath = runDlcToolchain(config.dlcRootPath);
+
+    LOG_INFO("Build process of IP lists is started using V2IP...");
+    outGeoipPath = runV2ipToolchain(config.v2ipRootPath);
+
+    if (!outGeositePath || !outGeoipPath) {
+        LOG_ERROR("Building one or more lists failed due to errors within the toolchains");
+        return 1;
+    }
+    // !SECTION
+
+    // SECTION - Copy created files to destanation
+    try {
+        fs::copy(*outGeositePath, gkGeositeDestPath, fs::copy_options::overwrite_existing);
+        fs::copy(*outGeoipPath, gkGeoipDestPath, fs::copy_options::overwrite_existing);
+    } catch (const fs::filesystem_error& e) {
+        log(LogType::ERROR, "Filesystem error:", e.what());
+        return 1;
+    }
+
+    log(LogType::INFO, "Domain address list successfully created:", gkGeositeDestPath.string());
+    log(LogType::INFO, "IP address list successfully created:", gkGeoipDestPath.string());
     // !SECTION
 
     return 0;

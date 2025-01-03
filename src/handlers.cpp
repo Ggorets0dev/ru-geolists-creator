@@ -18,6 +18,20 @@
         return false; \
     }
 
+static std::string
+parseUnixTime(const std::time_t& timeU) {
+    // Преобразуйте unix-время в структуру tm
+    std::tm* time_info = std::localtime(&timeU);
+
+    // Создайте строку формата день.месяц.год часы:минуты:секунды
+    std::stringstream ss;
+    ss << time_info->tm_mday << '.' << (time_info->tm_mon + 1) << '.' << (time_info->tm_year + 1900) << ' ';
+    ss << time_info->tm_hour << ':' << time_info->tm_min << ':' << time_info->tm_sec;
+
+    // Выведите строку
+    return ss.str();
+}
+
 void
 initSoftware() {
     bool status;
@@ -73,7 +87,8 @@ checkForUpdates(const RgcConfig& config) {
     bool status;
     bool isUpdateFound;
     Json::Value value;
-    std::string ruadlistVersion; 
+    std::string ruadlistVersion;
+    std::string logMsg;
     std::optional<std::time_t> lastReleaseTime;
 
     std::string gitHttpHeader = "Authorization: token " + config.apiToken;
@@ -97,7 +112,12 @@ checkForUpdates(const RgcConfig& config) {
     isUpdateFound = config.refilterTime < *lastReleaseTime;
 
     if (isUpdateFound) {
-        LOG_INFO("An update to the ReFilter lists has been detected");
+        logMsg = "An update to the ReFilter lists has been detected: ";
+        logMsg += parseUnixTime(*lastReleaseTime);
+        logMsg += " vs ";
+        logMsg += parseUnixTime(config.refilterTime);
+
+        LOG_WARNING(logMsg);
         return std::make_tuple(status, isUpdateFound);
     }
     // !SECTION
@@ -113,7 +133,7 @@ checkForUpdates(const RgcConfig& config) {
     status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
-    fs::remove(REFILTER_RELEASE_REQ_FILE_NAME);
+    fs::remove(XRAY_RULES_RELEASE_REQ_FILE_NAME);
 
     lastReleaseTime = parsePublishTime(value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(lastReleaseTime);
@@ -121,7 +141,12 @@ checkForUpdates(const RgcConfig& config) {
     isUpdateFound = config.v2rayTime < *lastReleaseTime;
 
     if (isUpdateFound) {
-        LOG_INFO("An update to the XRAY rules has been detected");
+        logMsg = "An update to the XRay lists has been detected: ";
+        logMsg += parseUnixTime(*lastReleaseTime);
+        logMsg += " vs ";
+        logMsg += parseUnixTime(config.refilterTime);
+
+        LOG_WARNING(logMsg);
         return std::make_tuple(status, isUpdateFound);
     }
     // !SECTION
@@ -136,7 +161,10 @@ checkForUpdates(const RgcConfig& config) {
     isUpdateFound = config.ruadlistVersion != ruadlistVersion;
 
     if (isUpdateFound) {
-        LOG_INFO("An update to the RUADLIST has been detected");
+        logMsg = "An update to the RUADLIST has been detected: ";
+        logMsg += (ruadlistVersion + " vs " + config.ruadlistVersion);
+
+        LOG_WARNING(logMsg);
         return std::make_tuple(status, isUpdateFound);
     }
     // !SECTION
@@ -166,7 +194,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     config.refilterTime = *lastReleaseTime;
 
     assetsNames = {"domains_all.lst", "ipsum.lst"};
-    status = downloadGithubReleaseAssets(value, assetsNames);\
+    status = downloadGithubReleaseAssets(value, assetsNames);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[0]));
@@ -185,7 +213,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     config.v2rayTime = *lastReleaseTime;
 
     assetsNames = {"reject-list.txt"};
-    status = downloadGithubReleaseAssets(value, assetsNames);\
+    status = downloadGithubReleaseAssets(value, assetsNames);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, "xray_reject"), kCurrentDir / assetsNames[0]));

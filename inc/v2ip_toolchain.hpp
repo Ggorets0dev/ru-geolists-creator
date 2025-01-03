@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 extern std::optional<std::string>
 downloadV2ipSourceCode();
 
-extern bool
+extern std::optional<fs::path>
 runV2ipToolchain(const std::string& rootPath);
 
 extern void
