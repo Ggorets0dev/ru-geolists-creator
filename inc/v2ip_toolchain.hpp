@@ -21,7 +21,7 @@ extern std::optional<std::string>
 downloadV2ipSourceCode();
 
 extern bool
-runToolchain(const std::string& rootPath);
+runV2ipToolchain(const std::string& rootPath);
 
 extern void
 addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray);

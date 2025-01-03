@@ -76,7 +76,7 @@ downloadV2ipSourceCode() {
 }
 
 bool
-runToolchain(const std::string& rootPath) {
+runV2ipToolchain(const std::string& rootPath) {
     const fs::path kCurrentDir = fs::current_path();
 
     fs::current_path(rootPath.c_str());
@@ -104,6 +104,8 @@ addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
     objRoot["type"] = "text";
     objRoot["action"] = "add";
     objRoot["args"] = objArgs;
+
+    v2ipInputArray.append(objRoot);
 }
 
 bool
@@ -114,7 +116,12 @@ saveIPSources(const std::string& v2ipRootPath, const Json::Value& v2ipInputArray
     bool status;
 
     configPath = v2ipRootPath;
-    configPath = configPath / "config.json";
+    configPath /= "config.json";
+
+    createOutputArray(outputArray, usedSections);
+
+    configObj["input"] = v2ipInputArray;
+    configObj["output"] = outputArray;
 
     status = writeJsonToFile(configPath.string(), configObj);
 

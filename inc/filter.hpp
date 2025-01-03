@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 extern const std::vector<std::string> kKeywordWhitelist;
 
 extern bool
-checkKeywordBlacklist(std::string_view domain);
+checkKeywordWhitelist(std::string_view domain);
 
 extern bool
 removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPath);

@@ -3,20 +3,11 @@
 #include "temp.hpp"
 #include "main_sources.hpp"
 
-static void
-printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources) {
-    std::cout << "---------" << std::endl;
-
-    for (const auto& source : downloadedSources) {
-        source.first.print();
-        std::cout << "Path: " << source.second << std::endl;
-        std::cout << "---------" << std::endl;
-    }
-}
-
 int main() {
     bool status;
     RgcConfig config;
+    std::vector<std::string> v2ipSections;
+    Json::Value v2ipInputRules(Json::arrayValue);
     std::vector<DownloadedSourcePair> downloadedSources;
 
     if (!fs::exists(RGC_CONFIG_PATH)) {
@@ -64,14 +55,16 @@ int main() {
     writeConfig(config);
 
     // SECTION - Move sources to toolchains
-    std::vector<std::string> v2ipSections;
-    Json::Value v2ipInputRules;
+    clearDlcDataSection(config.dlcRootPath);
+
+    v2ipSections.reserve(downloadedSources.size());
 
     for (const auto& source : downloadedSources) {
         if (source.first.type == Source::Type::DOMAIN) {
             status &= addDomainSource(config.dlcRootPath, source.second);
         } else { // IP
             addIPSource(source, v2ipInputRules);
+            v2ipSections.push_back(source.first.section);
         }
     }
 
@@ -81,6 +74,8 @@ int main() {
         LOG_ERROR("Failed to correctly place sources in toolchains");
         return 1;
     }
+
+    LOG_INFO("Successfully deployed source files to toolchain environments");
     // !SECTION
 
     return 0;

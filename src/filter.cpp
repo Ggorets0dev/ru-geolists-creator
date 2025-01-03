@@ -13,7 +13,7 @@ const std::vector<std::string> kKeywordWhitelist = {
 };
 
 bool
-checkKeywordBlacklist(std::string_view domain) {
+checkKeywordWhitelist(std::string_view domain) {
     for (uint8_t i(0); i < kKeywordWhitelist.size(); ++i) {
         if (domain.find(kKeywordWhitelist[i]) != std::string::npos) {
             return true;
@@ -58,7 +58,7 @@ removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPat
 
     while (std::getline(fileA, line)) {
         if (linesInB.find(line) == linesInB.end()) {
-            tempFileA << line << "\n";
+            tempFileA << line << std::endl;
         }
     }
 

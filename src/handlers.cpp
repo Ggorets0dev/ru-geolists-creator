@@ -198,8 +198,13 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     status = parseRuadlistVersion(RUADLIST_FILE_NAME, ruadlistVersion);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
+    status = extractDomainsFromFile(RUADLIST_FILE_NAME, RUADLIST_EXTRACTED_FILE_NAME);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    status = removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // reject-list.txt
+
     config.ruadlistVersion = std::move(ruadlistVersion);
-    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::IP, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_FILE_NAME));
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME));
     // !SECTION
 
     // SECTION - Download extra sources

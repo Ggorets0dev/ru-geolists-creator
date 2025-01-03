@@ -16,6 +16,7 @@
 #include <string>
 #include <iostream>
 #include <filesystem>
+#include <vector>
 
 class Source {
 
@@ -40,5 +41,8 @@ sourceTypeToString(Source::Type type);
 
 extern Source::Type
 sourceStringToType(std::string_view str);
+
+extern void
+printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources);
 
 #endif // MAIN_SOURCES_HPP

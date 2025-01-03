@@ -9,6 +9,7 @@
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
 #include "ruadlist.hpp"
+#include "filter.hpp"
 #include "archive.hpp"
 
 namespace fs = std::filesystem;

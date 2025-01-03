@@ -73,11 +73,15 @@ clearDlcDataSection(std::string dlcRootPath) {
 }
 
 bool
-addDomainSource(std::string dlcRootPath, const fs::path& sourceFilePath) {
-    dlcRootPath += "/data"; // Now it points to data section
+addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath) {
+    fs::path newFilePath = dlcRootPath;
+
+    newFilePath /= "data";
+    newFilePath /= sourceFilePath.filename();
+    newFilePath.replace_extension("");
 
     try {
-        fs::copy(sourceFilePath, dlcRootPath / sourceFilePath.filename());
+        fs::copy(sourceFilePath, newFilePath);
     } catch (const fs::filesystem_error& e) {
         log(LogType::ERROR, "Filesystem error:", e.what());
         return false;

@@ -1,5 +1,7 @@
 #include "main_sources.hpp"
 
+#define DOWNLOADED_SOURCES_DELIMETER "---------"
+
 Source::Source(Source::Type type, const std::string& section) {
     this->type = type;
     this->section = section;
@@ -26,5 +28,18 @@ sourceStringToType(std::string_view str) {
         return Source::Type::IP;
     } else { //  domain
         return Source::Type::DOMAIN;
+    }
+}
+
+void
+printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources) {
+    const char delimeter[] = DOWNLOADED_SOURCES_DELIMETER;
+
+    std::cout << delimeter << std::endl;
+
+    for (const auto& source : downloadedSources) {
+        source.first.print();
+        std::cout << "Path: " << source.second << std::endl;
+        std::cout << delimeter << std::endl;
     }
 }
