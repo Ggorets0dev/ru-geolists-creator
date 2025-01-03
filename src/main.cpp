@@ -3,7 +3,7 @@
 #include "temp.hpp"
 #include "main_sources.hpp"
 
-#define RGC_VERSION         "0.1.0"
+#define RGC_VERSION         "0.2.0"
 #define RGC_DEVELOPER       "Ggorets0dev"
 #define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"
 #define RGC_LICENSE         "MIT"
@@ -63,6 +63,7 @@ main() {
         return 0;
     }
 
+    // SECTION - Download latest available sources
     LOG_INFO("Process of downloading the latest versions of the sources begins...");
     status = downloadNewestSources(config, true, downloadedSources);
 
@@ -70,6 +71,7 @@ main() {
         // An additional log can be posted here
         return 1; // Failed to download newest releases. Exit
     }
+    // !SECTION
 
     EXIT_TEMP_DIR();
 

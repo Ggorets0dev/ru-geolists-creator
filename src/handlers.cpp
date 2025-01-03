@@ -152,7 +152,7 @@ checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check RUADLIST for updates
-    status = downloadFile(RUADLIST_URL, RUADLIST_FILE_NAME);
+    status = downloadFile(RUADLIST_FULL_URL, RUADLIST_FILE_NAME);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
     status = parseRuadlistVersion(RUADLIST_FILE_NAME, ruadlistVersion);
@@ -177,7 +177,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     bool status;
     Json::Value value;
     std::optional<std::time_t> lastReleaseTime;
-    std::string ruadlistVersion;
+    std::string latestRuadlistVersion;
     std::vector<std::string> assetsNames;
 
     const fs::path kCurrentDir = fs::current_path();
@@ -220,10 +220,13 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
-    status = downloadFile(RUADLIST_URL, RUADLIST_FILE_NAME);
+    status = downloadFile(RUADLIST_FULL_URL, RUADLIST_FILE_NAME);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    status = parseRuadlistVersion(RUADLIST_FILE_NAME, ruadlistVersion);
+    status = parseRuadlistVersion(RUADLIST_FILE_NAME, latestRuadlistVersion);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    status = downloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     status = extractDomainsFromFile(RUADLIST_FILE_NAME, RUADLIST_EXTRACTED_FILE_NAME);
@@ -231,7 +234,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
 
     status = removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // reject-list.txt
 
-    config.ruadlistVersion = std::move(ruadlistVersion);
+    config.ruadlistVersion = std::move(latestRuadlistVersion);
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME));
     // !SECTION
 

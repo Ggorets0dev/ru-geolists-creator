@@ -3,9 +3,6 @@
 #define MAX_DOMAIN_SIZE         56
 #define DOMAIN_REGEX            R"((?:[a-zA-Z0-9-]+\.)+(?:by|ru|ua|info|sex|su|life|com|ml|best|net|site|biz|xyz))"
 
-#define START_SEGMENT_MARK      "! *** advblock/first_level.txt ***"
-#define STOP_SEGMENT_MARK       "! *** advblock/specific_hide.txt ***"
-
 bool
 extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath) {
     std::ifstream inputFile(inputFilePath);
@@ -32,27 +29,10 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
     std::regex domainRegex(DOMAIN_REGEX);
     std::smatch match;
 
-    bool segmentBlock = true;
-
-    while (std::getline(inputFile, line)) { // Читаем файл построчно
-        if (segmentBlock && line == START_SEGMENT_MARK) {
-            segmentBlock = false;
-        } else if (line == STOP_SEGMENT_MARK) {
-            inputFile.close();
-            outputFile.close();
-
-            break;
-        }
-
-        if (segmentBlock) {
-            continue;
-        }
-
-        // Итераторы для поиска совпадений
+    while (std::getline(inputFile, line)) {
         auto begin = std::sregex_iterator(line.begin(), line.end(), domainRegex);
         auto end = std::sregex_iterator();
 
-        // Вывод всех найденных доменов
         for (auto it = begin; it != end; ++it) {
             match = *it;
 

@@ -9,7 +9,8 @@
 #define XRAY_RULES_RELEASE_REQ_FILE_NAME    "xray_rules_github_release_api_req.json"
 
 #define RUADLIST_SECTION_NAME               "ruadlist"
-#define RUADLIST_URL                        "https://easylist-downloads.adblockplus.org/ruadlist.txt"
+#define RUADLIST_FULL_URL                   "https://easylist-downloads.adblockplus.org/ruadlist.txt"
+#define RUADLIST_ADSERVERS_URL              "https://raw.githubusercontent.com/easylist/ruadlist/refs/heads/master/advblock/adservers.txt"
 #define RUADLIST_FILE_NAME                  "ruadlist.txt"
 #define RUADLIST_EXTRACTED_FILE_NAME        "ruadlist_extracted.txt"
 
