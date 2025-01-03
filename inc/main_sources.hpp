@@ -7,6 +7,7 @@
 
 #define XRAY_RULES_API_LAST_RELEASE_URL     "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest"
 #define XRAY_RULES_RELEASE_REQ_FILE_NAME    "xray_rules_github_release_api_req.json"
+#define XRAY_REJECT_SECTION_NAME            "v2ray_reject"
 
 #define RUADLIST_SECTION_NAME               "ruadlist"
 #define RUADLIST_FULL_URL                   "https://easylist-downloads.adblockplus.org/ruadlist.txt"

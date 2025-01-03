@@ -1,3 +1,6 @@
+#ifndef EXTRA_SOURCES_HPP
+#define EXTRA_SOURCES_HPP
+
 #include <string>
 
 #include "json_io.hpp"
@@ -10,3 +13,5 @@ public:
 
     std::string url;
 };
+
+#endif // EXTRA_SOURCES_HPP

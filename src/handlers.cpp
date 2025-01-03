@@ -20,15 +20,12 @@
 
 static std::string
 parseUnixTime(const std::time_t& timeU) {
-    // Преобразуйте unix-время в структуру tm
     std::tm* time_info = std::localtime(&timeU);
 
-    // Создайте строку формата день.месяц.год часы:минуты:секунды
     std::stringstream ss;
     ss << time_info->tm_mday << '.' << (time_info->tm_mon + 1) << '.' << (time_info->tm_year + 1900) << ' ';
     ss << time_info->tm_hour << ':' << time_info->tm_min << ':' << time_info->tm_sec;
 
-    // Выведите строку
     return ss.str();
 }
 
@@ -216,7 +213,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     status = downloadGithubReleaseAssets(value, assetsNames);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, "xray_reject"), kCurrentDir / assetsNames[0]));
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, XRAY_REJECT_SECTION_NAME), kCurrentDir / assetsNames[0]));
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
