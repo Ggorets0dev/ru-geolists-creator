@@ -31,3 +31,5 @@
 * [libcurl](https://curl.se/libcurl/)
 
 * [libarchive](https://libarchive.org/)
+
+* [CLI11](https://github.com/CLIUtils/CLI11)

@@ -2,25 +2,14 @@
 #include "config.hpp"
 #include "temp.hpp"
 #include "main_sources.hpp"
-
-#define RGC_VERSION         "0.2.2"
-#define RGC_DEVELOPER       "Ggorets0dev"
-#define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"
-#define RGC_LICENSE         "MIT"
+#include "cli_args.hpp"
 
 static const fs::path gkGeositeDestPath = fs::current_path() / GEOSITE_FILE_NAME;
 static const fs::path gkGeoipDestPath = fs::current_path() / GEOIP_FILE_NAME;
 
-static void
-printSoftwareInfo() {
-    std::cout << "ru-geolists-creator v" << RGC_VERSION << std::endl;
-    std::cout << "Developer: " << RGC_DEVELOPER << std::endl;
-    std::cout << "License: " << RGC_LICENSE << std::endl;
-    std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
-}
-
 int
-main() {
+main(int argc, char** argv) {
+    int cmdArgsParseStatus;
     bool status;
     RgcConfig config;
     std::vector<std::string> v2ipSections;
@@ -28,8 +17,18 @@ main() {
     std::vector<DownloadedSourcePair> downloadedSources;
     std::optional<fs::path> outGeoipPath, outGeositePath;
 
-    printSoftwareInfo();
-    std::cout << std::endl;
+    // SECTION - Parse CMD args using CLI11 lib
+    cmdArgsParseStatus = parseCmdArgs(argc, argv);
+
+    if (cmdArgsParseStatus != 0) {
+        exit(cmdArgsParseStatus);
+    }
+    // !SECTION
+
+    if (gCmdArgs.isShowHelp) {
+        printSoftwareInfo();
+        return 0;
+    }
 
     if (!fs::exists(RGC_CONFIG_PATH)) {
         LOG_WARNING("Configuration file is not detected, initialization is performed");
@@ -48,16 +47,20 @@ main() {
     CREATE_TEMP_DIR();
     ENTER_TEMP_DIR();
 
-    auto [checkStatus, isUpdateFound] = checkForUpdates(config);
+    if (!gCmdArgs.isForceCreation) {
+        LOG_INFO("Updates will be searched for, and built if available");
 
-    if (!checkStatus) {
-        // An additional log can be posted here
-        return 1; // Failed to check updates. Exit
-    }
+        auto [checkStatus, isUpdateFound] = checkForUpdates(config);
 
-    if (!isUpdateFound) {
-        LOG_INFO("No need to update sources, exit the program");
-        return 0;
+        if (!checkStatus) {
+            // An additional log can be posted here
+            return 1; // Failed to check updates. Exit
+        } else if (!isUpdateFound) {
+            LOG_INFO("No need to update sources, exit the program");
+            return 0;
+        }
+    } else {
+        LOG_INFO("No check for updates required, forced download and build");
     }
 
     // SECTION - Download latest available sources

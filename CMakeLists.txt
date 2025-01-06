@@ -14,14 +14,16 @@ pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 
 # Поиск библиотеки libjsoncpp
 pkg_check_modules(JSONCPP jsoncpp)
-link_libraries(${JSONCPP_LIBRARIES})
 
 # Поиск всех файлов в папках src и inc
 file(GLOB SRC_FILES "src/*.c" "src/*.cpp")
 file(GLOB INC_FILES "inc/*.h" "inc/*.hpp")
 
-add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES})
+# Поиск зависимостей в папке third-party
+file(GLOB TP_INC_FILES "third-party/*.h" "third-party/*.hpp")
+
+add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TP_INC_FILES})
 
 target_link_libraries(RuGeolistsCreator CURL::libcurl ${LIBARCHIVE_LIBRARIES} ${JSONCPP_LIBRARIES})
 
-target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} "inc/")
+target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} "inc/" "third-party/")
