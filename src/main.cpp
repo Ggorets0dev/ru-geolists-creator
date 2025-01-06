@@ -3,13 +3,10 @@
 #include "temp.hpp"
 #include "main_sources.hpp"
 
-#define RGC_VERSION         "0.2.1"
+#define RGC_VERSION         "0.2.2"
 #define RGC_DEVELOPER       "Ggorets0dev"
 #define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"
 #define RGC_LICENSE         "MIT"
-
-#define GEOSITE_FILE_NAME   "geosite.dat"
-#define GEOIP_FILE_NAME     "geoip.dat"
 
 static const fs::path gkGeositeDestPath = fs::current_path() / GEOSITE_FILE_NAME;
 static const fs::path gkGeoipDestPath = fs::current_path() / GEOIP_FILE_NAME;

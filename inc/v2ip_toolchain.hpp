@@ -27,6 +27,6 @@ extern void
 addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray);
 
 extern bool
-saveIPSources(const std::string& v2ipRootPath, const Json::Value& v2ipInputArray, const std::vector<std::string>& usedSections);
+saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray, std::vector<std::string>& usedSections);
 
 #endif // V2IP_TOOLCHAIN_HPP

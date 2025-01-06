@@ -19,7 +19,7 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
     CURL* curl;
     CURLcode res;
 
-    // Открываем файл для записи
+    // Open file for write
     std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile.is_open()) {
         LOG_ERROR(FILE_OPEN_ERROR_MSG + filePath);
@@ -28,16 +28,15 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
 
     curl = curl_easy_init();
     if (curl) {
-        // Настраиваем URL
+        // Set url settings
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-
         curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
 
-        // Настраиваем обратный вызов для записи данных
+        // Set callback for write
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
 
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); // Следовать за редиректами
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); // Follow redirects
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
 
         if (httpHeader != nullptr && strlen(httpHeader) > 0) {
@@ -46,16 +45,16 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
         }
 
-        // Выполняем запрос
+        // Perform query
         res = curl_easy_perform(curl);
 
-        // Проверяем на ошибки
+        // Check for errors
         if (res != CURLE_OK) {
             log(LogType::ERROR, "Failed to download file because of error:", curl_easy_strerror(res));
             return false;
         }
 
-        // Освобождаем ресурсы
+        // Free curl resources
         curl_easy_cleanup(curl);
     } else {
         std::cerr << "Failed to initialize CURL" << std::endl;
@@ -72,7 +71,7 @@ parsePublishTime(const Json::Value& value) {
     std::tm tm = {};
     std::istringstream ss(value["published_at"].asString());
 
-    // Парсим строку в формате ISO 8601 (например, 2024-12-20T14:11:25Z)
+    // Parse date and time with ISO 8601 (example 2024-12-20T14:11:25Z)
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
 
     if (ss.fail()) {
@@ -80,7 +79,7 @@ parsePublishTime(const Json::Value& value) {
         return std::nullopt;
     }
 
-    // Конвертируем в time_t (UNIX-время)
+    // Convert to time_t (UNIX-time)
     return std::mktime(&tm);
 }
 

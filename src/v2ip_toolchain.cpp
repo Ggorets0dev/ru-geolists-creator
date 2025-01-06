@@ -21,7 +21,7 @@ createOutputArray(Json::Value& outputArray, const std::vector<std::string>& used
     }
 
     argsObj["outputDir"] = "./output";
-    argsObj["outputName"] = "geoip.dat";
+    argsObj["outputName"] = GEOIP_FILE_NAME;
     argsObj["wantedList"] = wantedList;
 
     outputObj["type"] = "v2rayGeoIPDat";
@@ -29,6 +29,17 @@ createOutputArray(Json::Value& outputArray, const std::vector<std::string>& used
     outputObj["args"] = argsObj;
 
     outputArray.append(outputObj);
+}
+
+static void
+addPrivateSource(Json::Value& inputArray, std::vector<std::string>& usedSections) {
+    Json::Value obj;
+
+    obj["type"] = "private";
+    obj["action"] = "add";
+
+    inputArray.append(obj);
+    usedSections.push_back("private");
 }
 
 std::optional<std::string>
@@ -85,7 +96,7 @@ runV2ipToolchain(const std::string& rootPath) {
     int result = std::system("go run ./");
 
     if (result == 0) {
-        outFilePath = fs::current_path() / "output" / "geoip.dat";
+        outFilePath = fs::current_path() / "output" / GEOIP_FILE_NAME;
         LOG_INFO("IP address list building with XRay tools has been successfully completed");
     } else {
         outFilePath = std::nullopt;
@@ -112,7 +123,7 @@ addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
 }
 
 bool
-saveIPSources(const std::string& v2ipRootPath, const Json::Value& v2ipInputArray, const std::vector<std::string>& usedSections) {
+saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray, std::vector<std::string>& usedSections) {
     Json::Value configObj;
     Json::Value outputArray(Json::arrayValue);
     fs::path configPath;
@@ -120,6 +131,9 @@ saveIPSources(const std::string& v2ipRootPath, const Json::Value& v2ipInputArray
 
     configPath = v2ipRootPath;
     configPath /= "config.json";
+
+    // Add dummy private section
+    addPrivateSource(v2ipInputArray, usedSections);
 
     createOutputArray(outputArray, usedSections);
 

@@ -12,6 +12,9 @@
 #define CFG_DEFAULT_NUM_VALUE   0u
 #define CFG_DEFAULT_STR_VALUE   ""
 
+#define GEOSITE_FILE_NAME   "geosite.dat"
+#define GEOIP_FILE_NAME     "geoip.dat"
+
 struct RgcConfig {
     std::string dlcRootPath;
     std::string v2ipRootPath;
