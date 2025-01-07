@@ -9,6 +9,7 @@ static const fs::path gkGeoipDestPath = fs::current_path() / GEOIP_FILE_NAME;
 
 int
 main(int argc, char** argv) {
+    CLI::App app;
     int cmdArgsParseStatus;
     bool status;
     RgcConfig config;
@@ -18,14 +19,20 @@ main(int argc, char** argv) {
     std::optional<fs::path> outGeoipPath, outGeositePath;
 
     // SECTION - Parse CMD args using CLI11 lib
-    cmdArgsParseStatus = parseCmdArgs(argc, argv);
+    prepareCmdArgs(app, argc, argv);
 
-    if (cmdArgsParseStatus != 0) {
-        exit(cmdArgsParseStatus);
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::CallForHelp &e) {
+        std::cout << app.help() << std::endl; // Standard help
+        std::cout << "Notice: When running without arguments, the update-checked mode is used" << std::endl;
+        return 0;
+    } catch (const CLI::ParseError &e) {
+        return app.exit(e);
     }
     // !SECTION
 
-    if (gCmdArgs.isShowHelp) {
+    if (gCmdArgs.isShowAbout) {
         printSoftwareInfo();
         return 0;
     }
@@ -117,7 +124,7 @@ main(int argc, char** argv) {
     }
     // !SECTION
 
-    // SECTION - Copy created files to destanation
+    // SECTION - Copy created files to destination
     try {
         fs::copy(*outGeositePath, gkGeositeDestPath, fs::copy_options::overwrite_existing);
         fs::copy(*outGeoipPath, gkGeoipDestPath, fs::copy_options::overwrite_existing);

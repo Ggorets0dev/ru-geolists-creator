@@ -10,7 +10,7 @@
 
 struct CmdArgs {
     bool isForceCreation;
-    bool isShowHelp;
+    bool isShowAbout;
 };
 
 extern CmdArgs gCmdArgs;
@@ -18,7 +18,7 @@ extern CmdArgs gCmdArgs;
 extern void
 printSoftwareInfo();
 
-extern int
-parseCmdArgs(int argc, char** argv);
+extern void
+prepareCmdArgs(CLI::App& app, int argc, char** argv);
 
 #endif // CLI_ARGS_HPP

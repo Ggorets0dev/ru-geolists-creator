@@ -1,8 +1,11 @@
-#include "cli_args.hpp"
+#include "cli_args.hpp" 
+
+#define FORCE_OPTION_DESCRIPTION    "Starts source download and build even if no updates are detected"
+#define ABOUT_OPTION_DESCRIPTION    "Displaying software information"
 
 CmdArgs gCmdArgs = {
     .isForceCreation = false,
-    .isShowHelp = false
+    .isShowAbout = false
 };
 
 void
@@ -13,15 +16,12 @@ printSoftwareInfo() {
     std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
 }
 
-int
-parseCmdArgs(int argc, char** argv) {
-    CLI::App app{RGC_DESCRIPTION};
+void
+prepareCmdArgs(CLI::App& app, int argc, char** argv) {
+    app.description(RGC_DESCRIPTION);
+
     argv = app.ensure_utf8(argv);
 
-    app.add_flag("-f,--force", gCmdArgs.isForceCreation, "Starts source download and build even if no updates are detected");
-    app.add_flag("-v,--version", gCmdArgs.isShowHelp, "Displaying software information");
-
-    CLI11_PARSE(app, argc, argv);
-
-    return 0;
+    app.add_flag("-f,--force", gCmdArgs.isForceCreation, FORCE_OPTION_DESCRIPTION);
+    app.add_flag("-a,--about", gCmdArgs.isShowAbout, ABOUT_OPTION_DESCRIPTION);
 }
