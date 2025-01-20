@@ -1,4 +1,5 @@
 #include "handlers.hpp"
+#include "time_tools.hpp"
 
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
@@ -17,17 +18,6 @@
         LOG_ERROR(DOWNLOAD_UPDATES_FAIL_MSG); \
         return false; \
     }
-
-static std::string
-parseUnixTime(const std::time_t& timeU) {
-    std::tm* time_info = std::localtime(&timeU);
-
-    std::stringstream ss;
-    ss << time_info->tm_mday << '.' << (time_info->tm_mon + 1) << '.' << (time_info->tm_year + 1900) << ' ';
-    ss << time_info->tm_hour << ':' << time_info->tm_min << ':' << time_info->tm_sec;
-
-    return ss.str();
-}
 
 void
 initSoftware() {

@@ -29,7 +29,7 @@ public:
     };
 
     Source(Source::Type type, const std::string& section);
-    void print() const;
+    void print(std::ostream& stream) const;
 
     std::string section;
     Source::Type type;
@@ -45,6 +45,6 @@ extern Source::Type
 sourceStringToType(std::string_view str);
 
 extern void
-printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources);
+printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources);
 
 #endif // MAIN_SOURCES_HPP

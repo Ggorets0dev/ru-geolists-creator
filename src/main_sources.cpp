@@ -7,9 +7,9 @@ Source::Source(Source::Type type, const std::string& section) {
     this->section = section;
 }
 
-void Source::print() const {
-    std::cout << "Type: " << sourceTypeToString(this->type) << std::endl;
-    std::cout << "Section: " << this->section << std::endl;
+void Source::print(std::ostream& stream) const {
+    stream << "Type: " << sourceTypeToString(this->type) << std::endl;
+    stream << "Section: " << this->section << std::endl;
 }
 
 std::string
@@ -32,14 +32,14 @@ sourceStringToType(std::string_view str) {
 }
 
 void
-printDownloadedSources(const std::vector<DownloadedSourcePair>& downloadedSources) {
+printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources) {
     const char delimeter[] = DOWNLOADED_SOURCES_DELIMETER;
 
-    std::cout << delimeter << std::endl;
+    stream << delimeter << std::endl;
 
     for (const auto& source : downloadedSources) {
-        source.first.print();
-        std::cout << "Path: " << source.second << std::endl;
-        std::cout << delimeter << std::endl;
+        source.first.print(stream);
+        stream << "Path: " << source.second << std::endl;
+        stream << delimeter << std::endl;
     }
 }

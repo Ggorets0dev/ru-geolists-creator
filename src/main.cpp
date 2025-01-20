@@ -4,8 +4,8 @@
 #include "main_sources.hpp"
 #include "cli_args.hpp"
 
-static const fs::path gkGeositeDestPath = fs::current_path() / GEOSITE_FILE_NAME;
-static const fs::path gkGeoipDestPath = fs::current_path() / GEOIP_FILE_NAME;
+static const fs::path gkGeositeDestPath = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
+static const fs::path gkGeoipDestPath   = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
 
 int
 main(int argc, char** argv) {
@@ -53,6 +53,7 @@ main(int argc, char** argv) {
 
     CREATE_TEMP_DIR();
     ENTER_TEMP_DIR();
+    CLEAR_TEMP_DIR();
 
     if (!gCmdArgs.isForceCreation) {
         LOG_INFO("Updates will be searched for, and built if available");
@@ -83,7 +84,7 @@ main(int argc, char** argv) {
     EXIT_TEMP_DIR();
 
     LOG_INFO("Successfully downloaded all sources: \n");
-    printDownloadedSources(downloadedSources);
+    printDownloadedSources(std::cout, downloadedSources);
 
     writeConfig(config);
 
@@ -126,8 +127,13 @@ main(int argc, char** argv) {
 
     // SECTION - Copy created files to destination
     try {
+        if (!fs::exists(OUTPUT_FOLDER_NAME)) { \
+            fs::create_directory(OUTPUT_FOLDER_NAME); \
+        }
+
         fs::copy(*outGeositePath, gkGeositeDestPath, fs::copy_options::overwrite_existing);
         fs::copy(*outGeoipPath, gkGeoipDestPath, fs::copy_options::overwrite_existing);
+        createReleaseNotes(config, downloadedSources);
     } catch (const fs::filesystem_error& e) {
         log(LogType::ERROR, "Filesystem error:", e.what());
         return 1;

@@ -12,6 +12,11 @@ namespace fs = std::filesystem;
 		fs::create_directory(TEMP_DIR_NAME); \
 	}
 
+#define CLEAR_TEMP_DIR() \
+    for (const auto& entry : fs::directory_iterator(fs::current_path())) { \
+        fs::remove_all(entry.path()); \
+    } \
+
 #define ENTER_TEMP_DIR()    fs::current_path(TEMP_DIR_NAME)
 
 #define EXIT_TEMP_DIR()     fs::current_path("./..")
