@@ -54,7 +54,7 @@ initSoftware() {
 
     config.refilterTime = CFG_DEFAULT_NUM_VALUE;
     config.v2rayTime = CFG_DEFAULT_NUM_VALUE;
-    config.ruadlistVersion = CFG_DEFAULT_STR_VALUE;
+    config.ruadlistTime = CFG_DEFAULT_NUM_VALUE;
     config.apiToken = CFG_DEFAULT_STR_VALUE;
 
     status = writeConfig(config);
@@ -139,17 +139,22 @@ checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check RUADLIST for updates
-    status = downloadFile(RUADLIST_FULL_URL, RUADLIST_FILE_NAME);
+    status = downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
-    status = parseRuadlistVersion(RUADLIST_FILE_NAME, ruadlistVersion);
+    status = readJsonFromFile(RUADLIST_FILE_NAME, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
-    isUpdateFound = config.ruadlistVersion != ruadlistVersion;
+    status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);
+    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
+
+    isUpdateFound = config.ruadlistTime < lastReleaseTime;
 
     if (isUpdateFound) {
         logMsg = "An update to the RUADLIST has been detected: ";
-        logMsg += (ruadlistVersion + " vs " + config.ruadlistVersion);
+        logMsg += parseUnixTime(*lastReleaseTime);
+        logMsg += " vs ";
+        logMsg += parseUnixTime(config.ruadlistTime);
 
         LOG_WARNING(logMsg);
         return std::make_tuple(status, isUpdateFound);
@@ -207,10 +212,13 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
-    status = downloadFile(RUADLIST_FULL_URL, RUADLIST_FILE_NAME);
+    status = downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    status = parseRuadlistVersion(RUADLIST_FILE_NAME, latestRuadlistVersion);
+    status = readJsonFromFile(RUADLIST_FILE_NAME, value);
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+
+    status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     status = downloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
@@ -221,7 +229,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
 
     status = removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // reject-list.txt
 
-    config.ruadlistVersion = std::move(latestRuadlistVersion);
+    config.ruadlistTime = *lastReleaseTime;
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME));
     // !SECTION
 

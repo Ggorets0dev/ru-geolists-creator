@@ -22,7 +22,7 @@ struct RgcConfig {
 
     std::time_t refilterTime;
     std::time_t v2rayTime;
-    std::string ruadlistVersion;
+    std::time_t ruadlistTime;
 
     std::string apiToken;
 

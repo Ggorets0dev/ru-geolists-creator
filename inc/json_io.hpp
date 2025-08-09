@@ -2,6 +2,9 @@
 #define JSON_IO_HPP
 
 #include <fstream>
+#include <ctime>
+#include <optional>
+#include <iomanip>
 
 #if __has_include(<jsoncpp/json/json.h>)
 #include <jsoncpp/json/json.h>
@@ -20,5 +23,8 @@ writeJsonToFile(const std::string& filePath, const Json::Value& value);
 template<typename Type>
 extern bool
 updateJsonValue(const std::string& filePath, const std::string& key, Type value);
+
+extern std::optional<std::time_t>
+parsePublishTime(const Json::Value& value);
 
 #endif // JSON_IO_HPP

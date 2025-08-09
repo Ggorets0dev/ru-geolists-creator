@@ -54,23 +54,20 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
 }
 
 bool
-parseRuadlistVersion(const std::string& inputFilePath, std::string& versionOut) {
-    std::string buffer;
-    std::ifstream inputFile(inputFilePath);
+parseRuadlistUpdateDatetime(const Json::Value &value, std::time_t& dtOut) {
+    std::tm tm = {};
+    auto dateObj = value["commit"]["commit"]["committer"]["date"];
 
-    versionOut.reserve(RUADLIST_VERSION_SIZE);
+    std::istringstream ss(dateObj.asString());
 
-    if (!inputFile.is_open()) {
-        LOG_ERROR(FILE_OPEN_ERROR_MSG + inputFilePath);
+    // Parse date and time with ISO 8601 (example 2024-12-20T14:11:25Z)
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+
+    if (ss.fail()) {
+        LOG_ERROR("Failed to parse last change datetime from RuAdList");
         return false;
     }
 
-    while (std::getline(inputFile, buffer)) {
-        if (buffer.find("Version") != std::string::npos) {
-            versionOut = buffer.substr(buffer.size() - RUADLIST_VERSION_SIZE, RUADLIST_VERSION_SIZE);
-            return true;
-        }
-    }
-
-    return false;
+    // Convert to time_t (UNIX-time)
+    return std::mktime(&tm);
 }

@@ -13,7 +13,7 @@ createReleaseNotes(const RgcConfig& config, const std::vector<DownloadedSourcePa
 
     releaseNotes << "ReFilter lists datetime: " << parseUnixTime(config.refilterTime) << std::endl;
     releaseNotes << "V2Ray lists datetime: " << parseUnixTime(config.v2rayTime) << std::endl;
-    releaseNotes << "RuAdlist version: " << config.ruadlistVersion << std::endl;
+    releaseNotes << "RuAdList datetime: " << config.ruadlistTime << std::endl;
 
     releaseNotes << "\n\n";
 

@@ -19,8 +19,9 @@ writeConfig(const RgcConfig& config) {
     value["refilterTime"] = config.refilterTime;
     value["v2rayTime"] = config.v2rayTime;
 
+    value["ruadlistTime"] = config.ruadlistTime;
+
     SET_NULL_IF_EMPTY(value["apiToken"], config.apiToken);
-    SET_NULL_IF_EMPTY(value["ruadlistVersion"], config.ruadlistVersion);
 
     for (const auto& source : config.extraSources) {
         Json::Value obj;
@@ -60,7 +61,7 @@ readConfig(RgcConfig& config) {
 
     config.refilterTime = value["refilterTime"].asInt64();
     config.v2rayTime = value["v2rayTime"].asInt64();
-    config.ruadlistVersion = value["ruadlistVersion"].asString();
+    config.ruadlistTime = value["v2rayTime"].asInt64();
 
     config.apiToken = value["apiToken"].asString();
 

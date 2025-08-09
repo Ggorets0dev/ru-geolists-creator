@@ -71,3 +71,20 @@ updateJsonValue(const std::string& filePath, const std::string& key, Type value)
 
     return true;
 }
+
+std::optional<std::time_t>
+parsePublishTime(const Json::Value& value) {
+    std::tm tm = {};
+    std::istringstream ss(value["published_at"].asString());
+
+    // Parse date and time with ISO 8601 (example 2024-12-20T14:11:25Z)
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+
+    if (ss.fail()) {
+        LOG_ERROR("Failed to parse publish time from release");
+        return std::nullopt;
+    }
+
+    // Convert to time_t (UNIX-time)
+    return std::mktime(&tm);
+}
