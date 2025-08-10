@@ -1,6 +1,7 @@
 #include "network.hpp"
 
 #include <algorithm>
+#include "exception.h"
 
 #define USER_AGENT "ru-geolists-creator"
 
@@ -16,7 +17,7 @@ writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     return totalSize;
 }
 
-bool
+void
 downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
     CURL* curl;
     CURLcode res;
@@ -24,8 +25,7 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
     // Open file for write
     std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile.is_open()) {
-        LOG_ERROR(FILE_OPEN_ERROR_MSG + filePath);
-        return false;
+        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + filePath);
     }
 
     curl = curl_easy_init();
@@ -54,26 +54,20 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
 
         // Check for errors
         if (res != CURLE_OK) {
-            log(LogType::ERROR, "Failed to download file because of error:", curl_easy_strerror(res));
-            return false;
+            throw CurlError("Failed to download file", res);
         }
 
         // Free curl resources
         curl_easy_cleanup(curl);
     } else {
-        std::cerr << "Failed to initialize CURL" << std::endl;
-        return false;
+        throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
 
     outFile.close();
-
-    return true;
 }
 
 bool
 downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
-    bool status = false;
-
     if (value.isMember("assets") && value["assets"].isArray()) {
         const Json::Value& assets = value["assets"];
         for (const auto& asset : assets) {
@@ -81,9 +75,15 @@ downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::str
                 continue;
             }
 
-            status = downloadFile(asset["browser_download_url"].asString(), asset["name"].asString());
+            try {
+                downloadFile(asset["browser_download_url"].asString(), asset["name"].asString());
+            }  catch (std::exception& e) {
+                LOG_ERROR(e.what());
+
+                return false;
+            }
         }
     }
 
-    return status;
+    return true;
 }

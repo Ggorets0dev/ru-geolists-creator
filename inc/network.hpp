@@ -11,7 +11,7 @@
 
 #define DOWNLOAD_TRY_DELAY_SEC      1u
 
-extern bool
+extern void
 downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
 extern bool

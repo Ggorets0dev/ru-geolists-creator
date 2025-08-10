@@ -9,10 +9,6 @@
 #define CHECK_UPDATES_FAIL_MSG      "Failed to check sources for updates"
 #define DOWNLOAD_UPDATES_FAIL_MSG   "Failed to download latest releases of main sources"
 
-#define ERROR_LOG_PREFIX        "-"
-#define WARNING_LOG_PREFIX      "!"
-#define INFO_LOG_PREFIX         "+"
-
 #define LOG_ERROR(msg)          log(LogType::ERROR, msg)
 #define LOG_WARNING(msg)        log(LogType::WARNING, msg)
 #define LOG_INFO(msg)           log(LogType::INFO, msg)

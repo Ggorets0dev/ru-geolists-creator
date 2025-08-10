@@ -81,12 +81,15 @@ checkForUpdates(const RgcConfig& config) {
     std::string gitHttpHeader = "Authorization: token " + config.apiToken;
 
     // SECTION - Check ReFilter for updates
-    if (!config.apiToken.empty()) {
-        status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
-    } else {
-        status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    try {
+        if (!config.apiToken.empty()) {
+            downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
+        } else {
+            downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR(e.what());
     }
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
     status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
@@ -105,17 +108,22 @@ checkForUpdates(const RgcConfig& config) {
         logMsg += parseUnixTime(config.refilterTime);
 
         LOG_WARNING(logMsg);
+
         return std::make_tuple(status, isUpdateFound);
     }
     // !SECTION
 
     // SECTION - Check XRAY rules for updates
-    if (!config.apiToken.empty()) {
-        status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
-    } else {
-        status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    try {
+        if (!config.apiToken.empty()) {
+            downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
+        } else {
+            downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR(e.what());
+        return std::make_tuple(false, false);
     }
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
     status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
@@ -139,8 +147,12 @@ checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check RUADLIST for updates
-    status = downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
+    try {
+        downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+    } catch (const std::exception& e) {
+        LOG_ERROR(e.what());
+        return std::make_tuple(false, false);
+    }
 
     status = readJsonFromFile(RUADLIST_FILE_NAME, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
@@ -157,6 +169,7 @@ checkForUpdates(const RgcConfig& config) {
         logMsg += parseUnixTime(config.ruadlistTime);
 
         LOG_WARNING(logMsg);
+
         return std::make_tuple(status, isUpdateFound);
     }
     // !SECTION
@@ -175,8 +188,12 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     const fs::path kCurrentDir = fs::current_path();
 
     // SECTION - Download newest ReFilter rules
-    status = downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
-    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    try {
+        downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        return false;
+    }
 
     status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
@@ -194,8 +211,12 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     // !SECTION
 
     // SECTION - Download newest XRay rules
-    status = downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
-    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    try {
+        downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        return false;
+    }
 
     status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
@@ -212,8 +233,12 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
-    status = downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
-    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    try {
+        downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        return false;
+    }
 
     status = readJsonFromFile(RUADLIST_FILE_NAME, value);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
@@ -221,8 +246,12 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    status = downloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
-    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    try {
+        downloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        return false;
+    }
 
     status = extractDomainsFromFile(RUADLIST_FILE_NAME, RUADLIST_EXTRACTED_FILE_NAME);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
@@ -235,8 +264,13 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
 
     // SECTION - Download extra sources
     for (const auto& source : config.extraSources) {
-        status = downloadFile(source.url, source.section);
-        VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+        try {
+            downloadFile(source.url, source.section);
+        }  catch (std::exception& e) {
+            LOG_ERROR(e.what());
+            LOG_WARNING("Failed to download extra source: " + source.url);
+        }
+
         downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / source.section));
     }
     // !SECTION

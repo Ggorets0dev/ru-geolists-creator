@@ -45,12 +45,16 @@ addPrivateSource(Json::Value& inputArray, std::vector<std::string>& usedSections
 std::optional<std::string>
 downloadV2ipSourceCode() {
     bool status = 1;
+
+    uint8_t curr_attempt = 0;
     const uint8_t attempt_cnt = 5;
 
-    status = downloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME);
+    try {
+        downloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR("Failed to perform API request for V2IP repository");
 
-    if (!status) {
-        LOG_ERROR("Failed to get data on the V2IP repository. Check your internet connection");
         return std::nullopt;
     }
 
@@ -65,21 +69,24 @@ downloadV2ipSourceCode() {
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
-    for(uint8_t i(0); i < attempt_cnt; ++i) {
-        status = downloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME);
+    for(curr_attempt = 0; curr_attempt < attempt_cnt; ++curr_attempt) {
+        try {
+            downloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME);
+        }  catch (std::exception& e) {
+            LOG_ERROR(e.what());
+            LOG_WARNING("Failed to download the V2IP source code, performing another attempt...");
 
-        if (status) {
-            LOG_INFO("V2IP source code was successfully downloaded");
-            break;
-        } else {
-            LOG_ERROR("Failed to download the V2IP source code, performing another attempt...");
+            std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_TRY_DELAY_SEC));
+
+            continue;
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_TRY_DELAY_SEC));
+        LOG_INFO("V2IP source code was successfully downloaded");
+        break;
     }
 
-    if (!status) {
-        LOG_ERROR("V2IP source code could not be downloaded after several attempts. Check your internet connection");
+    if (curr_attempt == attempt_cnt) {
+        LOG_ERROR("V2IP source code could not be downloaded after several attempts");
         return std::nullopt;
     }
 

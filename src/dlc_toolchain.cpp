@@ -5,12 +5,15 @@
 std::optional<std::string>
 downloadDlcSourceCode() {
     bool status = 1;
+
+    uint8_t curr_attempt = 0;
     const uint8_t attempt_cnt = 5;
 
-    status = downloadFile(DLC_API_LAST_RELEASE_URL, DLC_RELEASE_REQ_FILE_NAME);
-
-    if (!status) {
-        LOG_ERROR("Failed to get data on the DLC repository. Check your internet connection");
+    try {
+        downloadFile(DLC_API_LAST_RELEASE_URL, DLC_RELEASE_REQ_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR("Failed to perform API request for DLC repository");
         return std::nullopt;
     }
 
@@ -25,21 +28,24 @@ downloadDlcSourceCode() {
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
-    for(uint8_t i(0); i < attempt_cnt; ++i) {
-        status = downloadFile(lastReleaseUrl, DLC_SRC_FILE_NAME);
+    for(curr_attempt = 0; curr_attempt < attempt_cnt; ++curr_attempt) {
+        try {
+            downloadFile(lastReleaseUrl, DLC_SRC_FILE_NAME);
+        }  catch (std::exception& e) {
+            LOG_ERROR(e.what());
+            LOG_WARNING("Failed to download the DLC source code, performing another attempt...");
 
-        if (status) {
-            LOG_INFO("DLC source code was successfully downloaded");
-            break;
-        } else {
-            LOG_ERROR("Failed to download the DLC source code, performing another attempt...");
+            std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_TRY_DELAY_SEC));
+
+            continue;
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_TRY_DELAY_SEC));
+        LOG_INFO("DLC source code was successfully downloaded");
+        break;
     }
 
-    if (!status) {
-        LOG_ERROR("DLC source code could not be downloaded after several attempts. Check your internet connection");
+    if (curr_attempt == attempt_cnt) {
+        LOG_ERROR("DLC source code could not be downloaded after several attempts");
         return std::nullopt;
     }
 
