@@ -48,7 +48,7 @@
     }
   ],
   "refilterTime" : 1736426783,
-  "ruadlistVersion" : "202501101551",
+  "ruadlistTime" : 1754766886,
   "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
   "v2rayTime" : 1736449948
 }
