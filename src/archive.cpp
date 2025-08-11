@@ -1,4 +1,9 @@
 #include "archive.hpp"
+#include "log.hpp"
+
+#include <fstream>
+#include <archive.h>
+#include <archive_entry.h>
 
 #define ARCHIVE_BUFFER_BYTES    10240u // 10 kb
 #define NEW_DIR_ACCESS_CODE     0755

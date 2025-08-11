@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#define FILE_LOCATE_ERROR_MSG       "Failed to locate file on path: "
 #define FILE_OPEN_ERROR_MSG         "Failed to open file on path: "
 #define JSON_PARSE_ERROR_MSG        "Failed to parse JSON file on path: "
 #define SOFTWARE_INIT_FAIL_MSG      "Failed to initialize software with its components"

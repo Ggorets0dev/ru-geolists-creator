@@ -1,10 +1,6 @@
 #ifndef TEMP_HPP
 #define TEMP_HPP
 
-#include <filesystem>
-
-namespace fs = std::filesystem;
-
 #define TEMP_DIR_NAME		"./temp"
 
 #define CREATE_TEMP_DIR() \

@@ -1,7 +1,7 @@
 #include "network.hpp"
+#include "exception.hpp"
 
 #include <algorithm>
-#include "exception.h"
 
 #define USER_AGENT "ru-geolists-creator"
 

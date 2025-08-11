@@ -7,6 +7,19 @@
 static const fs::path gkGeositeDestPath = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
 static const fs::path gkGeoipDestPath   = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
 
+static void performCleanup() {
+    if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {
+        std::error_code ec;  // Для подавления исключений (если не хочется try-catch)
+
+        // Удаляем папку и всё её содержимое
+        fs::remove_all(TEMP_DIR_NAME, ec);
+
+        if (ec) {
+            LOG_ERROR("Failed to delete TEMP dir before exiting: " + ec.message());
+        }
+    }
+}
+
 int
 main(int argc, char** argv) {
     CLI::App app;
@@ -42,12 +55,16 @@ main(int argc, char** argv) {
         initSoftware(); // Download all toolchains and create config
 
         LOG_INFO("You can add a GitHub API access key before running the software. Restart the application with the token added if desired");
+
+        performCleanup();
         return 0;
     }
 
     status = readConfig(config);
     if (!status) {
         LOG_ERROR("Configuration file could not be read, operation cannot be continued");
+
+        performCleanup();
         return 1;
     }
 
@@ -62,9 +79,13 @@ main(int argc, char** argv) {
 
         if (!checkStatus) {
             // An additional log can be posted here
+
+            performCleanup();
             return 1; // Failed to check updates. Exit
         } else if (!isUpdateFound) {
             LOG_INFO("No need to update sources, exit the program");
+
+            performCleanup();
             return 0;
         }
     } else {
@@ -77,6 +98,8 @@ main(int argc, char** argv) {
 
     if (!status) {
         // An additional log can be posted here
+
+        performCleanup();
         return 1; // Failed to download newest releases. Exit
     }
     // !SECTION
@@ -106,6 +129,8 @@ main(int argc, char** argv) {
 
     if (!status) {
         LOG_ERROR("Failed to correctly place sources in toolchains");
+
+        performCleanup();
         return 1;
     }
 
@@ -121,6 +146,8 @@ main(int argc, char** argv) {
 
     if (!outGeositePath || !outGeoipPath) {
         LOG_ERROR("Building one or more lists failed due to errors within the toolchains");
+
+        performCleanup();
         return 1;
     }
     // !SECTION
@@ -136,6 +163,8 @@ main(int argc, char** argv) {
         createReleaseNotes(config, downloadedSources);
     } catch (const fs::filesystem_error& e) {
         log(LogType::ERROR, "Filesystem error:", e.what());
+
+        performCleanup();
         return 1;
     }
 
@@ -143,5 +172,6 @@ main(int argc, char** argv) {
     log(LogType::INFO, "IP address list successfully created:", gkGeoipDestPath.string());
     // !SECTION
 
+    performCleanup();
     return 0;
 }

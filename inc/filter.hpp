@@ -5,18 +5,16 @@
 #include <vector>
 #include <unordered_set>
 #include <fstream>
-#include <filesystem>
+#include <fs_utils.hpp>
 
 #include "log.hpp"
-
-namespace fs = std::filesystem;
 
 extern const std::vector<std::string> kKeywordWhitelist;
 
 extern bool
 checkKeywordWhitelist(std::string_view domain);
 
-extern bool
+extern void
 removeDuplicateDomains(const std::string& fileAPath, const std::string& fileBPath);
 
 #endif // FILTER_HPP

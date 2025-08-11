@@ -1,7 +1,6 @@
 #ifndef HANDLERS_HPP
 #define HANDLERS_HPP
 
-#include <filesystem>
 #include <string>
 #include <sstream>
 
@@ -9,11 +8,7 @@
 #include "config.hpp"
 #include "main_sources.hpp"
 #include "build_tools.hpp"
-#include "ruadlist.hpp"
-#include "filter.hpp"
 #include "archive.hpp"
-
-namespace fs = std::filesystem;
 
 extern void
 initSoftware();

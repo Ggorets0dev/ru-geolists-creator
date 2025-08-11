@@ -1,5 +1,7 @@
 #include "handlers.hpp"
 #include "time_tools.hpp"
+#include "ruadlist.hpp"
+#include "filter.hpp"
 
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
@@ -256,10 +258,22 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     status = extractDomainsFromFile(RUADLIST_FILE_NAME, RUADLIST_EXTRACTED_FILE_NAME);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    status = removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // reject-list.txt
+    removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // RuAdList vs reject-list.txt from XRay
 
     config.ruadlistTime = *lastReleaseTime;
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME));
+    // !SECTION
+
+    // SECTION - Download newest ANTIFILTER rules
+    try {
+        downloadFile(ANTIFILTER_DOMAINS_URL, ANTIFILTER_FILE_NAME);
+        removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, ANTIFILTER_FILE_NAME);
+    }  catch (std::exception& e) {
+        LOG_ERROR(e.what());
+        LOG_WARNING("Failed add Antifilter rules to Geolists");
+    }
+
+    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, ANTIFILTER_SECTION_NAME), kCurrentDir / ANTIFILTER_FILE_NAME));
     // !SECTION
 
     // SECTION - Download extra sources
