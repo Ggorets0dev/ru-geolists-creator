@@ -1,7 +1,6 @@
 #include "handlers.hpp"
 #include "time_tools.hpp"
 #include "ruadlist.hpp"
-#include "filter.hpp"
 
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
@@ -186,6 +185,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     std::optional<std::time_t> lastReleaseTime;
     std::string latestRuadlistVersion;
     std::vector<std::string> assetsNames;
+    size_t dupeCnt;
 
     const fs::path kCurrentDir = fs::current_path();
 
@@ -204,7 +204,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(lastReleaseTime);
     config.refilterTime = *lastReleaseTime;
 
-    assetsNames = {"domains_all.lst", "ipsum.lst"};
+    assetsNames = {REFILTER_DOMAIN_ASSET_FILE_NAME, REFILTER_IP_ASSET_FILE_NAME};
     status = downloadGithubReleaseAssets(value, assetsNames);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
@@ -258,7 +258,7 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     status = extractDomainsFromFile(RUADLIST_FILE_NAME, RUADLIST_EXTRACTED_FILE_NAME);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // RuAdList vs reject-list.txt from XRay
+    removeDuplicateLines(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // RuAdList vs reject-list.txt from XRay
 
     config.ruadlistTime = *lastReleaseTime;
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME));
@@ -266,26 +266,32 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
 
     // SECTION - Download newest ANTIFILTER rules
     try {
-        downloadFile(ANTIFILTER_DOMAINS_URL, ANTIFILTER_FILE_NAME);
-        removeDuplicateDomains(RUADLIST_EXTRACTED_FILE_NAME, ANTIFILTER_FILE_NAME);
+        downloadFile(ANTIFILTER_AYN_IPS_URL, ANTIFILTER_FILE_NAME);
+
+        dupeCnt = removeDuplicateLines(REFILTER_IP_ASSET_FILE_NAME, ANTIFILTER_FILE_NAME);
+
+        if (dupeCnt) {
+            LOG_INFO("Count of duplicates found between REFILTER and ANTIFILTER: " + std::to_string(dupeCnt));
+        } else {
+            LOG_INFO("No duplicates were found between REFILTER AND ANTIFILTER");
+        }
+
+        downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::IP, ANTIFILTER_SECTION_NAME), kCurrentDir / ANTIFILTER_FILE_NAME));
     }  catch (std::exception& e) {
         LOG_ERROR(e.what());
         LOG_WARNING("Failed add Antifilter rules to Geolists");
     }
-
-    downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, ANTIFILTER_SECTION_NAME), kCurrentDir / ANTIFILTER_FILE_NAME));
     // !SECTION
 
     // SECTION - Download extra sources
     for (const auto& source : config.extraSources) {
         try {
             downloadFile(source.url, source.section);
+            downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / source.section));
         }  catch (std::exception& e) {
             LOG_ERROR(e.what());
             LOG_WARNING("Failed to download extra source: " + source.url);
         }
-
-        downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / source.section));
     }
     // !SECTION
 

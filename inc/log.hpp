@@ -1,7 +1,7 @@
 #ifndef LOG_HPP
 #define LOG_HPP
 
-#include <iostream>
+#include <string>
 
 #define FILE_LOCATE_ERROR_MSG       "Failed to locate file on path: "
 #define FILE_OPEN_ERROR_MSG         "Failed to open file on path: "

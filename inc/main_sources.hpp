@@ -8,6 +8,8 @@
 #include "fs_utils.hpp"
 
 #define REFILTER_SECTION_NAME               "refilter"
+#define REFILTER_DOMAIN_ASSET_FILE_NAME     "domains_all.lst"
+#define REFILTER_IP_ASSET_FILE_NAME         "ipsum.lst"
 #define REFILTER_API_LAST_RELEASE_URL       "https://api.github.com/repos/1andrevich/Re-filter-lists/releases/latest"
 #define REFILTER_RELEASE_REQ_FILE_NAME      "refilter_github_release_api_req.json"
 
@@ -23,7 +25,7 @@
 
 #define ANTIFILTER_SECTION_NAME             "antifilter"
 #define ANTIFILTER_FILE_NAME                "antifilter.txt"
-#define ANTIFILTER_DOMAINS_URL              "https://antifilter.download/list/domains.lst"
+#define ANTIFILTER_AYN_IPS_URL              "https://antifilter.download/list/allyouneed.lst"
 
 class Source {
 

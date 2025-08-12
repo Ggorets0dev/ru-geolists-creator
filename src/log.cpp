@@ -1,5 +1,7 @@
 #include "log.hpp"
 
+#include <iostream>
+
 // ANSI escape codes for colors
 #define COLOR_RESET  "\033[0m"
 #define COLOR_RED    "\033[31m"
@@ -14,8 +16,8 @@
 
 void
 log(LogType type, std::string_view msg) {
-    const char* color = "";
-    const char* prefix = "";
+    const char* color;
+    const char* prefix;
 
     switch (type) {
     case LogType::ERROR:
@@ -32,8 +34,8 @@ log(LogType type, std::string_view msg) {
         break;
     }
 
-    std::cout << COLOR_CYAN << "[" << color << prefix << COLOR_CYAN << "] "
-              << COLOR_RESET << msg << std::endl;
+    std::cout << COLOR_CYAN << " " << color << prefix << COLOR_CYAN <<
+              " " << COLOR_RESET << msg << std::endl;
 }
 
 void

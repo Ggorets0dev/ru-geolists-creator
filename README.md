@@ -14,6 +14,8 @@
 
 * [Ruadlist](https://github.com/easylist/ruadlist)
 
+* [Antifilter](https://antifilter.download/)
+
 ## Системы сборки списков
 
 Для сборки списков используется официальное ПО V2Ray:
