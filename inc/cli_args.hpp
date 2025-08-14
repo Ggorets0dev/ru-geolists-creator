@@ -11,12 +11,16 @@
 struct CmdArgs {
     bool isForceCreation;
     bool isShowAbout;
+    bool isCheckUrls;
 };
 
 extern CmdArgs gCmdArgs;
 
 extern void
 printSoftwareInfo();
+
+extern void
+checkUrlsAccess();
 
 extern void
 prepareCmdArgs(CLI::App& app, int argc, char** argv);

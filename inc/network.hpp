@@ -17,4 +17,7 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
 extern bool
 downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames);
 
+extern bool
+isUrlAccessible(const std::string& url);
+
 #endif // NETWORK_HPP

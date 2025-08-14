@@ -45,6 +45,7 @@ main(int argc, char** argv) {
     }
     // !SECTION
 
+    // Show about and close software
     if (gCmdArgs.isShowAbout) {
         printSoftwareInfo();
         return 0;
@@ -59,6 +60,14 @@ main(int argc, char** argv) {
         performCleanup();
         return 0;
     }
+
+    // Check access for URLs and close software
+    if (gCmdArgs.isCheckUrls) {
+        checkUrlsAccess();
+        return 0;
+    }
+
+    // ---> Download sources --->
 
     status = readConfig(config);
     if (!status) {

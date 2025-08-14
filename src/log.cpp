@@ -42,3 +42,12 @@ void
 log(LogType type, const std::string& msg1, const std::string& msg2) {
     log(type, msg1 + " " + msg2);
 }
+
+void
+log_url_access(const std::string& url, bool status) {
+    if (status) {
+        LOG_INFO("Successfully accessed the resource at the following link: " + url);
+    } else {
+        LOG_ERROR("Failed to access the resource at the following link: " + url);
+    }
+}

@@ -26,4 +26,7 @@ log(LogType type, std::string_view msg);
 extern void
 log(LogType type, const std::string& msg1, const std::string& msg2);
 
+extern void
+log_url_access(const std::string& url, bool status);
+
 #endif // LOG_HPP
