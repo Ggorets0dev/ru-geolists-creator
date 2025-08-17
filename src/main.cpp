@@ -31,6 +31,9 @@ main(int argc, char** argv) {
     std::vector<DownloadedSourcePair> downloadedSources;
     std::optional<fs::path> outGeoipPath, outGeositePath;
 
+    // Init RAND
+    std::srand(std::time(0));
+
     // SECTION - Parse CMD args using CLI11 lib
     prepareCmdArgs(app, argc, argv);
 
@@ -119,6 +122,9 @@ main(int argc, char** argv) {
     printDownloadedSources(std::cout, downloadedSources);
 
     writeConfig(config);
+
+    // Join similar sources if they exist
+    joinSimilarSources(downloadedSources);
 
     // SECTION - Move sources to toolchains
     clearDlcDataSection(config.dlcRootPath);

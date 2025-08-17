@@ -5,8 +5,10 @@
 
 namespace fs = std::filesystem;
 
-size_t countLinesInFile(const fs::path& file_path);
+size_t countLinesInFile(const fs::path& filePath);
 
 size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fileBPath);
+
+void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath);
 
 #endif // FS_UTILS_H

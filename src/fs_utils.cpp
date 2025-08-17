@@ -6,14 +6,14 @@
 
 #define TEMP_FILE_NAME "filter_temp.txt"
 
-size_t countLinesInFile(const fs::path& file_path) {
-    if (!fs::exists(file_path) || !fs::is_regular_file(file_path)) {
-        throw std::ios_base::failure(FILE_LOCATE_ERROR_MSG + file_path.string());
+size_t countLinesInFile(const fs::path& filePath) {
+    if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
+        throw std::ios_base::failure(FILE_LOCATE_ERROR_MSG + filePath.string());
     }
 
-    std::ifstream file(file_path);
+    std::ifstream file(filePath);
     if (!file.is_open()) {
-        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + file_path.string());
+        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + filePath.string());
     }
 
     size_t line_count = 0;
@@ -25,8 +25,7 @@ size_t countLinesInFile(const fs::path& file_path) {
     return line_count;
 }
 
-size_t
-removeDuplicateLines(const std::string& fileAPath, const std::string& fileBPath) {
+size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fileBPath) {
     // Открываем файл B и читаем строки в множество
     std::unordered_set<std::string> linesInB;
     const std::string* fileForReplace;
@@ -88,4 +87,26 @@ removeDuplicateLines(const std::string& fileAPath, const std::string& fileBPath)
     fs::rename(TEMP_FILE_NAME, fileAPath);
 
     return dupeCnt;
+}
+
+void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath) {
+    std::ifstream fileB(fileBPath, std::ios::binary);
+    if (!fileB.is_open()) {
+        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + fileBPath);
+    }
+
+    std::ofstream fileA(fileAPath, std::ios::binary | std::ios::app);
+    if (!fileA.is_open()) {
+        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + fileAPath);
+    }
+
+//    fileA.seekp(0, std::ios::end);
+//    if (fileA.tellp() != 0) {
+//        fileA << '\n';
+//    }
+
+    fileA << fileB.rdbuf();
+
+    fileA.close();
+    fileB.close();
 }

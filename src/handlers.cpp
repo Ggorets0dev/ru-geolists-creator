@@ -284,10 +284,14 @@ downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<Downl
     // !SECTION
 
     // SECTION - Download extra sources
+    std::string fileName;
+
     for (const auto& source : config.extraSources) {
         try {
-            downloadFile(source.url, source.section);
-            downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / source.section));
+            fileName = genSourceFileName(source);
+
+            downloadFile(source.url, fileName);
+            downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
         }  catch (std::exception& e) {
             LOG_ERROR(e.what());
             LOG_WARNING("Failed to download extra source: " + source.url);

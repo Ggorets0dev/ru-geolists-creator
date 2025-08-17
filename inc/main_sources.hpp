@@ -44,13 +44,14 @@ public:
 
 using DownloadedSourcePair = std::pair<Source, fs::path>;
 
-extern std::string
-sourceTypeToString(Source::Type type);
+std::string sourceTypeToString(Source::Type type);
 
-extern Source::Type
-sourceStringToType(std::string_view str);
+Source::Type sourceStringToType(std::string_view str);
 
-extern void
-printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources);
+void printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources);
+
+void joinSimilarSources(std::vector<DownloadedSourcePair>& downloadedSources);
+
+std::string genSourceFileName(const Source& source);
 
 #endif // MAIN_SOURCES_HPP
