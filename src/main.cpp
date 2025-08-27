@@ -4,12 +4,17 @@
 #include "main_sources.hpp"
 #include "cli_args.hpp"
 
+#include "dlc_toolchain.hpp"
+#include "v2ip_toolchain.hpp"
+
+#include "release_notes.pb.h"
+
 static const fs::path gkGeositeDestPath = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
 static const fs::path gkGeoipDestPath   = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
 
 static void performCleanup() {
     if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {
-        std::error_code ec;  // Для подавления исключений (если не хочется try-catch)
+        std::error_code ec;
 
         // Удаляем папку и всё её содержимое
         fs::remove_all(TEMP_DIR_NAME, ec);
@@ -30,6 +35,8 @@ main(int argc, char** argv) {
     Json::Value v2ipInputRules(Json::arrayValue);
     std::vector<DownloadedSourcePair> downloadedSources;
     std::optional<fs::path> outGeoipPath, outGeositePath;
+
+    geo_release::ReleaseNotes notes;
 
     // Init RAND
     std::srand(std::time(0));

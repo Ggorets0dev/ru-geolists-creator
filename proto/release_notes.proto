@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package geo_release;
+
+message ReleaseNotes {
+	string file_path = 1;
+	uint64 time = 2;
+	
+	enum SourceType {
+		IP = 0;
+		DOMAIN = 1;
+  	}
+	
+	message Source {
+    		string section = 1;
+    		SourceType type = 2;
+	}
+	
+	repeated Source sources = 3;
+}
