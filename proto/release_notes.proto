@@ -2,19 +2,24 @@ syntax = "proto3";
 
 package geo_release;
 
-message ReleaseNotes {
-	string file_path = 1;
-	uint64 time = 2;
-	
+message ReleaseNotes {	
 	enum SourceType {
-		IP = 0;
-		DOMAIN = 1;
+	        DOMAIN = 0;
+		IP = 1;
   	}
 	
+        message FilesPaths {
+	        string domain_list = 1;
+		string ip_list = 2;
+	}
+
 	message Source {
     		string section = 1;
     		SourceType type = 2;
 	}
 	
+
+        FilesPaths files_paths = 1;
+	string time = 2;
 	repeated Source sources = 3;
 }

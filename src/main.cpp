@@ -7,11 +7,6 @@
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
 
-#include "release_notes.pb.h"
-
-static const fs::path gkGeositeDestPath = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
-static const fs::path gkGeoipDestPath   = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
-
 static void performCleanup() {
     if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {
         std::error_code ec;
@@ -35,8 +30,7 @@ main(int argc, char** argv) {
     Json::Value v2ipInputRules(Json::arrayValue);
     std::vector<DownloadedSourcePair> downloadedSources;
     std::optional<fs::path> outGeoipPath, outGeositePath;
-
-    geo_release::ReleaseNotes notes;
+    GeoListsPaths release_paths;
 
     // Init RAND
     std::srand(std::time(0));
@@ -175,14 +169,19 @@ main(int argc, char** argv) {
     // !SECTION
 
     // SECTION - Copy created files to destination
+
+    // Setting paths by default
+    release_paths.domain_list = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
+    release_paths.ip_list = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
+
     try {
-        if (!fs::exists(OUTPUT_FOLDER_NAME)) { \
-            fs::create_directory(OUTPUT_FOLDER_NAME); \
+        if (!fs::exists(OUTPUT_FOLDER_NAME)) {
+            fs::create_directory(OUTPUT_FOLDER_NAME);
         }
 
-        fs::copy(*outGeositePath, gkGeositeDestPath, fs::copy_options::overwrite_existing);
-        fs::copy(*outGeoipPath, gkGeoipDestPath, fs::copy_options::overwrite_existing);
-        createReleaseNotes(config, downloadedSources);
+        fs::copy(*outGeositePath, release_paths.domain_list, fs::copy_options::overwrite_existing);
+        fs::copy(*outGeoipPath, release_paths.ip_list, fs::copy_options::overwrite_existing);
+
     } catch (const fs::filesystem_error& e) {
         log(LogType::ERROR, "Filesystem error:", e.what());
 
@@ -190,10 +189,18 @@ main(int argc, char** argv) {
         return 1;
     }
 
-    log(LogType::INFO, "Domain address list successfully created:", gkGeositeDestPath.string());
-    log(LogType::INFO, "IP address list successfully created:", gkGeoipDestPath.string());
+    try {
+        createReleaseNotes(release_paths, config, downloadedSources);
+    } catch (const std::runtime_error& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR("Failed to create release notes for parent proccess");
+    }
+
+    log(LogType::INFO, "Domain address list successfully created:", release_paths.domain_list.string());
+    log(LogType::INFO, "IP address list successfully created:", release_paths.ip_list.string());
     // !SECTION
 
     performCleanup();
+
     return 0;
 }

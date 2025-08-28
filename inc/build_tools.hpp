@@ -3,9 +3,11 @@
 
 #include "config.hpp"
 
-#define RELEASE_MOTES_FILENAME  "release_notes.txt"
+struct GeoListsPaths {
+    fs::path domain_list;
+    fs::path ip_list;
+};
 
-extern void
-createReleaseNotes(const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources);
+void createReleaseNotes(const GeoListsPaths& paths, const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources);
 
 #endif // BUILD_TOOLS_HPP

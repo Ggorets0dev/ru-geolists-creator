@@ -49,9 +49,9 @@ target_link_libraries(RuGeolistsCreator
 	${JSONCPP_LIBRARIES}
 	${Protobuf_LIBRARIES}     
 	absl::log_internal_check_op
-    absl::strings
-    absl::base
-    pthread)
+        absl::strings
+        absl::base
+        pthread)
 
 target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS})
 
