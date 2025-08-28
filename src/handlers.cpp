@@ -2,6 +2,9 @@
 #include "time_tools.hpp"
 #include "ruadlist.hpp"
 
+#include "dlc_toolchain.hpp"
+#include "v2ip_toolchain.hpp"
+
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
         LOG_ERROR(SOFTWARE_INIT_FAIL_MSG); \

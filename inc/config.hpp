@@ -4,7 +4,6 @@
 #include <string>
 #include <ctime>
 
-#include "json_io.hpp"
 #include "extra_sources.hpp"
 
 #define RGC_CONFIG_PATH         "rgc_config.json"
