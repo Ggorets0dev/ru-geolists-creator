@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(RuGeolistsCreator LANGUAGES CXX)
+project(RuGeolistsCreator LANGUAGES CXX VERSION 0.8.0)
+
+# Формирование строки версии
+set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,6 +29,13 @@ find_package(Protobuf REQUIRED)
 # Пытаемся найти Abseil
 find_package(absl REQUIRED)
 
+# Генерация version.h
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp
+    @ONLY
+)
+
 # Сборка файлов protobuf
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
 	${CMAKE_CURRENT_SOURCE_DIR}/proto/release_notes.proto)
@@ -49,9 +59,9 @@ target_link_libraries(RuGeolistsCreator
 	${JSONCPP_LIBRARIES}
 	${Protobuf_LIBRARIES}     
 	absl::log_internal_check_op
-    absl::strings
-    absl::base
-    pthread)
+        absl::strings
+        absl::base
+        pthread)
 
 target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS})
 

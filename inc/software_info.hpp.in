@@ -1,7 +1,11 @@
 #ifndef SOFTWARE_INFO_HPP
 #define SOFTWARE_INFO_HPP
 
-#define RGC_VERSION         "0.6.0"
+#define RGC_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define RGC_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define RGC_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define RGC_VERSION_STRING "@RGC_VERSION_STRING@"
+
 #define RGC_DEVELOPER       "Ggorets0dev"
 #define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"
 #define RGC_LICENSE         "MIT"
