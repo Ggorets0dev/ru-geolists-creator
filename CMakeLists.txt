@@ -9,9 +9,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set (PROJECT_INCLUDE_DIRS
-    ${CMAKE_SOURCE_DIR}/inc
-    ${CMAKE_SOURCE_DIR}/third-party
-    ${CMAKE_SOURCE_DIR}/proto)
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/third-party
+    ${CMAKE_CURRENT_SOURCE_DIR}/proto)
 
 # Поиск библиотеки libcurl
 find_package(CURL REQUIRED)
