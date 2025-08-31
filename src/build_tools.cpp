@@ -1,6 +1,7 @@
 #include "build_tools.hpp"
 #include "time_tools.hpp"
 #include "cli_args.hpp"
+#include "ipc_chain.hpp"
 
 // ============== PROTOBUF headers
 #include "release_notes.pb.h"
@@ -9,12 +10,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <csignal>
+#include <signal.h>
 
 #define RELEASE_NOTES_TXT_FILENAME  "release_notes.txt"
-
-#define RELEASE_NOTES_FIFO_PATH     "/tmp/rgc.fifo"
-#define RELEASE_NOTES_FIFO_PERMS    0666
 
 static void saveToText(const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources) {
     fs::path notesPath = fs::current_path() / OUTPUT_FOLDER_NAME / RELEASE_NOTES_TXT_FILENAME;
@@ -61,13 +59,13 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
     kill(getppid(), SIGUSR1);
 
     // SECTION: Создание и запись через FIFO для IPC
-    err = mkfifo(RELEASE_NOTES_FIFO_PATH, RELEASE_NOTES_FIFO_PERMS);
+    err = mkfifo(RGC_RELEASE_NOTES_FIFO_PATH, RGC_RELEASE_NOTES_FIFO_PERMS);
 
     if (err == -1) {
         throw std::runtime_error("Failed to create FIFO for IPC");
     }
 
-    fd = open(RELEASE_NOTES_FIFO_PATH, O_WRONLY);
+    fd = open(RGC_RELEASE_NOTES_FIFO_PATH, O_WRONLY);
 
     if (fd == -1) {
         throw std::runtime_error("Failed to open FIFO for IPC");

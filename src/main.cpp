@@ -3,9 +3,10 @@
 #include "temp.hpp"
 #include "main_sources.hpp"
 #include "cli_args.hpp"
-
+#include "log.hpp"
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
+#include "build_tools.hpp"
 
 static void performCleanup() {
     if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {

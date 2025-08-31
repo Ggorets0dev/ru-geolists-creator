@@ -1,9 +1,13 @@
 #include "handlers.hpp"
 #include "time_tools.hpp"
 #include "ruadlist.hpp"
-
+#include "archive.hpp"
+#include "log.hpp"
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
+#include "network.hpp"
+
+#include <string>
 
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \

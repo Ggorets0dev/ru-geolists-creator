@@ -1,4 +1,8 @@
 #include "json_io.hpp"
+#include "log.hpp"
+
+#include <iomanip>
+#include <fstream>
 
 bool
 readJsonFromFile(const std::string& filePath, Json::Value& outValue) {

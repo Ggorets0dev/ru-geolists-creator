@@ -1,4 +1,10 @@
 #include "dlc_toolchain.hpp"
+#include "log.hpp"
+#include "json_io.hpp"
+#include "network.hpp"
+
+#include <thread>
+#include <chrono>
 
 #define DLC_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/domain-list-community/releases/latest"
 

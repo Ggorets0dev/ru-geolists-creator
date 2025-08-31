@@ -2,11 +2,8 @@
 #define NETWORK_HPP
 
 #include <string>
-#include <iostream>
-#include <fstream>
 #include <curl/curl.h>
 
-#include "log.hpp"
 #include "json_io.hpp"
 
 #define DOWNLOAD_TRY_DELAY_SEC      1u

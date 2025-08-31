@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include "log.hpp"
 
 #define SET_NULL_IF_EMPTY(jsonValue, variable) \
     if (!variable.empty()) { \

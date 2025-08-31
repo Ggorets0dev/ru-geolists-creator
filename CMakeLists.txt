@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(RuGeolistsCreator LANGUAGES CXX VERSION 0.8.0)
+project(RuGeolistsCreator LANGUAGES CXX VERSION 0.8.1)
 
 # Формирование строки версии
 set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")

@@ -1,4 +1,11 @@
 #include "v2ip_toolchain.hpp"
+#include "config.hpp"
+#include "log.hpp"
+#include "network.hpp"
+
+#include <thread>
+#include <chrono>
+#include <unistd.h>
 
 #define V2IP_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/geoip/releases/latest"
 

@@ -1,14 +1,8 @@
 #ifndef HANDLERS_HPP
 #define HANDLERS_HPP
 
-#include <string>
-#include <sstream>
-
-#include "log.hpp"
 #include "config.hpp"
 #include "main_sources.hpp"
-#include "build_tools.hpp"
-#include "archive.hpp"
 
 extern void
 initSoftware();
