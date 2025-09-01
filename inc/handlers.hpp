@@ -4,6 +4,8 @@
 #include "config.hpp"
 #include "main_sources.hpp"
 
+void showExtraSources();
+
 void initSoftware();
 
 void deinitSoftware();

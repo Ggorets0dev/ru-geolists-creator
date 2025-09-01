@@ -11,6 +11,8 @@ class ExtraSource : public Source {
 public:
     ExtraSource(const Json::Value& value);
     std::string url;
+
+    void print(std::ostream& stream) const override;
 };
 
 #endif // EXTRA_SOURCES_HPP

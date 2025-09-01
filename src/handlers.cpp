@@ -10,6 +10,8 @@
 
 #include <string>
 
+#define PRINT_DELIMETER "============================"
+
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
         LOG_ERROR(SOFTWARE_INIT_FAIL_MSG); \
@@ -29,10 +31,43 @@
     }
 
 void printSoftwareInfo() {
+    std::cout << PRINT_DELIMETER << std::endl;
     std::cout << "ru-geolists-creator v" << RGC_VERSION_STRING << std::endl;
     std::cout << "Developer: " << RGC_DEVELOPER << std::endl;
     std::cout << "License: " << RGC_LICENSE << std::endl;
     std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
+    std::cout << PRINT_DELIMETER << std::endl;
+}
+
+void showExtraSources() {
+    RgcConfig config;
+    bool status;
+    uint16_t recordId(1);
+
+    status = readConfig(config);
+
+    if (!status) {
+        LOG_ERROR("Failed to show all extra sources");
+        exit(1);
+    }
+
+    if (config.extraSources.size() == 0) {
+        LOG_INFO("No extra sources were found in config file");
+        return;
+    }
+
+    std::cout << "\nExtra sources specified in config: \n\n";
+
+    std::cout << PRINT_DELIMETER << std::endl;
+
+    for (const auto& source : config.extraSources) {
+        std::cout << "[ID ~ " << recordId << "]\n\n";
+
+        source.print(std::cout);
+        std::cout << PRINT_DELIMETER << std::endl;
+
+        ++recordId;
+    }
 }
 
 void checkUrlsAccess() {

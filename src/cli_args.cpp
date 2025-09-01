@@ -7,6 +7,7 @@
 #define CHECK_OPTION_DESCRIPTION    "Checking access of all source's URLs from config"
 #define CHILD_OPTION_DESCRIPTION    "Sending release notes to parent proccess (for work in chain)"
 #define INIT_OPTION_DESCRIPTION     "Initializing software by creating config and downloading all dependencies"
+#define SHOW_OPTION_DESCRIPTION   "Displaying all extra sources from configuration files"
 
 CmdArgs gCmdArgs = { 0 };
 
@@ -22,6 +23,8 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.add_flag("-c,--check", gCmdArgs.isCheckUrls, CHECK_OPTION_DESCRIPTION);
     app.add_flag("--child", gCmdArgs.isChild, CHILD_OPTION_DESCRIPTION);
     app.add_flag("--init", gCmdArgs.isInit, INIT_OPTION_DESCRIPTION);
+
+    app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
 }
 
 bool askYesNo(const std::string& question, bool isYesDefault) {

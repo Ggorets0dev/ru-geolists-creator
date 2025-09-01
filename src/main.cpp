@@ -81,6 +81,12 @@ main(int argc, char** argv) {
         return 0;
     }
 
+    // Show all extra sources
+    if (gCmdArgs.isShowExtras) {
+        showExtraSources();
+        return 0;
+    }
+
     // Check access for URLs and close software
     if (gCmdArgs.isCheckUrls) {
         checkUrlsAccess();

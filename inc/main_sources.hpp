@@ -35,11 +35,12 @@ public:
         IP
     };
 
-    Source(Source::Type type, const std::string& section);
-    void print(std::ostream& stream) const;
-
     std::string section;
     Source::Type type;
+
+    Source(Source::Type type, const std::string& section);
+
+    virtual void print(std::ostream& stream) const;
 };
 
 using DownloadedSourcePair = std::pair<Source, fs::path>;

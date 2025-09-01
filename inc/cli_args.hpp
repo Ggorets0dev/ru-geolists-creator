@@ -5,11 +5,14 @@
 #include "CLI11.hpp"
 
 struct CmdArgs {
+    uint16_t extraSourceId;
+
     bool isForceCreation;
     bool isShowAbout;
     bool isCheckUrls;
     bool isChild;
     bool isInit;
+    bool isShowExtras;
 };
 
 extern CmdArgs gCmdArgs;
