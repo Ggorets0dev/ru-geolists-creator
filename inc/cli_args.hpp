@@ -9,17 +9,13 @@ struct CmdArgs {
     bool isShowAbout;
     bool isCheckUrls;
     bool isChild;
+    bool isInit;
 };
 
 extern CmdArgs gCmdArgs;
 
-extern void
-printSoftwareInfo();
+void prepareCmdArgs(CLI::App& app, int argc, char** argv);
 
-extern void
-checkUrlsAccess();
-
-extern void
-prepareCmdArgs(CLI::App& app, int argc, char** argv);
+bool askYesNo(const std::string& question, bool isYesDefault);
 
 #endif // CLI_ARGS_HPP

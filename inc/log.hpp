@@ -7,6 +7,7 @@
 #define FILE_OPEN_ERROR_MSG         "Failed to open file on path: "
 #define JSON_PARSE_ERROR_MSG        "Failed to parse JSON file on path: "
 #define SOFTWARE_INIT_FAIL_MSG      "Failed to initialize software with its components"
+#define SOFTWARE_DEINIT_FAIL_MSG    "Failed to deinit software, re-init cant be executed"
 #define CHECK_UPDATES_FAIL_MSG      "Failed to check sources for updates"
 #define DOWNLOAD_UPDATES_FAIL_MSG   "Failed to download latest releases of main sources"
 

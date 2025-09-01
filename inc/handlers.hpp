@@ -4,13 +4,16 @@
 #include "config.hpp"
 #include "main_sources.hpp"
 
-extern void
-initSoftware();
+void initSoftware();
 
-extern std::tuple<bool, bool>
-checkForUpdates(const RgcConfig& config);
+void deinitSoftware();
 
-extern bool
-downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles);
+std::tuple<bool, bool> checkForUpdates(const RgcConfig& config);
+
+bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles);
+
+void printSoftwareInfo();
+
+void checkUrlsAccess();
 
 #endif // HANDLERS_HPP

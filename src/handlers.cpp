@@ -6,6 +6,7 @@
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
 #include "network.hpp"
+#include "software_info.hpp"
 
 #include <string>
 
@@ -27,9 +28,72 @@
         return false; \
     }
 
-void
-initSoftware() {
+void printSoftwareInfo() {
+    std::cout << "ru-geolists-creator v" << RGC_VERSION_STRING << std::endl;
+    std::cout << "Developer: " << RGC_DEVELOPER << std::endl;
+    std::cout << "License: " << RGC_LICENSE << std::endl;
+    std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
+}
+
+void checkUrlsAccess() {
+    bool access_status;
+    RgcConfig config;
+
+    // Adding all main sources
+    std::vector<std::string> urls = {
+        REFILTER_API_LAST_RELEASE_URL,
+        XRAY_RULES_API_LAST_RELEASE_URL,
+        RUADLIST_API_MASTER_URL,
+        RUADLIST_ADSERVERS_URL,
+        ANTIFILTER_AYN_IPS_URL
+    };
+
+    LOG_INFO("Checking all sources for access via web...\n");
+
+    const bool cfg_read_status = readConfig(config);
+
+    if (cfg_read_status) {
+        std::transform(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(urls),
+                       [](const ExtraSource& source) { return source.url; });
+    } else {
+        LOG_WARNING("Configuration file could not be read, extra sources wont be checked");
+    }
+
+    for (const std::string& url : urls) {
+        access_status = isUrlAccessible(url);
+        log_url_access(url, access_status);
+    }
+}
+
+void deinitSoftware() {
     bool status;
+    RgcConfig config;
+
+    status = readConfig(config);
+
+    if (!status) {
+        LOG_ERROR(SOFTWARE_DEINIT_FAIL_MSG);
+        exit(1);
+    }
+
+    try {
+        fs::remove(gkConfigPath);
+
+        fs::remove_all(config.dlcRootPath);
+        fs::remove_all(config.v2ipRootPath);
+    } catch (const fs::filesystem_error& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR(SOFTWARE_DEINIT_FAIL_MSG);
+        exit(1);
+    }
+
+    LOG_INFO("Deinitalization successfully completed, all components deleted");
+}
+
+void initSoftware() {
+    bool status;
+    std::string apiToken;
+    RgcConfig config;
 
     // Create dirs for DLC toolchain deploy
     try {
@@ -72,16 +136,19 @@ initSoftware() {
     fs::remove(*v2ipArchivePath);
     // !SECTION
 
-    // SECTION - Create config
-    RgcConfig config;
+    // SECTION - Get user's GitHub API token
+    std::cout << "❔ Specify your GitHub API token for requests (not required, may be left empty): ";
+    std::getline(std::cin, apiToken);
+    // !SECTION
 
+    // SECTION - Create config
     config.dlcRootPath = std::move(*dlcRootPath);
     config.v2ipRootPath = std::move(*v2ipRootPath);
 
     config.refilterTime = CFG_DEFAULT_NUM_VALUE;
     config.v2rayTime = CFG_DEFAULT_NUM_VALUE;
     config.ruadlistTime = CFG_DEFAULT_NUM_VALUE;
-    config.apiToken = CFG_DEFAULT_STR_VALUE;
+    config.apiToken = apiToken;
 
     status = writeConfig(config);
     VALIDATE_INIT_PART_RESULT(status);
@@ -95,8 +162,7 @@ initSoftware() {
     }
 }
 
-std::tuple<bool, bool>
-checkForUpdates(const RgcConfig& config) {
+std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     bool status;
     bool isUpdateFound;
     Json::Value value;
@@ -203,8 +269,7 @@ checkForUpdates(const RgcConfig& config) {
     return std::make_tuple(status, isUpdateFound);
 }
 
-bool
-downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles) {
+bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<DownloadedSourcePair>& downloadedFiles) {
     bool status;
     Json::Value value;
     std::optional<std::time_t> lastReleaseTime;

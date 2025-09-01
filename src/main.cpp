@@ -51,19 +51,33 @@ main(int argc, char** argv) {
     // !SECTION
 
     // Show about and close software
+    if (gCmdArgs.isInit) {
+        if (fs::exists(gkConfigPath)) {
+            bool isInitAgain = askYesNo("Initialization is already performed, delete config and run it again?", false);
+
+            if (isInitAgain) {
+                deinitSoftware();
+            } else {
+                LOG_INFO("Re-initialization canceled");
+                return 0;
+            }
+        }
+
+        LOG_INFO("Launching software initialization...");
+
+        initSoftware(); // Download all toolchains and create config
+
+        performCleanup();
+        return 0;
+    }
+
     if (gCmdArgs.isShowAbout) {
         printSoftwareInfo();
         return 0;
     }
 
     if (!fs::exists(gkConfigPath)) {
-        LOG_WARNING("Configuration file is not detected, initialization is performed");
-
-        initSoftware(); // Download all toolchains and create config
-
-        LOG_INFO("You can add a GitHub API access key before running the software. Restart the application with the token added if desired");
-
-        performCleanup();
+        LOG_WARNING("Configuration file is not found, perform software initialization using --init");
         return 0;
     }
 
