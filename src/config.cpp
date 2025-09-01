@@ -8,6 +8,8 @@
         jsonValue = Json::nullValue; \
     }
 
+const fs::path gkConfigPath = fs::path(std::getenv("HOME")) / ".config" / "ru-geolists-creator" / "config.json";
+
 bool
 writeConfig(const RgcConfig& config) {
     bool status;
@@ -34,9 +36,14 @@ writeConfig(const RgcConfig& config) {
         extraArray.append(obj);
     }
 
-    value["extra"] = extraArray;
+    try {
+        fs::create_directories(gkConfigPath.parent_path());
+    } catch (const fs::filesystem_error& e) {
+        LOG_ERROR(e.what());
+        return false;
+    }
 
-    status = writeJsonToFile(RGC_CONFIG_PATH, value);
+    status = writeJsonToFile(gkConfigPath, value);
 
     if (!status) {
         LOG_ERROR("Configuration file could not be written due to an error");
@@ -50,7 +57,7 @@ readConfig(RgcConfig& config) {
     bool status;
     Json::Value value;
 
-    status = readJsonFromFile(RGC_CONFIG_PATH, value);
+    status = readJsonFromFile(gkConfigPath, value);
 
     if (!status) {
         LOG_ERROR("Failed to read configuration file");

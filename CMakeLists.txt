@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(RuGeolistsCreator LANGUAGES CXX VERSION 0.8.1)
+project(RuGeolistsCreator LANGUAGES CXX VERSION 0.9.0)
 
-# Формирование строки версии
+# Create version string
 set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -12,23 +12,23 @@ set (PROJECT_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
-# Поиск библиотеки libcurl
+# Try to find libcurl in system
 find_package(CURL REQUIRED)
 
-# Поиск библиотеки libarchive
+# Try to find libarchive in system
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 
-# Поиск библиотеки libjsoncpp
+# Try to find jsoncpp in systemp
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
-# Поиск утилиты protobuf
+# Try to find protobuf in system
 find_package(Protobuf REQUIRED)
 
-# Пытаемся найти Abseil
+# Try to find abseil in system
 find_package(absl REQUIRED)
 
-# Генерация version.h
+# Genereate software_info.hpp with correct version
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp.in
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp
@@ -38,17 +38,17 @@ configure_file(
 set(PROTO_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/proto/release_notes.proto)
 
-# Сборка файлов protobuf
+# Build protobuf sources
 protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES ${PROTO_SRC_FILES})
 
 message("(PROTOBUF) Generated sources: ${PROTO_GEN_SRC_FILES}")
 message("(PROTOBUF) Generated headers: ${PROTO_GEN_INC_FILES}")
 
-# Получение основных исходников проекта
+# Get all sources and headers of project
 file(GLOB SRC_FILES "src/*.c" "src/*.cpp" "src/*.cc")
 file(GLOB INC_FILES "inc/*.h" "inc/*.hpp")
 
-# Получение дополнительных исходников проекта
+# Get all third-party dependencies
 file(GLOB TC_SRC_FILES "third-party/*.c" "third-party/*.cpp" "third-party/*.cc")
 file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 
@@ -66,3 +66,11 @@ target_link_libraries(RuGeolistsCreator
 
 target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 
+# Set .local as destination for deploy
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(HOME_DIR $ENV{HOME})
+    set(CMAKE_INSTALL_PREFIX "${HOME_DIR}/.local")
+endif()
+
+# Install software into ~/.local/bin
+install(TARGETS RuGeolistsCreator DESTINATION bin)

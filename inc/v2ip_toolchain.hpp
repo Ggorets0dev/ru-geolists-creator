@@ -9,6 +9,8 @@
 #define V2IP_SRC_FILE_NAME           "v2ip_src.tar.gz"
 #define V2IP_RELEASE_REQ_FILE_NAME   "v2ip_req.json"
 
+extern const fs::path gkV2ipToolchainDir;
+
 extern std::optional<std::string>
 downloadV2ipSourceCode();
 

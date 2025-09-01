@@ -45,7 +45,8 @@ extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
             mkdir(fullPath.c_str(), NEW_DIR_ACCESS_CODE);
         } else {
             std::ofstream outFile(fullPath, std::ios::binary);
-            if (!outFile) {
+
+            if (!outFile.is_open()) {
                 LOG_ERROR(FILE_OPEN_ERROR_MSG + fullPath);
                 return std::nullopt;
             }

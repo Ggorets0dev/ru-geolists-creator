@@ -31,11 +31,29 @@ void
 initSoftware() {
     bool status;
 
+    // Create dirs for DLC toolchain deploy
+    try {
+        fs::create_directories(gkDlcToolchainDir);
+    } catch (const fs::filesystem_error& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR(SOFTWARE_INIT_FAIL_MSG);
+        exit(1);
+    }
+
+    // Create dirs for V2IP toolchain deploy
+    try {
+        fs::create_directories(gkV2ipToolchainDir);
+    } catch (const fs::filesystem_error& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR(SOFTWARE_INIT_FAIL_MSG);
+        exit(1);
+    }
+
     // SECTION - Download DLC
     auto dlcArchivePath = downloadDlcSourceCode();
     VALIDATE_INIT_PART_RESULT(dlcArchivePath);
 
-    auto dlcRootPath = extractTarGz(*dlcArchivePath, "./");
+    auto dlcRootPath = extractTarGz(*dlcArchivePath, gkDlcToolchainDir);
     VALIDATE_INIT_PART_RESULT(dlcRootPath);
 
     status = clearDlcDataSection(*dlcRootPath);
@@ -48,7 +66,7 @@ initSoftware() {
     auto v2ipArchivePath = downloadV2ipSourceCode();
     VALIDATE_INIT_PART_RESULT(v2ipArchivePath);
 
-    auto v2ipRootPath = extractTarGz(*v2ipArchivePath, "./");
+    auto v2ipRootPath = extractTarGz(*v2ipArchivePath, gkV2ipToolchainDir);
     VALIDATE_INIT_PART_RESULT(v2ipRootPath);
 
     fs::remove(*v2ipArchivePath);

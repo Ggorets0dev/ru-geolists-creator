@@ -6,14 +6,14 @@
 
 #include "extra_sources.hpp"
 
-#define RGC_CONFIG_PATH         "rgc_config.json"
-
 #define OUTPUT_FOLDER_NAME      "output"
 #define GEOSITE_FILE_NAME       "geosite.dat"
 #define GEOIP_FILE_NAME         "geoip.dat"
 
 #define CFG_DEFAULT_NUM_VALUE   0u
 #define CFG_DEFAULT_STR_VALUE   ""
+
+extern const fs::path gkConfigPath;
 
 struct RgcConfig {
     std::string dlcRootPath;

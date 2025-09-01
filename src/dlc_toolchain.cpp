@@ -8,6 +8,8 @@
 
 #define DLC_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/domain-list-community/releases/latest"
 
+const fs::path gkDlcToolchainDir = fs::path(std::getenv("HOME")) / ".local" / "lib";
+
 std::optional<std::string>
 downloadDlcSourceCode() {
     bool status = 1;

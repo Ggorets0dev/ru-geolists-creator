@@ -8,6 +8,8 @@
 #define DLC_SRC_FILE_NAME           "dlc_src.tar.gz"
 #define DLC_RELEASE_REQ_FILE_NAME   "dlc_req.json"
 
+extern const fs::path gkDlcToolchainDir;
+
 extern std::optional<std::string>
 downloadDlcSourceCode();
 

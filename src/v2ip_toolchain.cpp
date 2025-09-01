@@ -9,6 +9,8 @@
 
 #define V2IP_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/geoip/releases/latest"
 
+const fs::path gkV2ipToolchainDir = fs::path(std::getenv("HOME")) / ".local" / "lib";
+
 static void
 createOutputArray(Json::Value& outputArray, const std::vector<std::string>& usedSections) {
     // {
@@ -20,6 +22,7 @@ createOutputArray(Json::Value& outputArray, const std::vector<std::string>& used
     //     "wantedList": ["cn", "private"]
     //     }
     // }
+
     Json::Value wantedList(Json::arrayValue);
     Json::Value outputObj, argsObj;
 

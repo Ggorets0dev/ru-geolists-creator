@@ -56,8 +56,9 @@ main(int argc, char** argv) {
         return 0;
     }
 
-    if (!fs::exists(RGC_CONFIG_PATH)) {
+    if (!fs::exists(gkConfigPath)) {
         LOG_WARNING("Configuration file is not detected, initialization is performed");
+
         initSoftware(); // Download all toolchains and create config
 
         LOG_INFO("You can add a GitHub API access key before running the software. Restart the application with the token added if desired");
