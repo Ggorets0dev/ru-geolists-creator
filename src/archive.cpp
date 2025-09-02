@@ -27,7 +27,7 @@ extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
 
     r = archive_read_open_filename(a, archivePath.c_str(), ARCHIVE_BUFFER_BYTES);
     if (r != ARCHIVE_OK) {
-        log(LogType::ERROR, "Failed to open archive for read:", archive_error_string(a));
+        LOG_ERROR("Failed to open archive for read:" + std::string(archive_error_string(a)));
         return std::nullopt;
     }
 
@@ -65,7 +65,7 @@ extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
     }
 
     if (r != ARCHIVE_EOF) {
-        log(LogType::ERROR, "Failed to read archive: ", archive_error_string(a));
+        LOG_ERROR("Failed to read archive: " + std::string(archive_error_string(a)));
     }
 
     archive_read_free(a);  // Освобождаем ресурсы

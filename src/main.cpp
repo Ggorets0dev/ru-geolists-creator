@@ -36,6 +36,9 @@ main(int argc, char** argv) {
     // Init RAND
     std::srand(std::time(0));
 
+    // Init logging
+    initLogging();
+
     // SECTION - Parse CMD args using CLI11 lib
     prepareCmdArgs(app, argc, argv);
 
@@ -205,7 +208,7 @@ main(int argc, char** argv) {
         fs::copy(*outGeoipPath, release_paths.ip_list, fs::copy_options::overwrite_existing);
 
     } catch (const fs::filesystem_error& e) {
-        log(LogType::ERROR, "Filesystem error:", e.what());
+        LOG_ERROR("Filesystem error:" + std::string(e.what()));
 
         performCleanup();
         return 1;
@@ -218,8 +221,8 @@ main(int argc, char** argv) {
         LOG_ERROR("Failed to create release notes for parent proccess");
     }
 
-    log(LogType::INFO, "Domain address list successfully created:", release_paths.domain_list.string());
-    log(LogType::INFO, "IP address list successfully created:", release_paths.ip_list.string());
+    LOG_INFO("Domain address list successfully created:" + release_paths.domain_list.string());
+    LOG_INFO("IP address list successfully created:" + release_paths.ip_list.string());
     // !SECTION
 
     performCleanup();

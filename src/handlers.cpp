@@ -70,6 +70,28 @@ void showExtraSources() {
     }
 }
 
+bool addExtraSource() {
+    // cin >>
+
+    return true;
+}
+
+bool removeExtraSource(SourceId id) {
+    RgcConfig config;
+    bool status;
+
+    status = readConfig(config);
+
+    if (!status) {
+        LOG_ERROR(REMOVE_EXTRA_FAIL_MSG);
+        exit(1);
+    }
+
+    // config.extraSources.
+
+    return true;
+}
+
 void checkUrlsAccess() {
     bool access_status;
     RgcConfig config;
@@ -96,7 +118,7 @@ void checkUrlsAccess() {
 
     for (const std::string& url : urls) {
         access_status = isUrlAccessible(url);
-        log_url_access(url, access_status);
+        logUrlAccess(url, access_status);
     }
 }
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(RuGeolistsCreator LANGUAGES CXX VERSION 0.9.0)
+project(RuGeolistsCreator LANGUAGES CXX VERSION 0.10.0)
 
 # Create version string
 set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
@@ -14,6 +14,9 @@ set (PROJECT_INCLUDE_DIRS
 
 # Try to find libcurl in system
 find_package(CURL REQUIRED)
+
+# Try to find log4cxx in system
+find_package(log4cxx REQUIRED)
 
 # Try to find libarchive in system
 find_package(PkgConfig REQUIRED)
@@ -54,7 +57,7 @@ file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 
 add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
 
-target_link_libraries(RuGeolistsCreator 
+target_link_libraries(RuGeolistsCreator PRIVATE
 	CURL::libcurl 
 	${LIBARCHIVE_LIBRARIES} 
 	${JSONCPP_LIBRARIES}
@@ -62,7 +65,8 @@ target_link_libraries(RuGeolistsCreator
 	absl::log_internal_check_op
         absl::strings
         absl::base
-        pthread)
+        pthread
+        log4cxx)
 
 target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -74,3 +78,12 @@ endif()
 
 # Install software into ~/.local/bin
 install(TARGETS RuGeolistsCreator DESTINATION bin)
+
+# Install log config into ~./config/..
+install(CODE "
+  execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory \$ENV{HOME}/.config/ru-geolists-creator)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/log4cxx.properties
+    \$ENV{HOME}/.config/ru-geolists-creator/log4cxx.properties
+  )
+")

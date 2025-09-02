@@ -27,6 +27,9 @@
 #define ANTIFILTER_FILE_NAME                "antifilter.txt"
 #define ANTIFILTER_AYN_IPS_URL              "https://antifilter.download/list/allyouneed.lst"
 
+// ID of source saved in configuration file
+using SourceId = uint16_t;
+
 class Source {
 
 public:

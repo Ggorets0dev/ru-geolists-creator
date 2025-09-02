@@ -2,6 +2,9 @@
 #define LOG_HPP
 
 #include <string>
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/helpers/exception.h>
 
 #define FILE_LOCATE_ERROR_MSG       "Failed to locate file on path: "
 #define FILE_OPEN_ERROR_MSG         "Failed to open file on path: "
@@ -10,24 +13,25 @@
 #define SOFTWARE_DEINIT_FAIL_MSG    "Failed to deinit software, re-init cant be executed"
 #define CHECK_UPDATES_FAIL_MSG      "Failed to check sources for updates"
 #define DOWNLOAD_UPDATES_FAIL_MSG   "Failed to download latest releases of main sources"
+#define REMOVE_EXTRA_FAIL_MSG       "Failed to remove extra source from configuration file"
 
-#define LOG_ERROR(msg)          log(LogType::ERROR, msg)
-#define LOG_WARNING(msg)        log(LogType::WARNING, msg)
-#define LOG_INFO(msg)           log(LogType::INFO, msg)
+#define LOG_MARK_ERROR      "❌"
+#define LOG_MARK_WARN       "⚠️"
+#define LOG_MARK_INFO       "ℹ️"
 
-enum LogType {
-    ERROR,
-    WARNING,
-    INFO
-};
+#define LOG_ERROR(msg)          logWithMark(msg, LOG_MARK_ERROR, log4cxx::Level::ERROR_INT)
+#define LOG_WARNING(msg)        logWithMark(msg, LOG_MARK_WARN, log4cxx::Level::WARN_INT)
+#define LOG_INFO(msg)           logWithMark(msg, LOG_MARK_INFO, log4cxx::Level::INFO_INT)
 
-extern void
-log(LogType type, std::string_view msg);
+using namespace log4cxx;
+using namespace log4cxx::helpers;
 
-extern void
-log(LogType type, const std::string& msg1, const std::string& msg2);
+extern LoggerPtr gLogger;
 
-extern void
-log_url_access(const std::string& url, bool status);
+void initLogging();
+
+void logUrlAccess(const std::string& url, bool status);
+
+void logWithMark(const std::string& msg, const std::string& mark, uint32_t level);
 
 #endif // LOG_HPP

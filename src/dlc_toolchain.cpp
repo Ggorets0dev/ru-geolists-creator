@@ -79,7 +79,7 @@ clearDlcDataSection(std::string dlcRootPath) {
             return false;
         }
     } catch (const fs::filesystem_error& e) {
-        log(LogType::ERROR, "Filesystem error:", e.what());
+        LOG_ERROR("Filesystem error:" + std::string(e.what()));
         return false;
     }
 
@@ -97,7 +97,7 @@ addDomainSource(const std::string& dlcRootPath, const fs::path& sourceFilePath, 
     try {
         fs::copy(sourceFilePath, newFilePath);
     } catch (const fs::filesystem_error& e) {
-        log(LogType::ERROR, "Filesystem error:", e.what());
+        LOG_ERROR("Filesystem error:" + std::string(e.what()));
         return false;
     }
 

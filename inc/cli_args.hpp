@@ -4,8 +4,10 @@
 // Third-party imports (LICENSES are included)
 #include "CLI11.hpp"
 
+#include "main_sources.hpp"
+
 struct CmdArgs {
-    uint16_t extraSourceId;
+    SourceId extraSourceId;
 
     bool isForceCreation;
     bool isShowAbout;

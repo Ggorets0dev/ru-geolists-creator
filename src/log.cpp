@@ -1,53 +1,47 @@
-#include "log.hpp"
-
 #include <iostream>
 
-// ANSI escape codes for colors
-#define COLOR_RESET  "\033[0m"
-#define COLOR_RED    "\033[31m"
-#define COLOR_YELLOW "\033[33m"
-#define COLOR_GREEN  "\033[32m"
-#define COLOR_CYAN   "\033[36m"
+#include "log.hpp"
+#include "fs_utils.hpp"
 
-// Unicode symbols for prefixes
-#define ERROR_LOG_PREFIX   "✗"
-#define WARNING_LOG_PREFIX "⚠"
-#define INFO_LOG_PREFIX    "ℹ"
+LoggerPtr gLogger(Logger::getLogger("RGC"));
 
-void
-log(LogType type, std::string_view msg) {
-    const char* color;
-    const char* prefix;
+const fs::path gkLogConfigPath = fs::path(std::getenv("HOME")) / ".config" / "ru-geolists-creator" / "log4cxx.properties";
 
-    switch (type) {
-    case LogType::ERROR:
-        color = COLOR_RED;
-        prefix = ERROR_LOG_PREFIX;
-        break;
-    case LogType::WARNING:
-        color = COLOR_YELLOW;
-        prefix = WARNING_LOG_PREFIX;
-        break;
-    case LogType::INFO:
-        color = COLOR_GREEN;
-        prefix = INFO_LOG_PREFIX;
-        break;
+void initLogging() {
+    try {
+        PropertyConfigurator::configure(gkLogConfigPath.string());
+    } catch (const Exception& e) {
+        std::cerr << "Failed to load log4cxx settings: " << e.what() << std::endl;
+        exit(1);
     }
-
-    std::cout << COLOR_CYAN << " " << color << prefix << COLOR_CYAN <<
-              " " << COLOR_RESET << msg << std::endl;
 }
 
-void
-log(LogType type, const std::string& msg1, const std::string& msg2) {
-    log(type, msg1 + " " + msg2);
-}
-
-void
-log_url_access(const std::string& url, bool status) {
+void logUrlAccess(const std::string& url, bool status) {
     if (status) {
         LOG_INFO("Successfully accessed the resource at the following link: " + url);
     } else {
         LOG_ERROR("Failed to access the resource at the following link: " + url);
+    }
+}
+
+void logWithMark(const std::string& msg, const std::string& mark, uint32_t level) {
+    std::string markMsg;
+    markMsg.reserve(msg.length() + mark.length() + 1);
+
+    markMsg = mark + "  " + msg;
+
+    switch (level) {
+    case log4cxx::Level::ERROR_INT:
+        LOG4CXX_ERROR(gLogger, markMsg.c_str());
+        break;
+    case log4cxx::Level::WARN_INT:
+        LOG4CXX_WARN(gLogger, markMsg.c_str());
+        break;
+    case log4cxx::Level::INFO_INT:
+        LOG4CXX_INFO(gLogger, markMsg.c_str());
+        break;
+    default:
+        // Level not supported
+        break;
     }
 }
