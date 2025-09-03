@@ -10,8 +10,7 @@
 
 const fs::path gkConfigPath = fs::path(std::getenv("HOME")) / ".config" / "ru-geolists-creator" / "config.json";
 
-bool
-writeConfig(const RgcConfig& config) {
+bool writeConfig(const RgcConfig& config) {
     bool status;
     Json::Value value;
     Json::Value extraArray(Json::arrayValue);
@@ -36,6 +35,8 @@ writeConfig(const RgcConfig& config) {
         extraArray.append(obj);
     }
 
+    value["extra"] = extraArray;
+
     try {
         fs::create_directories(gkConfigPath.parent_path());
     } catch (const fs::filesystem_error& e) {
@@ -52,8 +53,7 @@ writeConfig(const RgcConfig& config) {
     return status;
 }
 
-bool
-readConfig(RgcConfig& config) {
+bool readConfig(RgcConfig& config) {
     bool status;
     Json::Value value;
 
@@ -76,7 +76,7 @@ readConfig(RgcConfig& config) {
     if (value["extra"].isArray() && !value["extra"].isNull()) {
         const Json::Value& sources = value["extra"];
         for (const auto& source : sources) {
-            config.extraSources.push_back(ExtraSource(source));
+            config.extraSources.push_front(ExtraSource(source));
         }
     }
 

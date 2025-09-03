@@ -11,9 +11,10 @@
 #define ADD_EXTRA_OPTION            "Adding extra source to download list"
 #define REMOVE_EXTRA_OPTION         "Removing extra source from download list"
 
+#define ASK_MARK "❔"
+
 CmdArgs gCmdArgs = { 0 };
 
-CLI::Option* gAddExtraOption;
 CLI::Option* gRemoveExtraOption;
 
 void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
@@ -30,8 +31,8 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.add_flag("--init", gCmdArgs.isInit, INIT_OPTION_DESCRIPTION);
 
     app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
+    app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION);
 
-    gAddExtraOption = app.add_option("-a, --add", gCmdArgs.extraSourceId, ADD_EXTRA_OPTION);
     gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION);
 }
 
@@ -43,7 +44,7 @@ bool askYesNo(const std::string& question, bool isYesDefault) {
     char noChar = isYesDefault ? 'n' : 'N';
 
     while (true) {
-        std::cout << "❔ " << question << " (" << yesChar << "/" << noChar << "): ";
+        std::cout << ASK_MARK << " " << question << " (" << yesChar << "/" << noChar << "): ";
         std::getline(std::cin, userChoice);
 
         if (userChoice.length() == 0) {
@@ -52,6 +53,17 @@ bool askYesNo(const std::string& question, bool isYesDefault) {
                    std::tolower(userChoice[0]) == 'n') {
 
             return std::tolower(userChoice[0]) == 'y';
+        }
+    }
+}
+
+void getStringInput(const std::string& question, std::string& out, bool isEmptyAllowed) {
+    while (true) {
+        std::cout << ASK_MARK << " " << question << ": ";
+        std::getline(std::cin, out);
+
+        if (isEmptyAllowed || out.length() > 0) {
+            break;
         }
     }
 }

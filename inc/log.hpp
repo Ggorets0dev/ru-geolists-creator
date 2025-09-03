@@ -14,6 +14,7 @@
 #define CHECK_UPDATES_FAIL_MSG      "Failed to check sources for updates"
 #define DOWNLOAD_UPDATES_FAIL_MSG   "Failed to download latest releases of main sources"
 #define REMOVE_EXTRA_FAIL_MSG       "Failed to remove extra source from configuration file"
+#define ADD_EXTRA_FAIL_MSG       "Failed to add extra source to configuration file"
 
 #define LOG_MARK_ERROR      "❌"
 #define LOG_MARK_WARN       "⚠️"

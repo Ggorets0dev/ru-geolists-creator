@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ctime>
+#include <forward_list>
 
 #include "extra_sources.hpp"
 
@@ -25,13 +26,11 @@ struct RgcConfig {
 
     std::string apiToken;
 
-    std::vector<ExtraSource> extraSources;
+    std::forward_list<ExtraSource> extraSources;
 };
 
-extern bool
-writeConfig(const RgcConfig& config);
+bool writeConfig(const RgcConfig& config);
 
-extern bool
-readConfig(RgcConfig& config);
+bool readConfig(RgcConfig& config);
 
 #endif // CONFIG_HPP

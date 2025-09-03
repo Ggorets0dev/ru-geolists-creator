@@ -10,9 +10,9 @@ void initSoftware();
 
 void deinitSoftware();
 
-bool addExtraSource(SourceId id);
+void addExtraSource();
 
-bool removeExtraSource();
+void removeExtraSource(SourceId id);
 
 std::tuple<bool, bool> checkForUpdates(const RgcConfig& config);
 

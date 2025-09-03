@@ -9,8 +9,11 @@
 class ExtraSource : public Source {
 
 public:
-    ExtraSource(const Json::Value& value);
     std::string url;
+
+    ExtraSource() : Source() {};
+
+    ExtraSource(const Json::Value& value);
 
     void print(std::ostream& stream) const override;
 };

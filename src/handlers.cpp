@@ -7,6 +7,7 @@
 #include "v2ip_toolchain.hpp"
 #include "network.hpp"
 #include "software_info.hpp"
+#include "cli_args.hpp"
 
 #include <string>
 
@@ -51,7 +52,7 @@ void showExtraSources() {
         exit(1);
     }
 
-    if (config.extraSources.size() == 0) {
+    if (std::distance(config.extraSources.begin(), config.extraSources.end()) == 0) {
         LOG_INFO("No extra sources were found in config file");
         return;
     }
@@ -70,14 +71,42 @@ void showExtraSources() {
     }
 }
 
-bool addExtraSource() {
-    // cin >>
+void addExtraSource() {
+    RgcConfig config;
+    ExtraSource source;
+    bool status;
 
-    return true;
+    std::string buffer;
+    buffer.reserve(10);
+
+    status = readConfig(config);
+
+    if (!status) {
+        LOG_ERROR(ADD_EXTRA_FAIL_MSG);
+        exit(1);
+    }
+
+    getStringInput("Type (ip/domain)", buffer, false);
+    source.type = sourceStringToType(buffer);
+
+    getStringInput("Section", source.section, false);
+    getStringInput("URL", source.url, false);
+
+    config.extraSources.push_front(source);
+
+    status = writeConfig(config);
+
+    if (!status) {
+        LOG_ERROR(ADD_EXTRA_FAIL_MSG);
+        exit(1);
+    }
+
+    LOG_INFO("Successfully added source to config file");
 }
 
-bool removeExtraSource(SourceId id) {
+void removeExtraSource(SourceId id) {
     RgcConfig config;
+    SourceId currId(0);
     bool status;
 
     status = readConfig(config);
@@ -87,13 +116,23 @@ bool removeExtraSource(SourceId id) {
         exit(1);
     }
 
-    // config.extraSources.
+    config.extraSources.remove_if([&id, &currId](const auto& source) {
+        ++currId;
+        return (currId == id);
+    });
 
-    return true;
+    status = writeConfig(config);
+
+    if (!status) {
+        LOG_ERROR(REMOVE_EXTRA_FAIL_MSG);
+        exit(1);
+    }
+
+    LOG_INFO("Successfully removed source from config file");
 }
 
 void checkUrlsAccess() {
-    bool access_status;
+    bool accessStatus;
     RgcConfig config;
 
     // Adding all main sources
@@ -107,9 +146,9 @@ void checkUrlsAccess() {
 
     LOG_INFO("Checking all sources for access via web...\n");
 
-    const bool cfg_read_status = readConfig(config);
+    const bool cfgReadStatus = readConfig(config);
 
-    if (cfg_read_status) {
+    if (cfgReadStatus) {
         std::transform(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(urls),
                        [](const ExtraSource& source) { return source.url; });
     } else {
@@ -117,8 +156,8 @@ void checkUrlsAccess() {
     }
 
     for (const std::string& url : urls) {
-        access_status = isUrlAccessible(url);
-        logUrlAccess(url, access_status);
+        accessStatus = isUrlAccessible(url);
+        logUrlAccess(url, accessStatus);
     }
 }
 

@@ -84,6 +84,23 @@ main(int argc, char** argv) {
         return 0;
     }
 
+
+    // Add extra source
+    if (gCmdArgs.isAddExtra) {
+        addExtraSource();
+
+        performCleanup();
+        return 0;
+    }
+
+    // Remove extra source
+    if (gRemoveExtraOption->count() == 1) {
+        removeExtraSource(gCmdArgs.extraSourceId);
+
+        performCleanup();
+        return 0;
+    }
+
     // Show all extra sources
     if (gCmdArgs.isShowExtras) {
         showExtraSources();
