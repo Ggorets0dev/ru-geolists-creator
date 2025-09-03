@@ -92,6 +92,13 @@ void addExtraSource() {
     getStringInput("Section", source.section, false);
     getStringInput("URL", source.url, false);
 
+    status = isUrlAccessible(source.url);
+
+    if (!status) {
+        LOG_WARNING("Unable to access the list at the specified URL, resource not added");
+        return;
+    }
+
     config.extraSources.push_front(source);
 
     status = writeConfig(config);

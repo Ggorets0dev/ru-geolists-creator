@@ -24,30 +24,28 @@ bool
 isUrlAccessible(const std::string& url) {
 	CURL *curl = curl_easy_init();
     CURLcode res;
-    bool is_ok;
+    long responseCode(0);
 
     if (!curl) {
         throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
     
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);  // HEAD-запрос (без тела)
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);  // Таймаут 5 сек
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);  // Разрешить редиректы
+    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-    // Для GitHub может потребоваться User-Agent
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.68.0");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
 
     res = curl_easy_perform(curl);
-    is_ok = (res == CURLE_OK);
 
-    if (!is_ok) {
-        std::cerr << "cURL error: " << curl_easy_strerror(res) << std::endl;
+    if (res == CURLE_OK) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
     }
 
     curl_easy_cleanup(curl);
 
-    return is_ok;
+    return (res == CURLE_OK && responseCode >= 200 && responseCode < 400);
 }
 
 void
