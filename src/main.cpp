@@ -12,7 +12,6 @@ static void performCleanup() {
     if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {
         std::error_code ec;
 
-        // Удаляем папку и всё её содержимое
         fs::remove_all(TEMP_DIR_NAME, ec);
 
         if (ec) {
@@ -116,7 +115,7 @@ int main(int argc, char** argv) {
 
     status = readConfig(config);
     if (!status) {
-        LOG_ERROR("Configuration file could not be read, operation cannot be continued");
+        LOG_ERROR(READ_CFG_FAIL_MSG);
 
         performCleanup();
         return 1;
@@ -158,12 +157,8 @@ int main(int argc, char** argv) {
     }
     // !SECTION
 
-    EXIT_TEMP_DIR();
-
-    LOG_INFO("Successfully downloaded sources: \n");
+    std::cout << "\nSuccessfully downloaded sources: \n" << std::endl;
     printDownloadedSources(std::cout, downloadedSources);
-
-    writeConfig(config);
 
     // Join similar sources if they exist
     joinSimilarSources(downloadedSources);
@@ -243,5 +238,12 @@ int main(int argc, char** argv) {
 
     performCleanup();
 
-    return 0;
+    status = writeConfig(config);
+
+    if (!status) {
+        LOG_ERROR(WRITE_CFG_FAIL_MSG);
+        return 1;
+    } else {
+        return 0;
+    }
 }

@@ -86,6 +86,8 @@ void addExtraSource() {
         exit(1);
     }
 
+    LOG_INFO("Information about new source is required");
+
     getStringInput("Type (ip/domain)", buffer, false);
     source.type = sourceStringToType(buffer);
 
@@ -151,11 +153,11 @@ void checkUrlsAccess() {
         ANTIFILTER_AYN_IPS_URL
     };
 
-    LOG_INFO("Checking all sources for access via web...\n");
+    LOG_INFO("Check for all soirce's URLs is requested");
 
-    const bool cfgReadStatus = readConfig(config);
+    accessStatus = readConfig(config);
 
-    if (cfgReadStatus) {
+    if (accessStatus) {
         std::transform(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(urls),
                        [](const ExtraSource& source) { return source.url; });
     } else {
@@ -240,8 +242,7 @@ void initSoftware() {
     // !SECTION
 
     // SECTION - Get user's GitHub API token
-    std::cout << "❔ Specify your GitHub API token for requests (not required, may be left empty): ";
-    std::getline(std::cin, apiToken);
+    getStringInput("Specify your GitHub API token for requests (may be left empty)", config.apiToken, true);
     // !SECTION
 
     // SECTION - Create config

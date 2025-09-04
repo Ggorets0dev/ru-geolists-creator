@@ -20,7 +20,6 @@ if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) { \
 }
 
 #define ENTER_TEMP_DIR()        fs::current_path(TEMP_DIR_NAME)
-#define EXIT_TEMP_DIR()         fs::current_path(fs::current_path().parent_path())
 
 inline fs::path getSystemTempDir() {
     const char* tmpDir = std::getenv("TMPDIR");
