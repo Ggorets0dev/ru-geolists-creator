@@ -8,8 +8,7 @@
 
 #define USER_AGENT "ru-geolists-creator"
 
-static size_t
-writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
     size_t totalSize = size * nmemb;
 
@@ -20,8 +19,7 @@ writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     return totalSize;
 }
 
-bool
-isUrlAccessible(const std::string& url) {
+bool isUrlAccessible(const std::string& url) {
 	CURL *curl = curl_easy_init();
     CURLcode res;
     long responseCode(0);
@@ -48,10 +46,13 @@ isUrlAccessible(const std::string& url) {
     return (res == CURLE_OK && responseCode >= 200 && responseCode < 400);
 }
 
-void
-downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
+void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
     CURL* curl;
     CURLcode res;
+
+    if (!isUrlAccessible(url)) {
+        throw CurlError("Failed to access URL in download handler", CURLE_COULDNT_CONNECT);
+    }
 
     // Open file for write
     std::ofstream outFile(filePath, std::ios::binary);
@@ -97,8 +98,7 @@ downloadFile(const std::string& url, const std::string& filePath, const char* ht
     outFile.close();
 }
 
-bool
-downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
+bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
     if (value.isMember("assets") && value["assets"].isArray()) {
         const Json::Value& assets = value["assets"];
         for (const auto& asset : assets) {

@@ -21,8 +21,7 @@ static void performCleanup() {
     }
 }
 
-int
-main(int argc, char** argv) {
+int main(int argc, char** argv) {
     CLI::App app;
     int cmdArgsParseStatus;
     bool status;
@@ -161,7 +160,7 @@ main(int argc, char** argv) {
 
     EXIT_TEMP_DIR();
 
-    LOG_INFO("Successfully downloaded all sources: \n");
+    LOG_INFO("Successfully downloaded sources: \n");
     printDownloadedSources(std::cout, downloadedSources);
 
     writeConfig(config);
