@@ -1,7 +1,7 @@
 #include "build_tools.hpp"
 #include "time_tools.hpp"
 #include "cli_args.hpp"
-#include "ipc_chain.hpp.in"
+#include "ipc_chain.hpp"
 
 // ============== PROTOBUF headers
 #include "release_notes.pb.h"

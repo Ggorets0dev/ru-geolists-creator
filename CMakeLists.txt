@@ -8,9 +8,11 @@ set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJ
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set (IPC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC")
+
 set (PROJECT_INCLUDE_DIRS
+    IPC_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 # Try to find libcurl in system
@@ -48,7 +50,7 @@ configure_file(
 
 
 set(PROTO_SRC_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/proto/release_notes.proto)
+    ${IPC_DIR}/proto/release_notes.proto)
 
 # Build protobuf sources
 protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES ${PROTO_SRC_FILES})
@@ -92,11 +94,15 @@ install(TARGETS RuGeolistsCreator DESTINATION bin)
 set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" CACHE INTERNAL "Install path for RuGeolistsCreator")
 
 # =========== IPC
-# Path header with IPC chains
+# Path of header with IPC chains
 set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" CACHE INTERNAL "IPC chains header file (for parent/child process)")
 
-# Path header with IPC chains
-set(RGC_IPC_CHAIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC" CACHE INTERNAL "IPC chains folder (for child/parent process)")
+# Path of DIR with IPC stuff
+set(RGC_IPC_CHAIN_DIR "${IPC_DIR}" CACHE INTERNAL "IPC chains folder (for child/parent process)")
+
+# Path of headers and sources with protobuf schemes
+set(RGC_IPC_PROTO_SRC_FILES "${PROTO_GEN_SRC_FILES}" CACHE INTERNAL "Protobuf schemes source files (for child/parent process)")
+set(RGC_IPC_PROTO_INC_FILES "${PROTO_GEN_INC_FILES}" CACHE INTERNAL "Protobuf schemes header files (for child/parent process)")
 # ===========
 
 # Install log config into ~./config/..
