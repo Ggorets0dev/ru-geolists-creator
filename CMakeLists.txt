@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set (PROJECT_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 # Try to find libcurl in system
@@ -40,8 +41,8 @@ configure_file(
 
 # Genereate ipc_chain.hpp with correct information
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ipc_chain.hpp.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ipc_chain.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp
     @ONLY
 )
 
@@ -90,8 +91,13 @@ install(TARGETS RuGeolistsCreator DESTINATION bin)
 # Path of binary for parent project
 set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" CACHE INTERNAL "Install path for RuGeolistsCreator")
 
+# =========== IPC
 # Path header with IPC chains
-set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/ipc_chain.hpp" CACHE INTERNAL "IPC chains header file (for parent/child process)")
+set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" CACHE INTERNAL "IPC chains header file (for parent/child process)")
+
+# Path header with IPC chains
+set(RGC_IPC_CHAIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC" CACHE INTERNAL "IPC chains folder (for child/parent process)")
+# ===========
 
 # Install log config into ~./config/..
 install(CODE "
