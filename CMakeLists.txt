@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 
 project(RuGeolistsCreator LANGUAGES CXX VERSION 0.12.0)
 
@@ -37,6 +37,14 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp
     @ONLY
 )
+
+# Genereate ipc_chain.hpp with correct information
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ipc_chain.hpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ipc_chain.hpp
+    @ONLY
+)
+
 
 set(PROTO_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/proto/release_notes.proto)
@@ -78,6 +86,12 @@ endif()
 
 # Install software into ~/.local/bin
 install(TARGETS RuGeolistsCreator DESTINATION bin)
+
+# Path of binary for parent project
+set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" CACHE INTERNAL "Install path for RuGeolistsCreator")
+
+# Path header with IPC chains
+set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/ipc_chain.hpp" CACHE INTERNAL "IPC chains header file (for parent/child process)")
 
 # Install log config into ~./config/..
 install(CODE "

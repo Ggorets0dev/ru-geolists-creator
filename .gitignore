@@ -3,3 +3,4 @@ CMakeLists.txt.user
 *.pb.cc
 *.pb.h
 software_info.hpp
+ipc_chain.hpp
