@@ -37,7 +37,6 @@ static void saveToText(const RgcConfig& config, const std::vector<DownloadedSour
 static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedSourcePair>& downloadedSources) {
     geo_release::ReleaseNotes releaseNotes;
     geo_release::ReleaseNotes::FilesPaths filesPaths;
-    std::string proto;
     int err, fd;
 
     filesPaths.set_domain_list(paths.domain_list);
@@ -52,8 +51,6 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
         pb_source->set_section(dl_source.first.section);
         pb_source->set_type((geo_release::ReleaseNotes::SourceType)dl_source.first.type);
     }
-
-    proto = releaseNotes.SerializeAsString();
 
     // Отправка родителю сигнала о том, что пора ждать сводку по FIFO
     kill(getppid(), SIGUSR1);
@@ -71,9 +68,9 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
         throw std::runtime_error("Failed to open FIFO for IPC");
     }
 
-    err = write(fd, proto.c_str(), proto.length());
+    err = releaseNotes.SerializeToFileDescriptor(fd);
 
-    if (err == -1) {
+    if (err == 0) {
         throw std::runtime_error("Failed to write in FIFO for IPC");
     }
 

@@ -8,7 +8,8 @@ set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJ
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set (IPC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC")
+set(IPC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC")
+set(PROTO_GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/proto")
 
 set (PROJECT_INCLUDE_DIRS
     IPC_DIR
@@ -48,12 +49,43 @@ configure_file(
     @ONLY
 )
 
-
 set(PROTO_SRC_FILES
     ${IPC_DIR}/proto/release_notes.proto)
 
-# Build protobuf sources
-protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES ${PROTO_SRC_FILES})
+# Create directory for generated protobuf files
+file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
+
+# Generate protobuf files using protoc directly at configure time
+set(PROTO_GEN_SRC_FILES PARENT_SCOPE)
+set(PROTO_GEN_INC_FILES PARENT_SCOPE)
+
+foreach(PROTO_FILE ${PROTO_SRC_FILES})
+    get_filename_component(PROTO_ABS_PATH ${PROTO_FILE} ABSOLUTE)
+    get_filename_component(PROTO_NAME_WE ${PROTO_FILE} NAME_WE)
+
+    set(GEN_SRC_FILE ${PROTO_GEN_DIR}/${PROTO_NAME_WE}.pb.cc)
+    set(GEN_INC_FILE ${PROTO_GEN_DIR}/${PROTO_NAME_WE}.pb.h)
+
+    # Generate files immediately during CMake configuration
+    execute_process(
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+        --cpp_out=${PROTO_GEN_DIR}
+        --proto_path=${IPC_DIR}/proto
+        ${PROTO_ABS_PATH}
+        RESULT_VARIABLE PROTOC_RESULT
+        OUTPUT_VARIABLE PROTOC_OUTPUT
+        ERROR_VARIABLE PROTOC_ERROR
+    )
+
+    if(PROTOC_RESULT EQUAL 0)
+        message(STATUS "Successfully generated protobuf files for ${PROTO_NAME_WE}")
+    else()
+        message(FATAL_ERROR "Failed to generate protobuf files: ${PROTOC_ERROR}")
+    endif()
+
+    list(APPEND PROTO_GEN_SRC_FILES ${GEN_SRC_FILE})
+    list(APPEND PROTO_GEN_INC_FILES ${GEN_INC_FILE})
+endforeach()
 
 message("(PROTOBUF) Generated sources: ${PROTO_GEN_SRC_FILES}")
 message("(PROTOBUF) Generated headers: ${PROTO_GEN_INC_FILES}")
@@ -69,17 +101,21 @@ file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
 
 target_link_libraries(RuGeolistsCreator PRIVATE
-	CURL::libcurl 
-	${LIBARCHIVE_LIBRARIES} 
-	${JSONCPP_LIBRARIES}
-	${Protobuf_LIBRARIES}     
-	absl::log_internal_check_op
+        CURL::libcurl
+        ${LIBARCHIVE_LIBRARIES}
+        ${JSONCPP_LIBRARIES}
+        ${Protobuf_LIBRARIES}
+        absl::log_internal_check_op
         absl::strings
         absl::base
         pthread
         log4cxx)
 
-target_include_directories(RuGeolistsCreator PRIVATE ${LIBARCHIVE_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(RuGeolistsCreator PRIVATE
+    ${LIBARCHIVE_INCLUDE_DIRS}
+    ${PROJECT_INCLUDE_DIRS}
+    ${PROTO_GEN_DIR}
+)
 
 # Set .local as destination for deploy
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -90,21 +126,17 @@ endif()
 # Install software into ~/.local/bin
 install(TARGETS RuGeolistsCreator DESTINATION bin)
 
-# Path of binary for parent project
-set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" CACHE INTERNAL "Install path for RuGeolistsCreator")
-
 # =========== IPC
+# Path of binary for parent project
+set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" PARENT_SCOPE)
+
 # Path of header with IPC chains
-set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" CACHE INTERNAL "IPC chains header file (for parent/child process)")
+set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" PARENT_SCOPE)
 
 # Path of DIR with IPC stuff
-set(RGC_IPC_CHAIN_DIR "${IPC_DIR}" CACHE INTERNAL "IPC chains folder (for child/parent process)")
+set(RGC_IPC_CHAIN_DIR "${IPC_DIR}" PARENT_SCOPE)
 
-# Path of headers and sources with protobuf schemes
-set(RGC_IPC_PROTO_SRC_FILES "${PROTO_GEN_SRC_FILES}" CACHE INTERNAL "Protobuf schemes source files (for child/parent process)")
-set(RGC_IPC_PROTO_INC_FILES "${PROTO_GEN_INC_FILES}" CACHE INTERNAL "Protobuf schemes header files (for child/parent process)")
-
-set(RGC_IPC_PROTO_INC_DIR "${CMAKE_CURRENT_BINARY_DIR}" CACHE INTERNAL "Protobuf schemes include dir (for child/parent process)")
+set(RGC_IPC_PROTO_INC_DIR "${PROTO_GEN_DIR}" PARENT_SCOPE)
 # ===========
 
 # Install log config into ~./config/..
