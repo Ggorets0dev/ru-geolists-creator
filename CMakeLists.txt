@@ -35,6 +35,9 @@ find_package(Protobuf REQUIRED)
 # Try to find abseil in system
 find_package(absl REQUIRED)
 
+# Path of binary for parent project (need for IPC)
+set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" PARENT_SCOPE)
+
 # Genereate software_info.hpp with correct version
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp.in
@@ -127,9 +130,6 @@ endif()
 install(TARGETS RuGeolistsCreator DESTINATION bin)
 
 # =========== IPC
-# Path of binary for parent project
-set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" PARENT_SCOPE)
-
 # Path of header with IPC chains
 set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" PARENT_SCOPE)
 
