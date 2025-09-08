@@ -103,6 +103,8 @@ set(RGC_IPC_CHAIN_DIR "${IPC_DIR}" CACHE INTERNAL "IPC chains folder (for child/
 # Path of headers and sources with protobuf schemes
 set(RGC_IPC_PROTO_SRC_FILES "${PROTO_GEN_SRC_FILES}" CACHE INTERNAL "Protobuf schemes source files (for child/parent process)")
 set(RGC_IPC_PROTO_INC_FILES "${PROTO_GEN_INC_FILES}" CACHE INTERNAL "Protobuf schemes header files (for child/parent process)")
+
+set(RGC_IPC_PROTO_INC_DIR "${CMAKE_CURRENT_BINARY_DIR}" CACHE INTERNAL "Protobuf schemes include dir (for child/parent process)")
 # ===========
 
 # Install log config into ~./config/..
