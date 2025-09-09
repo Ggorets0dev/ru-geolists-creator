@@ -52,9 +52,6 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
         pb_source->set_type((geo_release::ReleaseNotes::SourceType)dl_source.first.type);
     }
 
-    // Отправка родителю сигнала о том, что пора ждать сводку по FIFO
-    kill(getppid(), SIGUSR1);
-
     // SECTION: Создание и запись через FIFO для IPC
     err = mkfifo(RGC_RELEASE_NOTES_FIFO_PATH, RGC_RELEASE_NOTES_FIFO_PERMS);
 
@@ -80,6 +77,9 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
         throw std::runtime_error("Failed to close FIFO for IPC");
     }
     // !SECTION
+
+    // Отправка родителю сигнала о том, что пора ждать сводку по FIFO
+    kill(getppid(), SIGUSR1);
 }
 
 void createReleaseNotes(const GeoListsPaths& paths,

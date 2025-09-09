@@ -19,7 +19,7 @@ static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, voi
     return totalSize;
 }
 
-bool isUrlAccessible(const std::string& url) {
+bool isUrlAccessible(const std::string& url, const char* httpHeader) {
 	CURL *curl = curl_easy_init();
     CURLcode res;
     long responseCode(0);
@@ -34,6 +34,12 @@ bool isUrlAccessible(const std::string& url) {
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
+
+    if (httpHeader != nullptr && strlen(httpHeader) > 0) {
+        struct curl_slist *header = nullptr;
+        header = curl_slist_append(header, httpHeader);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
+    }
 
     res = curl_easy_perform(curl);
 
@@ -50,7 +56,7 @@ void downloadFile(const std::string& url, const std::string& filePath, const cha
     CURL* curl;
     CURLcode res;
 
-    if (!isUrlAccessible(url)) {
+    if (!isUrlAccessible(url, httpHeader)) {
         throw CurlError("Failed to access URL in download handler", CURLE_COULDNT_CONNECT);
     }
 

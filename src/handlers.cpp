@@ -62,7 +62,7 @@ void showExtraSources() {
     std::cout << PRINT_DELIMETER << std::endl;
 
     for (const auto& source : config.extraSources) {
-        std::cout << "[ID ~ " << recordId << "]\n\n";
+        std::cout << "[ID = " << recordId << "]\n\n";
 
         source.print(std::cout);
         std::cout << PRINT_DELIMETER << std::endl;
@@ -115,8 +115,12 @@ void addExtraSource() {
 
 void removeExtraSource(SourceId id) {
     RgcConfig config;
-    SourceId currId(0);
     bool status;
+
+    SourceId currId(0);
+
+    SourceId beforeSize(0);
+    SourceId afterSize(0);
 
     status = readConfig(config);
 
@@ -125,10 +129,25 @@ void removeExtraSource(SourceId id) {
         exit(1);
     }
 
-    config.extraSources.remove_if([&id, &currId](const auto& source) {
+    // Get size before deleting
+    for (const auto& source : config.extraSources) {
+        ++beforeSize;
+    }
+
+    config.extraSources.remove_if([&currId, &id](const auto& source) {
         ++currId;
-        return (currId == id);
+        return currId == id;
     });
+
+    // Get size after deleting
+    for (const auto& source : config.extraSources) {
+        ++afterSize;
+    }
+
+    if (beforeSize == afterSize) {
+        LOG_WARNING("Failed to find source with specified ID for removing");
+        return;
+    }
 
     status = writeConfig(config);
 
@@ -272,9 +291,10 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     Json::Value value;
     std::string ruadlistVersion;
     std::string logMsg;
+    std::string gitHttpHeader;
     std::optional<std::time_t> lastReleaseTime;
 
-    std::string gitHttpHeader = "Authorization: token " + config.apiToken;
+    gitHttpHeader = "Authorization: token " + config.apiToken;
 
     // SECTION - Check ReFilter for updates
     try {

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(RuGeolistsCreator LANGUAGES CXX VERSION 0.12.0)
+project(RuGeolistsCreator LANGUAGES CXX VERSION 0.13.0)
 
 # Create version string
 set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
@@ -35,8 +35,14 @@ find_package(Protobuf REQUIRED)
 # Try to find abseil in system
 find_package(absl REQUIRED)
 
+# Set .local as destination for deploy
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(HOME_DIR $ENV{HOME})
+    set(CMAKE_INSTALL_PREFIX "${HOME_DIR}/.local")
+endif()
+
 # Path of binary for parent project (need for IPC)
-set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator" PARENT_SCOPE)
+set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator")
 
 # Genereate software_info.hpp with correct version
 configure_file(
@@ -119,12 +125,6 @@ target_include_directories(RuGeolistsCreator PRIVATE
     ${PROJECT_INCLUDE_DIRS}
     ${PROTO_GEN_DIR}
 )
-
-# Set .local as destination for deploy
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(HOME_DIR $ENV{HOME})
-    set(CMAKE_INSTALL_PREFIX "${HOME_DIR}/.local")
-endif()
 
 # Install software into ~/.local/bin
 install(TARGETS RuGeolistsCreator DESTINATION bin)

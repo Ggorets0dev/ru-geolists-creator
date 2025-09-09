@@ -8,13 +8,10 @@
 
 #define DOWNLOAD_TRY_DELAY_SEC      1u
 
-extern void
-downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
+void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
-extern bool
-downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames);
+bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames);
 
-extern bool
-isUrlAccessible(const std::string& url);
+bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr);
 
 #endif // NETWORK_HPP
