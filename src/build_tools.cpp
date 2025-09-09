@@ -41,8 +41,8 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
     fs::path pathFIFO {RGC_RELEASE_NOTES_FIFO_PATH};
     int err, fd;
 
-    filesPaths.set_domain_list(paths.domain_list);
-    filesPaths.set_ip_list(paths.ip_list);
+    filesPaths.set_domain_list(paths.listDomain);
+    filesPaths.set_ip_list(paths.listIP);
 
     releaseNotes.set_time(parseUnixTime(std::time(nullptr)));
     releaseNotes.set_allocated_files_paths(&filesPaths);

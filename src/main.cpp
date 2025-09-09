@@ -233,7 +233,7 @@ int main(int argc, char** argv) {
     }
 
     LOG_INFO("Domain address list successfully created:" + release_paths.listDomain.string());
-    LOG_INFO("IP address list successfully created:" + release_paths.listIp.string());
+    LOG_INFO("IP address list successfully created:" + release_paths.listIP.string());
     // !SECTION
 
     performCleanup();
