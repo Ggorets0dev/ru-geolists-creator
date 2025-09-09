@@ -2,6 +2,7 @@
 #include "time_tools.hpp"
 #include "cli_args.hpp"
 #include "ipc_chain.hpp"
+#include "log.hpp"
 
 // ============== PROTOBUF headers
 #include "release_notes.pb.h"
@@ -37,6 +38,7 @@ static void saveToText(const RgcConfig& config, const std::vector<DownloadedSour
 static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedSourcePair>& downloadedSources) {
     geo_release::ReleaseNotes releaseNotes;
     geo_release::ReleaseNotes::FilesPaths filesPaths;
+    fs::path pathFIFO {RGC_RELEASE_NOTES_FIFO_PATH};
     int err, fd;
 
     filesPaths.set_domain_list(paths.domain_list);
@@ -52,12 +54,18 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
         pb_source->set_type((geo_release::ReleaseNotes::SourceType)dl_source.first.type);
     }
 
-    // SECTION: Создание и запись через FIFO для IPC
+    // Create all DIRs needed for FIFO
+    fs::create_directories(pathFIFO.parent_path());
+
+    // SECTION: Creating and opening FIFO for IPC
     err = mkfifo(RGC_RELEASE_NOTES_FIFO_PATH, RGC_RELEASE_NOTES_FIFO_PERMS);
 
     if (err == -1) {
         throw std::runtime_error("Failed to create FIFO for IPC");
     }
+
+    // Sending signal to parrent for starting IPC
+    kill(getppid(), SIGUSR1);
 
     fd = open(RGC_RELEASE_NOTES_FIFO_PATH, O_WRONLY);
 
@@ -68,6 +76,7 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
     err = releaseNotes.SerializeToFileDescriptor(fd);
 
     if (err == 0) {
+        close(fd);
         throw std::runtime_error("Failed to write in FIFO for IPC");
     }
 
@@ -78,19 +87,23 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
     }
     // !SECTION
 
-    // Отправка родителю сигнала о том, что пора ждать сводку по FIFO
-    kill(getppid(), SIGUSR1);
+    LOG_INFO("Release notes were sent to parent by IPC successfully");
 }
 
 void createReleaseNotes(const GeoListsPaths& paths,
                         const RgcConfig& config,
                         const std::vector<DownloadedSourcePair>& downloadedSources) {
 
-    // Формируем текстовую сводку для пользователя
+    // Form TXT release notes for user
     saveToText(config, downloadedSources);
 
     if (gCmdArgs.isChild) {
-        // Формируем сводку для контролирующего процесса (protobuf)
-        saveToFIFO(paths, downloadedSources);
+        try {
+            // Form protobuf release notes for IPC
+            saveToFIFO(paths, downloadedSources);
+        } catch (const std::runtime_error& e) {
+            LOG_ERROR(e.what());
+            LOG_ERROR("Failed to perform IPC in current build");
+        }
     }
 }

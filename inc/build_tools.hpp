@@ -4,8 +4,8 @@
 #include "config.hpp"
 
 struct GeoListsPaths {
-    fs::path domain_list;
-    fs::path ip_list;
+    fs::path listDomain;
+    fs::path listIP;
 };
 
 void createReleaseNotes(const GeoListsPaths& paths, const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources);

@@ -207,16 +207,16 @@ int main(int argc, char** argv) {
     // SECTION - Copy created files to destination
 
     // Setting paths by default
-    release_paths.domain_list = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
-    release_paths.ip_list = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
+    release_paths.listDomain = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
+    release_paths.listIP = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
 
     try {
         if (!fs::exists(OUTPUT_FOLDER_NAME)) {
             fs::create_directory(OUTPUT_FOLDER_NAME);
         }
 
-        fs::copy(*outGeositePath, release_paths.domain_list, fs::copy_options::overwrite_existing);
-        fs::copy(*outGeoipPath, release_paths.ip_list, fs::copy_options::overwrite_existing);
+        fs::copy(*outGeositePath, release_paths.listDomain, fs::copy_options::overwrite_existing);
+        fs::copy(*outGeoipPath, release_paths.listIP, fs::copy_options::overwrite_existing);
 
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR("Filesystem error:" + std::string(e.what()));
@@ -232,8 +232,8 @@ int main(int argc, char** argv) {
         LOG_ERROR("Failed to create release notes for parent proccess");
     }
 
-    LOG_INFO("Domain address list successfully created:" + release_paths.domain_list.string());
-    LOG_INFO("IP address list successfully created:" + release_paths.ip_list.string());
+    LOG_INFO("Domain address list successfully created:" + release_paths.listDomain.string());
+    LOG_INFO("IP address list successfully created:" + release_paths.listIp.string());
     // !SECTION
 
     performCleanup();
