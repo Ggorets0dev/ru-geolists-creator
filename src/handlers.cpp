@@ -94,7 +94,7 @@ void addExtraSource() {
     getStringInput("Section", source.section, false);
     getStringInput("URL", source.url, false);
 
-    status = isUrlAccessible(source.url);
+    status = tryAccessUrl(source.url);
 
     if (!status) {
         LOG_WARNING("Unable to access the list at the specified URL, resource not added");
@@ -160,8 +160,8 @@ void removeExtraSource(SourceId id) {
 }
 
 void checkUrlsAccess() {
-    bool accessStatus;
     RgcConfig config;
+    bool isAccessed;
 
     // Adding all main sources
     std::vector<std::string> urls = {
@@ -174,9 +174,9 @@ void checkUrlsAccess() {
 
     LOG_INFO("Check for all soirce's URLs is requested");
 
-    accessStatus = readConfig(config);
+    isAccessed = readConfig(config);
 
-    if (accessStatus) {
+    if (isAccessed) {
         std::transform(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(urls),
                        [](const ExtraSource& source) { return source.url; });
     } else {
@@ -184,8 +184,8 @@ void checkUrlsAccess() {
     }
 
     for (const std::string& url : urls) {
-        accessStatus = isUrlAccessible(url);
-        logUrlAccess(url, accessStatus);
+        isAccessed = tryAccessUrl(url);
+        logUrlAccess(url, isAccessed);
     }
 }
 
@@ -297,14 +297,15 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     gitHttpHeader = "Authorization: token " + config.apiToken;
 
     // SECTION - Check ReFilter for updates
-    try {
-        if (!config.apiToken.empty()) {
-            downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
-        } else {
-            downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
-        }
-    } catch (const std::exception& e) {
-        LOG_ERROR(e.what());
+    if (!config.apiToken.empty()) {
+        status = tryDownloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
+    } else {
+        status = tryDownloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    }
+
+    if (!status) {
+        LOG_ERROR("Failed to fetch updates for ReFilter lists");
+        return std::make_tuple(false, false);
     }
 
     status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
@@ -330,14 +331,14 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check XRAY rules for updates
-    try {
-        if (!config.apiToken.empty()) {
-            downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
-        } else {
-            downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
-        }
-    } catch (const std::exception& e) {
-        LOG_ERROR(e.what());
+    if (!config.apiToken.empty()) {
+        status = tryDownloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
+    } else {
+        status = tryDownloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    }
+
+    if (!status) {
+        LOG_ERROR("Failed to fetch updates for XRay lists");
         return std::make_tuple(false, false);
     }
 
@@ -363,10 +364,10 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check RUADLIST for updates
-    try {
-        downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
-    } catch (const std::exception& e) {
-        LOG_ERROR(e.what());
+    status = tryDownloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+
+    if (!status) {
+        LOG_ERROR("Failed to fetch updates for RuAdList");
         return std::make_tuple(false, false);
     }
 
@@ -404,10 +405,10 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     const fs::path kCurrentDir = fs::current_path();
 
     // SECTION - Download newest ReFilter rules
-    try {
-        downloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
-    }  catch (std::exception& e) {
-        LOG_ERROR(e.what());
+    status = tryDownloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+
+    if (!status) {
+        LOG_ERROR("Failed to download ReFilter lists API response");
         return false;
     }
 
@@ -426,11 +427,11 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::IP, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[1]));
     // !SECTION
 
-    // SECTION - Download newest XRay rules
-    try {
-        downloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
-    }  catch (std::exception& e) {
-        LOG_ERROR(e.what());
+    // SECTION - Download newest XRay rules    
+    status = tryDownloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+
+    if (!status) {
+        LOG_ERROR("Failed to download XRay lists API response");
         return false;
     }
 
@@ -448,11 +449,11 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, XRAY_REJECT_SECTION_NAME), kCurrentDir / assetsNames[0]));
     // !SECTION
 
-    // SECTION - Download newest RUADLIST rules
-    try {
-        downloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
-    }  catch (std::exception& e) {
-        LOG_ERROR(e.what());
+    // SECTION - Download newest RUADLIST rules    
+    status = tryDownloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+
+    if (!status) {
+        LOG_ERROR("Failed to download RuAdList API response");
         return false;
     }
 
@@ -462,10 +463,10 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    try {
-        downloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
-    }  catch (std::exception& e) {
-        LOG_ERROR(e.what());
+    status = tryDownloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
+
+    if (!status) {
+        LOG_ERROR("Failed to download RuAdList adservers");
         return false;
     }
 
@@ -480,7 +481,7 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
 
     // SECTION - Download newest ANTIFILTER rules
     try {
-        downloadFile(ANTIFILTER_AYN_IPS_URL, ANTIFILTER_FILE_NAME);
+        tryDownloadFile(ANTIFILTER_AYN_IPS_URL, ANTIFILTER_FILE_NAME);
 
         dupeCnt = removeDuplicateLines(REFILTER_IP_ASSET_FILE_NAME, ANTIFILTER_FILE_NAME);
 
@@ -501,15 +502,14 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     std::string fileName;
 
     for (const auto& source : config.extraSources) {
-        try {
-            fileName = genSourceFileName(source);
+        status = tryDownloadFile(source.url, fileName);
 
-            downloadFile(source.url, fileName);
-            downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
-        }  catch (std::exception& e) {
-            LOG_ERROR(e.what());
-            LOG_WARNING("Failed to download extra source: " + source.url);
+        if (!status) {
+            LOG_WARNING("Failed to downloaded extra source: " + source.url);
+            continue;
         }
+
+        downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
     }
     // !SECTION
 

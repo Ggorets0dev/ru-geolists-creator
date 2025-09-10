@@ -57,6 +57,10 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
     // Create all DIRs needed for FIFO
     fs::create_directories(pathFIFO.parent_path());
 
+    if (fs::exists(pathFIFO)) {
+        fs::remove(pathFIFO);
+    }
+
     // SECTION: Creating and opening FIFO for IPC
     err = mkfifo(RGC_RELEASE_NOTES_FIFO_PATH, RGC_RELEASE_NOTES_FIFO_PERMS);
 

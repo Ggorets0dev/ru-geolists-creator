@@ -5,8 +5,15 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <thread>
 
-#define USER_AGENT "ru-geolists-creator"
+#define USER_AGENT                  "ru-geolists-creator"
+
+#define CONNECT_ATTEMPTS_COUNT      3u
+#define CONNECT_ATTEMPT_DELAY_SEC   2u
+
+#define DOWNLOAD_ATTEMPT_COUNT      3u
+#define DOWNLOAD_ATTEMPT_DELAY_SEC  2u
 
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
@@ -19,7 +26,7 @@ static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, voi
     return totalSize;
 }
 
-bool isUrlAccessible(const std::string& url, const char* httpHeader) {
+static bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr) {
 	CURL *curl = curl_easy_init();
     CURLcode res;
     long responseCode(0);
@@ -47,16 +54,21 @@ bool isUrlAccessible(const std::string& url, const char* httpHeader) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
     }
 
+    // std::cout << res << std::endl;
+
     curl_easy_cleanup(curl);
 
     return (res == CURLE_OK && responseCode >= 200 && responseCode < 400);
 }
 
-void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
+static void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr) {
     CURL* curl;
     CURLcode res;
+    bool isAccessed;
 
-    if (!isUrlAccessible(url, httpHeader)) {
+    isAccessed = tryAccessUrl(url, httpHeader);
+
+    if (!isAccessed) {
         throw CurlError("Failed to access URL in download handler", CURLE_COULDNT_CONNECT);
     }
 
@@ -102,6 +114,41 @@ void downloadFile(const std::string& url, const std::string& filePath, const cha
     }
 
     outFile.close();
+}
+
+bool tryAccessUrl(const std::string& url, const char* httpHeader) {
+    for(uint8_t i(0); i < CONNECT_ATTEMPTS_COUNT; ++i) {
+        if (isUrlAccessible(url, httpHeader)) {
+            return true;
+        } else {
+            LOG_WARNING("Failed to access URL, performing another attempt...");
+
+            std::this_thread::sleep_for(std::chrono::seconds(CONNECT_ATTEMPT_DELAY_SEC));
+
+            continue;
+        }
+    }
+
+    return false;
+}
+
+bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
+    for(uint8_t i(0); i < DOWNLOAD_ATTEMPT_COUNT; ++i) {
+        try {
+            downloadFile(url, filePath);
+        }  catch (std::exception& e) {
+            LOG_ERROR(e.what());
+            LOG_WARNING("Failed to download requested file, performing another attempt...");
+
+            std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_ATTEMPT_DELAY_SEC));
+
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {

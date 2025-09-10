@@ -6,12 +6,10 @@
 
 #include "json_io.hpp"
 
-#define DOWNLOAD_TRY_DELAY_SEC      1u
-
-void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
-
 bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames);
 
-bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr);
+bool tryAccessUrl(const std::string& url, const char* httpHeader = nullptr);
+
+bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
 #endif // NETWORK_HPP

@@ -3,8 +3,6 @@
 #include "log.hpp"
 #include "network.hpp"
 
-#include <thread>
-#include <chrono>
 #include <unistd.h>
 
 #define V2IP_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/geoip/releases/latest"
@@ -41,8 +39,7 @@ createOutputArray(Json::Value& outputArray, const std::vector<std::string>& used
     outputArray.append(outputObj);
 }
 
-static void
-addPrivateSource(Json::Value& inputArray, std::vector<std::string>& usedSections) {
+static void addPrivateSource(Json::Value& inputArray, std::vector<std::string>& usedSections) {
     Json::Value obj;
 
     obj["type"] = "private";
@@ -52,19 +49,11 @@ addPrivateSource(Json::Value& inputArray, std::vector<std::string>& usedSections
     usedSections.push_back("private");
 }
 
-std::optional<std::string>
-downloadV2ipSourceCode() {
-    bool status = 1;
+std::optional<std::string> downloadV2ipSourceCode() {
+    bool status = true;
 
-    uint8_t curr_attempt = 0;
-    const uint8_t attempt_cnt = 5;
-
-    try {
-        downloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME);
-    }  catch (std::exception& e) {
-        LOG_ERROR(e.what());
+    if (!tryDownloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME)) {
         LOG_ERROR("Failed to perform API request for V2IP repository");
-
         return std::nullopt;
     }
 
@@ -79,23 +68,7 @@ downloadV2ipSourceCode() {
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
-    for(curr_attempt = 0; curr_attempt < attempt_cnt; ++curr_attempt) {
-        try {
-            downloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME);
-        }  catch (std::exception& e) {
-            LOG_ERROR(e.what());
-            LOG_WARNING("Failed to download the V2IP source code, performing another attempt...");
-
-            std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_TRY_DELAY_SEC));
-
-            continue;
-        }
-
-        LOG_INFO("V2IP source code was successfully downloaded");
-        break;
-    }
-
-    if (curr_attempt == attempt_cnt) {
+    if (!tryDownloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME)) {
         LOG_ERROR("V2IP source code could not be downloaded after several attempts");
         return std::nullopt;
     }
@@ -103,8 +76,7 @@ downloadV2ipSourceCode() {
     return V2IP_SRC_FILE_NAME;
 }
 
-std::optional<fs::path>
-runV2ipToolchain(const std::string& rootPath) {
+std::optional<fs::path> runV2ipToolchain(const std::string& rootPath) {
     const fs::path kCurrentDir = fs::current_path();
     std::optional<fs::path> outFilePath;
 
@@ -125,8 +97,7 @@ runV2ipToolchain(const std::string& rootPath) {
     return outFilePath;
 }
 
-void
-addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
+void addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
     Json::Value objRoot, objArgs;
 
     objArgs["name"] = source.first.section;
@@ -139,8 +110,7 @@ addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
     v2ipInputArray.append(objRoot);
 }
 
-bool
-saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray, std::vector<std::string>& usedSections) {
+bool saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray, std::vector<std::string>& usedSections) {
     Json::Value configObj;
     Json::Value outputArray(Json::arrayValue);
     fs::path configPath;
