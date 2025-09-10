@@ -7,8 +7,18 @@
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
 #include "build_tools.hpp"
+#include "ipc_chain.hpp"
+
+#include <unistd.h>
+#include <signal.h>
+
+#define EXIT_WITH_CLEANUP(code) \
+    performCleanup();           \
+    return code;
 
 static void performCleanup() {
+    bool status;
+
     if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {
         std::error_code ec;
 
@@ -16,6 +26,14 @@ static void performCleanup() {
 
         if (ec) {
             LOG_ERROR("Failed to delete TEMP dir before exiting: " + ec.message());
+        }
+    }
+
+    if (fs::exists(RGC_RELEASE_NOTES_FIFO_PATH)) {
+        status = fs::remove(RGC_RELEASE_NOTES_FIFO_PATH);
+
+        if (!status) {
+            LOG_ERROR("Failed to delete FIFO for IPC before exiting");
         }
     }
 }
@@ -68,8 +86,7 @@ int main(int argc, char** argv) {
 
         initSoftware(); // Download all toolchains and create config
 
-        performCleanup();
-        return 0;
+        EXIT_WITH_CLEANUP(0);
     }
 
     if (gCmdArgs.isShowAbout) {
@@ -86,16 +103,12 @@ int main(int argc, char** argv) {
     // Add extra source
     if (gCmdArgs.isAddExtra) {
         addExtraSource();
-
-        performCleanup();
         return 0;
     }
 
     // Remove extra source
     if (gRemoveExtraOption->count() == 1) {
         removeExtraSource(gCmdArgs.extraSourceId);
-
-        performCleanup();
         return 0;
     }
 
@@ -117,8 +130,7 @@ int main(int argc, char** argv) {
     if (!status) {
         LOG_ERROR(READ_CFG_FAIL_MSG);
 
-        performCleanup();
-        return 1;
+        EXIT_WITH_CLEANUP(1);
     }
 
     CREATE_TEMP_DIR();
@@ -136,10 +148,14 @@ int main(int argc, char** argv) {
             performCleanup();
             return 1; // Failed to check updates. Exit
         } else if (!isUpdateFound) {
-            LOG_INFO("No need to update sources, exit the program");
+            LOG_INFO("No need to update sources, stopping program...");
 
-            performCleanup();
-            return 0;
+            if (gCmdArgs.isChild) {
+                // Signaling that there's nothing to do
+                kill(getppid(), SIGUSR2);
+            }
+
+            EXIT_WITH_CLEANUP(0);
         }
     } else {
         LOG_INFO("No check for updates required, forced download and build");
@@ -150,10 +166,8 @@ int main(int argc, char** argv) {
     status = downloadNewestSources(config, true, downloadedSources);
 
     if (!status) {
-        // An additional log can be posted here
-
-        performCleanup();
-        return 1; // Failed to download newest releases. Exit
+        LOG_ERROR("Failed to download newest sources to build lists");
+        EXIT_WITH_CLEANUP(1);
     }
     // !SECTION
 
@@ -182,8 +196,7 @@ int main(int argc, char** argv) {
     if (!status) {
         LOG_ERROR("Failed to correctly place sources in toolchains");
 
-        performCleanup();
-        return 1;
+        EXIT_WITH_CLEANUP(1);
     }
 
     LOG_INFO("Successfully deployed source files to toolchain environments");
@@ -199,8 +212,7 @@ int main(int argc, char** argv) {
     if (!outGeositePath || !outGeoipPath) {
         LOG_ERROR("Building one or more lists failed due to errors within the toolchains");
 
-        performCleanup();
-        return 1;
+        EXIT_WITH_CLEANUP(1);
     }
     // !SECTION
 
@@ -221,8 +233,7 @@ int main(int argc, char** argv) {
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR("Filesystem error:" + std::string(e.what()));
 
-        performCleanup();
-        return 1;
+        EXIT_WITH_CLEANUP(1);
     }
 
     try {

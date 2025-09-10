@@ -425,6 +425,8 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
 
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[0]));
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::IP, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[1]));
+
+    LOG_INFO("ReFilter rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download newest XRay rules    
@@ -447,6 +449,8 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, XRAY_REJECT_SECTION_NAME), kCurrentDir / assetsNames[0]));
+
+    LOG_INFO("XRay rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules    
@@ -477,6 +481,8 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
 
     config.ruadlistTime = *lastReleaseTime;
     downloadedFiles.push_back(DownloadedSourcePair(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME));
+
+    LOG_INFO("RuAdList rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download newest ANTIFILTER rules
@@ -496,6 +502,8 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
         LOG_ERROR(e.what());
         LOG_WARNING("Failed add Antifilter rules to Geolists");
     }
+
+    LOG_INFO("AntiFilter rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download extra sources
@@ -510,6 +518,7 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
         }
 
         downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
+        LOG_INFO("Extra source was downloaded successfully: " + source.url);
     }
     // !SECTION
 
