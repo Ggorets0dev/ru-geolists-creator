@@ -12,7 +12,7 @@ set(IPC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC")
 set(PROTO_GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/proto")
 
 set (PROJECT_INCLUDE_DIRS
-    IPC_DIR
+    ${IPC_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
@@ -100,8 +100,8 @@ message("(PROTOBUF) Generated sources: ${PROTO_GEN_SRC_FILES}")
 message("(PROTOBUF) Generated headers: ${PROTO_GEN_INC_FILES}")
 
 # Get all sources and headers of project
-file(GLOB SRC_FILES "src/*.c" "src/*.cpp" "src/*.cc")
-file(GLOB INC_FILES "inc/*.h" "inc/*.hpp")
+file(GLOB_RECURSE SRC_FILES "src/*.c" "src/*.cpp" "src/*.cc")
+file(GLOB_RECURSE INC_FILES "inc/*.h" "inc/*.hpp")
 
 # Get all third-party dependencies
 file(GLOB TC_SRC_FILES "third-party/*.c" "third-party/*.cpp" "third-party/*.cc")

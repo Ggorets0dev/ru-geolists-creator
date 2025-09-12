@@ -22,9 +22,18 @@
 #define LOG_MARK_WARN       "⚠️"
 #define LOG_MARK_INFO       "ℹ️"
 
+// Set special emojis before texts in logs
+// #define USE_EMOGI_MARKERS
+
+#ifdef USE_EMOGI_MARKERS
 #define LOG_ERROR(msg)          logWithMark(msg, LOG_MARK_ERROR, log4cxx::Level::ERROR_INT)
 #define LOG_WARNING(msg)        logWithMark(msg, LOG_MARK_WARN, log4cxx::Level::WARN_INT)
 #define LOG_INFO(msg)           logWithMark(msg, LOG_MARK_INFO, log4cxx::Level::INFO_INT)
+#else
+#define LOG_ERROR(msg)          LOG4CXX_ERROR(gLogger, msg);
+#define LOG_WARNING(msg)        LOG4CXX_WARN(gLogger, msg);
+#define LOG_INFO(msg)           LOG4CXX_INFO(gLogger, msg);
+#endif
 
 using namespace log4cxx;
 using namespace log4cxx::helpers;
