@@ -2,8 +2,7 @@
 #define TEMP_HPP
 
 #include <filesystem>
-
-namespace fs = std::filesystem;
+#include "fs_utils.hpp"
 
 #define TEMP_DIR_NAME            getTempDirPath()
 
@@ -20,6 +19,8 @@ if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) { \
 }
 
 #define ENTER_TEMP_DIR()        fs::current_path(TEMP_DIR_NAME)
+
+#define EXIT_TEMP_DIR()
 
 inline fs::path getSystemTempDir() {
     const char* tmpDir = std::getenv("TMPDIR");

@@ -13,11 +13,8 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define RELEASE_NOTES_TXT_FILENAME  "release_notes.txt"
-
-static void saveToText(const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources) {
-    fs::path notesPath = fs::current_path() / OUTPUT_FOLDER_NAME / RELEASE_NOTES_TXT_FILENAME;
-    std::ofstream releaseNotes(notesPath);
+static void saveToText(const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources, const fs::path& path) {
+    std::ofstream releaseNotes(path);
 
     releaseNotes << "Added IP/Domain sources:" << std::endl;
     printDownloadedSources(releaseNotes, downloadedSources);
@@ -99,7 +96,7 @@ void createReleaseNotes(const GeoListsPaths& paths,
                         const std::vector<DownloadedSourcePair>& downloadedSources) {
 
     // Form TXT release notes for user
-    saveToText(config, downloadedSources);
+    saveToText(config, downloadedSources, paths.releaseNotes);
 
     if (gCmdArgs.isChild) {
         try {

@@ -7,10 +7,6 @@
 
 #include "extra_sources.hpp"
 
-#define OUTPUT_FOLDER_NAME      "output"
-#define GEOSITE_FILE_NAME       "geosite.dat"
-#define GEOIP_FILE_NAME         "geoip.dat"
-
 #define CFG_DEFAULT_NUM_VALUE   0u
 #define CFG_DEFAULT_STR_VALUE   ""
 

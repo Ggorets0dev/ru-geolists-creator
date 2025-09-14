@@ -11,11 +11,14 @@
 
 #define USER_AGENT                  "ru-geolists-creator"
 
-#define CONNECT_ATTEMPTS_COUNT      3u
-#define CONNECT_ATTEMPT_DELAY_SEC   2u
+#define CURL_OPERATION_TIMEOUT_SEC      10u
+#define CURL_CONNECTION_TIMEOUT_SEC     5u
 
-#define DOWNLOAD_ATTEMPT_COUNT      3u
-#define DOWNLOAD_ATTEMPT_DELAY_SEC  2u
+#define CONNECT_ATTEMPTS_COUNT          3u
+#define CONNECT_ATTEMPT_DELAY_SEC       2u
+
+#define DOWNLOAD_ATTEMPT_COUNT          3u
+#define DOWNLOAD_ATTEMPT_DELAY_SEC      2u
 
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
@@ -40,7 +43,8 @@ static bool isUrlAccessible(const std::string& url, const char* httpHeader = nul
     
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_OPERATION_TIMEOUT_SEC);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONNECTION_TIMEOUT_SEC);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
@@ -89,7 +93,8 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
 
-        // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_OPERATION_TIMEOUT_SEC);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONNECTION_TIMEOUT_SEC);
 
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); // Follow redirects
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
@@ -168,6 +173,8 @@ bool tryDownloadFile(const std::string& url, const std::string& filePath, const 
 }
 
 bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
+    bool status;
+
     if (value.isMember("assets") && value["assets"].isArray()) {
         const Json::Value& assets = value["assets"];
         for (const auto& asset : assets) {
@@ -175,12 +182,10 @@ bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std
                 continue;
             }
 
-            try {
-                downloadFile(asset["browser_download_url"].asString(), asset["name"].asString());
-            }  catch (std::exception& e) {
-                LOG_ERROR(e.what());
+            status = tryDownloadFile(asset["browser_download_url"].asString(), asset["name"].asString());
 
-                return false;
+            if (!status) {
+                return status;
             }
         }
     }

@@ -126,6 +126,12 @@ int main(int argc, char** argv) {
 
     // ---> Download sources --->
 
+    // Check if out path is set correctly
+    if (gOutPathOption->count() == 0) {
+        LOG_ERROR("Out path for geolists was not specified");
+        return 1;
+    }
+
     status = readConfig(config);
     if (!status) {
         LOG_ERROR(READ_CFG_FAIL_MSG);
@@ -219,13 +225,12 @@ int main(int argc, char** argv) {
     // SECTION - Copy created files to destination
 
     // Setting paths by default
-    release_paths.listDomain = fs::current_path() / OUTPUT_FOLDER_NAME / GEOSITE_FILE_NAME;
-    release_paths.listIP = fs::current_path() / OUTPUT_FOLDER_NAME / GEOIP_FILE_NAME;
+    release_paths.listDomain = fs::path(gCmdArgs.outDirPath) / GEOSITE_FILE_NAME;
+    release_paths.listIP = fs::path(gCmdArgs.outDirPath) / GEOIP_FILE_NAME;
+    release_paths.releaseNotes = fs::path(gCmdArgs.outDirPath) / RELEASE_NOTES_FILENAME;
 
     try {
-        if (!fs::exists(OUTPUT_FOLDER_NAME)) {
-            fs::create_directory(OUTPUT_FOLDER_NAME);
-        }
+        fs::create_directories(gCmdArgs.outDirPath);
 
         fs::copy(*outGeositePath, release_paths.listDomain, fs::copy_options::overwrite_existing);
         fs::copy(*outGeoipPath, release_paths.listIP, fs::copy_options::overwrite_existing);
@@ -243,8 +248,8 @@ int main(int argc, char** argv) {
         LOG_ERROR("Failed to create release notes for parent proccess");
     }
 
-    LOG_INFO("Domain address list successfully created:" + release_paths.listDomain.string());
-    LOG_INFO("IP address list successfully created:" + release_paths.listIP.string());
+    LOG_INFO("Domain address list successfully created: " + release_paths.listDomain.string());
+    LOG_INFO("IP address list successfully created: " + release_paths.listIP.string());
     // !SECTION
 
     performCleanup();

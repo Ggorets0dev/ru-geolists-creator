@@ -8,8 +8,10 @@
 
 struct CmdArgs {
     SourceId extraSourceId;
+    std::string outDirPath;
 
     bool isForceCreation;
+    bool isUpdateCreation;
     bool isShowAbout;
     bool isCheckUrls;
     bool isChild;
@@ -21,6 +23,7 @@ struct CmdArgs {
 extern CmdArgs gCmdArgs;
 
 extern CLI::Option* gRemoveExtraOption;
+extern CLI::Option* gOutPathOption;
 
 void prepareCmdArgs(CLI::App& app, int argc, char** argv);
 

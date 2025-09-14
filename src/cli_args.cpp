@@ -2,20 +2,24 @@
 
 #include "software_info.hpp"
 
-#define FORCE_OPTION_DESCRIPTION    "Starts source download and build even if no updates are detected"
-#define ABOUT_OPTION_DESCRIPTION    "Displaying software information"
-#define CHECK_OPTION_DESCRIPTION    "Checking access of all source's URLs from config"
-#define CHILD_OPTION_DESCRIPTION    "Sending release notes to parent proccess (for work in chain)"
-#define INIT_OPTION_DESCRIPTION     "Initializing software by creating config and downloading all dependencies"
-#define SHOW_OPTION_DESCRIPTION     "Displaying all extra sources from configuration files"
-#define ADD_EXTRA_OPTION            "Adding extra source to download list"
-#define REMOVE_EXTRA_OPTION         "Removing extra source from download list"
+#define FORCE_OPTION_DESCRIPTION                "Starts source download and build even if no updates are detected"
+#define ABOUT_OPTION_DESCRIPTION                "Displaying software information"
+#define CHECK_OPTION_DESCRIPTION                "Checking access of all source's URLs from config"
+#define CHILD_OPTION_DESCRIPTION                "Sending release notes to parent proccess (for work in chain)"
+#define INIT_OPTION_DESCRIPTION                 "Initializing software by creating config and downloading all dependencies"
+#define SHOW_OPTION_DESCRIPTION                 "Displaying all extra sources from configuration files"
+#define ADD_EXTRA_OPTION_DESCRIPTION            "Adding extra source to download list"
+#define REMOVE_EXTRA_OPTION_DESCRIPTION         "Removing extra source from download list"
+#define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
+
+#define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
 #define ASK_MARK "❔"
 
 CmdArgs gCmdArgs = { 0 };
 
 CLI::Option* gRemoveExtraOption;
+CLI::Option* gOutPathOption;
 
 void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.description(RGC_DESCRIPTION);
@@ -24,16 +28,17 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
 
     (void)argv;
 
-    app.add_flag("-f,--force", gCmdArgs.isForceCreation, FORCE_OPTION_DESCRIPTION);
+    app.add_flag("--force", gCmdArgs.isForceCreation, FORCE_OPTION_DESCRIPTION);
     app.add_flag("--about", gCmdArgs.isShowAbout, ABOUT_OPTION_DESCRIPTION);
-    app.add_flag("-c,--check", gCmdArgs.isCheckUrls, CHECK_OPTION_DESCRIPTION);
+    app.add_flag("--check", gCmdArgs.isCheckUrls, CHECK_OPTION_DESCRIPTION);
     app.add_flag("--child", gCmdArgs.isChild, CHILD_OPTION_DESCRIPTION);
     app.add_flag("--init", gCmdArgs.isInit, INIT_OPTION_DESCRIPTION);
 
     app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
-    app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION);
+    app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
 
-    gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION);
+    gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION_DESCRIPTION);
+    gOutPathOption = app.add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION);
 }
 
 bool askYesNo(const std::string& question, bool isYesDefault) {
