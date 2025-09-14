@@ -12,4 +12,6 @@ bool tryAccessUrl(const std::string& url, const char* httpHeader = nullptr);
 
 bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
+bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken);
+
 #endif // NETWORK_HPP

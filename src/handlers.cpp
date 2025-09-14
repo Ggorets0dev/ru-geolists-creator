@@ -291,17 +291,10 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     Json::Value value;
     std::string ruadlistVersion;
     std::string logMsg;
-    std::string gitHttpHeader;
     std::optional<std::time_t> lastReleaseTime;
 
-    gitHttpHeader = "Authorization: token " + config.apiToken;
-
     // SECTION - Check ReFilter for updates
-    if (!config.apiToken.empty()) {
-        status = tryDownloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
-    } else {
-        status = tryDownloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
-    }
+    status = tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for ReFilter lists");
@@ -331,11 +324,7 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check XRAY rules for updates
-    if (!config.apiToken.empty()) {
-        status = tryDownloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, gitHttpHeader.c_str());
-    } else {
-        status = tryDownloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
-    }
+    status = tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for XRay lists");
@@ -405,7 +394,7 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     const fs::path kCurrentDir = fs::current_path();
 
     // SECTION - Download newest ReFilter rules
-    status = tryDownloadFile(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME);
+    status = tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to download ReFilter lists API response");
@@ -430,7 +419,7 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     // !SECTION
 
     // SECTION - Download newest XRay rules    
-    status = tryDownloadFile(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME);
+    status = tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to download XRay lists API response");
@@ -510,6 +499,7 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     std::string fileName;
 
     for (const auto& source : config.extraSources) {
+        fileName = genSourceFileName(source);
         status = tryDownloadFile(source.url, fileName);
 
         if (!status) {
@@ -522,6 +512,6 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     }
     // !SECTION
 
-    return status;
+    return true;
 }
 

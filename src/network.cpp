@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <thread>
 
+#define GITHUB_TOKEN_HEADER         "Authorization: Bearer "
+
 #define USER_AGENT                  "ru-geolists-creator"
 
 #define CONNECT_ATTEMPTS_COUNT      3u
@@ -29,9 +31,10 @@ static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, voi
 static bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr) {
 	CURL *curl = curl_easy_init();
     CURLcode res;
-    long responseCode(0);
+    volatile uint32_t responseCode(0);
 
     if (!curl) {
+        curl_easy_cleanup(curl);
         throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
     
@@ -53,8 +56,6 @@ static bool isUrlAccessible(const std::string& url, const char* httpHeader = nul
     if (res == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
     }
-
-    // std::cout << res << std::endl;
 
     curl_easy_cleanup(curl);
 
@@ -102,18 +103,23 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
         // Perform query
         res = curl_easy_perform(curl);
 
+        curl_easy_cleanup(curl);
+        outFile.close();
+
         // Check for errors
         if (res != CURLE_OK) {
             throw CurlError("Failed to download file", res);
         }
-
-        // Free curl resources
-        curl_easy_cleanup(curl);
     } else {
+        curl_easy_cleanup(curl);
+        outFile.close();
+
         throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
+}
 
-    outFile.close();
+static std::string genGithubTokenHeader(const std::string& token) {
+    return GITHUB_TOKEN_HEADER + token;
 }
 
 bool tryAccessUrl(const std::string& url, const char* httpHeader) {
@@ -132,10 +138,20 @@ bool tryAccessUrl(const std::string& url, const char* httpHeader) {
     return false;
 }
 
+bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken) {
+    std::string tokenHeader = genGithubTokenHeader(apiToken);
+
+    if (!apiToken.empty()) {
+        return tryDownloadFile(url, filePath, tokenHeader.c_str());
+    } else {
+        return tryDownloadFile(url, filePath);
+    }
+}
+
 bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
     for(uint8_t i(0); i < DOWNLOAD_ATTEMPT_COUNT; ++i) {
         try {
-            downloadFile(url, filePath);
+            downloadFile(url, filePath, httpHeader);
         }  catch (std::exception& e) {
             LOG_ERROR(e.what());
             LOG_WARNING("Failed to download requested file, performing another attempt...");
