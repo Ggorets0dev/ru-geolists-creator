@@ -28,14 +28,13 @@
 
 ## Файл конфигурации
 
-Файл конфигурации создается автоматически при первом запуске ПО без аргументов. Далее происходит выход перед формированием списков, чтобы пользователь мог добавить токен GitHub API по желанию. Вручную для ключа **apiToken** может быть указан токен GitHub API для увеличения лимита запросов.
+### Инициализация ПО
+
+Для создания файла конфигурации требуется провести инициализацию ПО с помощью флага ```--init```, расположение файла: ```home/***/.config/ru-geolists-creator/config.json```. В процессе иницализации может быть указан API ключ для доступа GitHub (увеличивает допустимое количество запросов). Ключ может быть установлен и позднее вручную в файле конфигурации в поле ```apiToken```. 
+
+### Пример файла конфигурации
 
 Автоматически сформированный файл конфигурации обладает всеми перечисленными на примере ключами, но изначально массив дополнительных источников **(extra)** пуст. 
-
-Для добавления используются объекты со следующими ключами:
-* **section** - Текстовое обозначение для будущей секции при подключении
-* **type** - ip/domain в зависимости от типа источника
-* **url** - Адрес к файлу со списком. Все адреса должны быть разделены переносом строки
 
 ```json
 {
@@ -54,6 +53,31 @@
   "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
   "v2rayTime" : 1736449948
 }
+```
+
+### Добавление дополнительных источников
+
+Дополнительные источники могут быть добавлены в файл конфигурации вручную или с помощью флага ```-a, --add``` при запуске ПО. Далее потребуется заполнить все свойства, присущие такому источнику.
+
+## Справка ПО (```--help```)
+
+```
+RuGeolistsCreator - Software for automatic assembly of geoip.dat and geosite.dat files for VPN server XRay. Software is focused on blocking in the Russian Federation
+Usage: RuGeolistsCreator [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  --force                     Starts source download and build even if no updates are detected
+  --about                     Displaying software information
+  --check                     Checking access of all source's URLs from config
+  --child                     Sending release notes to parent proccess (for work in chain)
+  --init                      Initializing software by creating config and downloading all dependencies
+  --show                      Displaying all extra sources from configuration files
+  -a,--add                    Adding extra source to download list
+  -r,--remove UINT            Removing extra source from download list
+  -o,--out TEXT               Path to out DIR with all lists to create
+
+Notice: When running without arguments, the update-checked mode is used
 ```
 
 ## Зависимости
