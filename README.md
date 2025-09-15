@@ -1,4 +1,5 @@
 # RuGeolistsCreator
+👉 [English version](README.en.md)
 
 ## Назначение
 
