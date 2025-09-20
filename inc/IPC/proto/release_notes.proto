@@ -19,7 +19,7 @@ message ReleaseNotes {
 	}
 	
 
-        FilesPaths files_paths = 1;
-	string time = 2;
+	string time = 1;
+        repeated FilesPaths files_paths = 2;
 	repeated Source sources = 3;
 }

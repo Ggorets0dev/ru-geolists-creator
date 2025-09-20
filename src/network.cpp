@@ -15,10 +15,10 @@
 #define CURL_CONNECTION_TIMEOUT_SEC     5u
 
 #define CONNECT_ATTEMPTS_COUNT          3u
-#define CONNECT_ATTEMPT_DELAY_SEC       2u
+#define CONNECT_ATTEMPT_DELAY_SEC       3u
 
 #define DOWNLOAD_ATTEMPT_COUNT          3u
-#define DOWNLOAD_ATTEMPT_DELAY_SEC      2u
+#define DOWNLOAD_ATTEMPT_DELAY_SEC      3u
 
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);

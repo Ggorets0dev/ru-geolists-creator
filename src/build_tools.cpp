@@ -32,23 +32,25 @@ static void saveToText(const RgcConfig& config, const std::vector<DownloadedSour
     releaseNotes.close();
 }
 
-static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedSourcePair>& downloadedSources) {
+static void saveToFIFO(const GeoReleases& releases, const std::vector<DownloadedSourcePair>& downloadedSources) {
     geo_release::ReleaseNotes releaseNotes;
-    geo_release::ReleaseNotes::FilesPaths filesPaths;
     fs::path pathFIFO {RGC_RELEASE_NOTES_FIFO_PATH};
     int err, fd;
 
-    filesPaths.set_domain_list(paths.listDomain);
-    filesPaths.set_ip_list(paths.listIP);
-
     releaseNotes.set_time(parseUnixTime(std::time(nullptr)));
-    releaseNotes.set_allocated_files_paths(&filesPaths);
 
-    for (const auto& dl_source : downloadedSources) {
-        auto pb_source = releaseNotes.add_sources();
+    for (const auto& pack : releases.packs) {
+        auto pbPack = releaseNotes.add_files_paths();
 
-        pb_source->set_section(dl_source.first.section);
-        pb_source->set_type((geo_release::ReleaseNotes::SourceType)dl_source.first.type);
+        pbPack->set_domain_list(pack.listDomain);
+        pbPack->set_domain_list(pack.listIP);
+    }
+
+    for (const auto& source : downloadedSources) {
+        auto pbSource = releaseNotes.add_sources();
+
+        pbSource->set_section(source.first.section);
+        pbSource->set_type((geo_release::ReleaseNotes::SourceType)source.first.type);
     }
 
     // Create all DIRs needed for FIFO
@@ -91,7 +93,7 @@ static void saveToFIFO(const GeoListsPaths& paths, const std::vector<DownloadedS
     LOG_INFO("Release notes were sent to parent by IPC successfully");
 }
 
-void createReleaseNotes(const GeoListsPaths& paths,
+void createReleaseNotes(const GeoReleases& paths,
                         const RgcConfig& config,
                         const std::vector<DownloadedSourcePair>& downloadedSources) {
 

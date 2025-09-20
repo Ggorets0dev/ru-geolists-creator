@@ -6,9 +6,16 @@
 
 #include "main_sources.hpp"
 
+#define GEO_FORMAT_V2RAY_CAPTION    "v2ray"
+#define GEO_FORMAT_SING_CAPTION     "sing"
+
+#define IS_FORMAT_REQUESTED(format) \
+    (std::find(gCmdArgs.formats.begin(), gCmdArgs.formats.end(), format) != gCmdArgs.formats.end())
+
 struct CmdArgs {
     SourceId extraSourceId;
     std::string outDirPath;
+    std::vector<std::string> formats;
 
     bool isForceCreation;
     bool isUpdateCreation;
@@ -24,6 +31,10 @@ extern CmdArgs gCmdArgs;
 
 extern CLI::Option* gRemoveExtraOption;
 extern CLI::Option* gOutPathOption;
+
+bool validateParsedFormats();
+
+void printAvailableFormats();
 
 void prepareCmdArgs(CLI::App& app, int argc, char** argv);
 

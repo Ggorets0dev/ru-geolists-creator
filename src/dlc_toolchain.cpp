@@ -8,7 +8,9 @@
 const fs::path gkDlcToolchainDir = fs::path(std::getenv("HOME")) / ".local" / "lib";
 
 std::optional<std::string> downloadDlcSourceCode() {
-    bool status = true;
+    bool status;
+
+    LOG_INFO("Starting to download DLC source code...");
 
     if (!tryDownloadFile(DLC_API_LAST_RELEASE_URL, DLC_RELEASE_REQ_FILE_NAME)) {
         LOG_ERROR("Failed to perform API request for DLC repository");
@@ -19,9 +21,10 @@ std::optional<std::string> downloadDlcSourceCode() {
     status = readJsonFromFile(DLC_RELEASE_REQ_FILE_NAME, request);
 
     if (!status) {
-        LOG_ERROR("Deserialization of the repository request failed");
+        LOG_ERROR("Failed to read JSON from API request (DLC)");
         return std::nullopt;
     }
+
     fs::remove(DLC_RELEASE_REQ_FILE_NAME);
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
@@ -43,9 +46,9 @@ bool clearDlcDataSection(std::string dlcRootPath) {
         if (fs::exists(dlcRootPath) && fs::is_directory(dlcRootPath)) {
             for (const auto& entry : fs::directory_iterator(dlcRootPath)) {
                 if (fs::is_regular_file(entry.path()) || fs::is_symlink(entry.path())) {
-                    fs::remove(entry.path()); // Удаляем файл или символическую ссылку
+                    fs::remove(entry.path());
                 } else if (fs::is_directory(entry.path())) {
-                    fs::remove_all(entry.path()); // Удаляем вложенную директорию
+                    fs::remove_all(entry.path());
                 }
             }
             LOG_INFO("Data section of DLC was cleared");
@@ -84,7 +87,11 @@ std::optional<fs::path> runDlcToolchain(const std::string& rootPath) {
 
     fs::current_path(rootPath.c_str());
 
+    // suppressConsoleOutput();
+
     int result = std::system("go run ./");
+
+    // restoreConsoleOutput();
 
     if (result == 0) {
         outFilePath = fs::current_path() / "dlc.dat";

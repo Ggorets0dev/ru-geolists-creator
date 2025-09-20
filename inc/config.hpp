@@ -15,6 +15,7 @@ extern const fs::path gkConfigPath;
 struct RgcConfig {
     std::string dlcRootPath;
     std::string v2ipRootPath;
+    std::string geoMgrBinaryPath;
 
     std::time_t refilterTime;
     std::time_t v2rayTime;

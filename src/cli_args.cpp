@@ -1,6 +1,9 @@
 #include "cli_args.hpp" 
 
 #include "software_info.hpp"
+#include "log.hpp"
+
+#include <iterator>
 
 #define FORCE_OPTION_DESCRIPTION                "Starts source download and build even if no updates are detected"
 #define ABOUT_OPTION_DESCRIPTION                "Displaying software information"
@@ -11,6 +14,7 @@
 #define ADD_EXTRA_OPTION_DESCRIPTION            "Adding extra source to download list"
 #define REMOVE_EXTRA_OPTION_DESCRIPTION         "Removing extra source from download list"
 #define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
+#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate"
 
 #define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
@@ -20,6 +24,11 @@ CmdArgs gCmdArgs = { 0 };
 
 CLI::Option* gRemoveExtraOption;
 CLI::Option* gOutPathOption;
+
+static const std::vector<std::string> gkAvailableGeoFormats = {
+    GEO_FORMAT_V2RAY_CAPTION,
+    GEO_FORMAT_SING_CAPTION
+};
 
 void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.description(RGC_DESCRIPTION);
@@ -37,8 +46,42 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
     app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
 
+    app.add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
+        ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
+
     gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION_DESCRIPTION);
     gOutPathOption = app.add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION);
+}
+
+void printAvailableFormats() {
+    std::cout << "Available formats of geolists: ";
+
+    for (uint8_t i(0); i < gkAvailableGeoFormats.size(); ++i) {
+        std::cout << gkAvailableGeoFormats[i];
+
+        if (i + 1 < gkAvailableGeoFormats.size()) {
+            std::cout << ", ";
+        }
+    }
+
+    std::cout << std::endl;
+}
+
+bool validateParsedFormats() {
+    if (gCmdArgs.formats.empty()) {
+        LOG_ERROR("No format specified for geolists");
+        return false;
+    }
+
+    for (const auto& format : gCmdArgs.formats) {
+        if (std::find(gkAvailableGeoFormats.begin(), gkAvailableGeoFormats.end(), format) == gkAvailableGeoFormats.end()) {
+            // Unsopported format for geolists
+            LOG_ERROR("Unsupported format specified: " + format);
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool askYesNo(const std::string& question, bool isYesDefault) {

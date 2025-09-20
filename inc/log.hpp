@@ -17,6 +17,7 @@
 #define ADD_EXTRA_FAIL_MSG          "Failed to add extra source to configuration file"
 #define READ_CFG_FAIL_MSG           "Failed to read config file"
 #define WRITE_CFG_FAIL_MSG          "Failed to write config file"
+#define GEO_FORMAT_CONVERT_FAIL_MSG "Since the list could not be converted, the requested format was ignored: "
 
 #define LOG_MARK_ERROR      "❌"
 #define LOG_MARK_WARN       "⚠️"
@@ -30,9 +31,9 @@
 #define LOG_WARNING(msg)        logWithMark(msg, LOG_MARK_WARN, log4cxx::Level::WARN_INT)
 #define LOG_INFO(msg)           logWithMark(msg, LOG_MARK_INFO, log4cxx::Level::INFO_INT)
 #else
-#define LOG_ERROR(msg)          LOG4CXX_ERROR(gLogger, msg);
-#define LOG_WARNING(msg)        LOG4CXX_WARN(gLogger, msg);
-#define LOG_INFO(msg)           LOG4CXX_INFO(gLogger, msg);
+#define LOG_ERROR(msg)          LOG4CXX_ERROR(gLogger, msg)
+#define LOG_WARNING(msg)        LOG4CXX_WARN(gLogger, msg)
+#define LOG_INFO(msg)           LOG4CXX_INFO(gLogger, msg)
 #endif
 
 using namespace log4cxx;
@@ -45,5 +46,9 @@ void initLogging();
 void logUrlAccess(const std::string& url, bool status);
 
 void logWithMark(const std::string& msg, const std::string& mark, uint32_t level);
+
+void suppressConsoleOutput();
+
+void restoreConsoleOutput();
 
 #endif // LOG_HPP

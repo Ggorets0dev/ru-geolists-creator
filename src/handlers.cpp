@@ -7,7 +7,7 @@
 #include "v2ip_toolchain.hpp"
 #include "network.hpp"
 #include "software_info.hpp"
-#include "cli_args.hpp"
+#include "geo_manager.hpp"
 
 #include <string>
 
@@ -38,6 +38,12 @@ void printSoftwareInfo() {
     std::cout << "License: " << RGC_LICENSE << std::endl;
     std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
     std::cout << PRINT_DELIMETER << std::endl;
+}
+
+void printHelp(const CLI::App& app) {
+    std::cout << app.help() << std::endl; // Standard help
+    std::cout << "Notice: When running without arguments, the update-checked mode is used\n\n";
+    printAvailableFormats();
 }
 
 void showExtraSources() {
@@ -205,6 +211,7 @@ void deinitSoftware() {
 
         fs::remove_all(config.dlcRootPath);
         fs::remove_all(config.v2ipRootPath);
+        fs::remove(config.geoMgrBinaryPath);
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR(e.what());
         LOG_ERROR(SOFTWARE_DEINIT_FAIL_MSG);
@@ -237,6 +244,15 @@ void initSoftware() {
         exit(1);
     }
 
+    // Create dirs for Geo Manager deploy
+    try {
+        fs::create_directories(gkGeoManagerDir);
+    } catch (const fs::filesystem_error& e) {
+        LOG_ERROR(e.what());
+        LOG_ERROR(SOFTWARE_INIT_FAIL_MSG);
+        exit(1);
+    }
+
     // SECTION - Download DLC
     auto dlcArchivePath = downloadDlcSourceCode();
     VALIDATE_INIT_PART_RESULT(dlcArchivePath);
@@ -260,6 +276,11 @@ void initSoftware() {
     fs::remove(*v2ipArchivePath);
     // !SECTION
 
+    // SECTION - Download GeoManager
+    auto geoManagerPath = setupGeoManagerBinary();
+    VALIDATE_INIT_PART_RESULT(geoManagerPath);
+    // !SECTION
+
     // SECTION - Get user's GitHub API token
     getStringInput("Specify your GitHub API token for requests (may be left empty)", config.apiToken, true);
     // !SECTION
@@ -267,6 +288,7 @@ void initSoftware() {
     // SECTION - Create config
     config.dlcRootPath = std::move(*dlcRootPath);
     config.v2ipRootPath = std::move(*v2ipRootPath);
+    config.geoMgrBinaryPath = std::move(*geoManagerPath);
 
     config.refilterTime = CFG_DEFAULT_NUM_VALUE;
     config.v2rayTime = CFG_DEFAULT_NUM_VALUE;
@@ -443,7 +465,7 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules    
-    status = tryDownloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+    status = tryDownloadFromGithub(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to download RuAdList API response");

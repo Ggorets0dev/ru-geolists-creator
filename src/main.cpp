@@ -8,6 +8,7 @@
 #include "v2ip_toolchain.hpp"
 #include "build_tools.hpp"
 #include "ipc_chain.hpp"
+#include "geo_manager.hpp"
 
 #include <unistd.h>
 #include <signal.h>
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     Json::Value v2ipInputRules(Json::arrayValue);
     std::vector<DownloadedSourcePair> downloadedSources;
     std::optional<fs::path> outGeoipPath, outGeositePath;
-    GeoListsPaths release_paths;
+    GeoReleases releases;
 
     // Init RAND
     std::srand(std::time(0));
@@ -61,8 +62,7 @@ int main(int argc, char** argv) {
     try {
         app.parse(argc, argv);
     } catch (const CLI::CallForHelp &e) {
-        std::cout << app.help() << std::endl; // Standard help
-        std::cout << "Notice: When running without arguments, the update-checked mode is used" << std::endl;
+        printHelp(app);
         return 0;
     } catch (const CLI::ParseError &e) {
         return app.exit(e);
@@ -89,6 +89,7 @@ int main(int argc, char** argv) {
         EXIT_WITH_CLEANUP(0);
     }
 
+    // Print software information
     if (gCmdArgs.isShowAbout) {
         printSoftwareInfo();
         return 0;
@@ -98,7 +99,6 @@ int main(int argc, char** argv) {
         LOG_WARNING("Configuration file is not found, perform software initialization using --init");
         return 0;
     }
-
 
     // Add extra source
     if (gCmdArgs.isAddExtra) {
@@ -125,6 +125,13 @@ int main(int argc, char** argv) {
     }
 
     // ---> Download sources --->
+
+    status = validateParsedFormats();
+
+    if (!status) {
+        LOG_ERROR("Build could not be started because the requested formats do not match the supported formats");
+        return 1;
+    }
 
     // Check if out path is set correctly
     if (gOutPathOption->count() == 0) {
@@ -225,16 +232,45 @@ int main(int argc, char** argv) {
     // SECTION - Copy created files to destination
 
     // Setting paths by default
-    release_paths.listDomain = fs::path(gCmdArgs.outDirPath) / GEOSITE_FILE_NAME;
-    release_paths.listIP = fs::path(gCmdArgs.outDirPath) / GEOIP_FILE_NAME;
-    release_paths.releaseNotes = fs::path(gCmdArgs.outDirPath) / RELEASE_NOTES_FILENAME;
-
     try {
         fs::create_directories(gCmdArgs.outDirPath);
 
-        fs::copy(*outGeositePath, release_paths.listDomain, fs::copy_options::overwrite_existing);
-        fs::copy(*outGeoipPath, release_paths.listIP, fs::copy_options::overwrite_existing);
+        if (IS_FORMAT_REQUESTED(GEO_FORMAT_V2RAY_CAPTION)) {
+            // Deploying V2Ray rules in .dat extension
+            releases.packs.push_back(
+                GeoReleasePack(fs::path(gCmdArgs.outDirPath) / GEOSITE_FILENAME_DAT, fs::path(gCmdArgs.outDirPath) / GEOIP_FILENAME_DAT)
+            );
 
+            fs::copy(*outGeositePath, releases.packs[0].listDomain, fs::copy_options::overwrite_existing);
+            fs::copy(*outGeoipPath, releases.packs[0].listIP, fs::copy_options::overwrite_existing);
+        }
+
+        if (IS_FORMAT_REQUESTED(GEO_FORMAT_SING_CAPTION)) {
+            // Deploying Sing rules in .db extension
+
+            std::string singGeositePath = fs::path(gCmdArgs.outDirPath) / GEOSITE_FILENAME_DB;
+            std::string singGeoipPath = fs::path(gCmdArgs.outDirPath) / GEOIP_FILENAME_DB;
+
+            status = convertGeolist(config.geoMgrBinaryPath, Source::Type::DOMAIN, GEO_FORMAT_V2RAY_CAPTION, GEO_FORMAT_SING_CAPTION, *outGeositePath, singGeositePath);
+
+            if (!status) {
+                auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
+                LOG_WARNING(log);
+            }
+
+            status = convertGeolist(config.geoMgrBinaryPath, Source::Type::IP, GEO_FORMAT_V2RAY_CAPTION, GEO_FORMAT_SING_CAPTION, *outGeoipPath, singGeoipPath);
+
+            if (!status) {
+                auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
+                LOG_WARNING(log);
+            }
+
+            releases.packs.push_back(
+                GeoReleasePack(singGeositePath, singGeoipPath)
+            );
+        }
+
+        releases.releaseNotes = fs::path(gCmdArgs.outDirPath) / RELEASE_NOTES_FILENAME;
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR("Filesystem error:" + std::string(e.what()));
 
@@ -242,14 +278,14 @@ int main(int argc, char** argv) {
     }
 
     try {
-        createReleaseNotes(release_paths, config, downloadedSources);
+        createReleaseNotes(releases, config, downloadedSources);
     } catch (const std::runtime_error& e) {
         LOG_ERROR(e.what());
         LOG_ERROR("Failed to create release notes for parent proccess");
     }
 
-    LOG_INFO("Domain address list successfully created: " + release_paths.listDomain.string());
-    LOG_INFO("IP address list successfully created: " + release_paths.listIP.string());
+    LOG_INFO("Domain address list(s) successfully created");
+    LOG_INFO("IP address list(s) successfully created");
     // !SECTION
 
     performCleanup();

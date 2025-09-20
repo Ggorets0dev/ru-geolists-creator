@@ -17,6 +17,7 @@ bool writeConfig(const RgcConfig& config) {
 
     value["dlcRootPath"] = config.dlcRootPath;
     value["v2ipRootPath"] = config.v2ipRootPath;
+    value["geoMgrBinaryPath"] = config.geoMgrBinaryPath;
 
     value["refilterTime"] = config.refilterTime;
     value["v2rayTime"] = config.v2rayTime;
@@ -66,6 +67,7 @@ bool readConfig(RgcConfig& config) {
 
     config.dlcRootPath = value["dlcRootPath"].asString();
     config.v2ipRootPath = value["v2ipRootPath"].asString();
+    config.geoMgrBinaryPath = value["geoMgrBinaryPath"].asString();
 
     config.refilterTime = value["refilterTime"].asInt64();
     config.v2rayTime = value["v2rayTime"].asInt64();

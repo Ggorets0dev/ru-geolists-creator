@@ -1,11 +1,24 @@
 #include <iostream>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "log.hpp"
 #include "fs_utils.hpp"
 
+struct OutputMessagesTarget {
+    int stdoutCode;
+    int stderrCode;
+
+    bool isSupressed;
+};
+
 LoggerPtr gLogger(Logger::getLogger("RGC"));
 
 const fs::path gkLogConfigPath = fs::path(std::getenv("HOME")) / ".config" / "ru-geolists-creator" / "log4cxx.properties";
+
+static OutputMessagesTarget gMsgTarget = {
+    .isSupressed = false
+};
 
 void initLogging() {
     try {
@@ -44,4 +57,37 @@ void logWithMark(const std::string& msg, const std::string& mark, uint32_t level
         // Level not supported
         break;
     }
+}
+
+void suppressConsoleOutput() {
+    // Save original file descriptors for stdout and stderr
+    gMsgTarget.stdoutCode = dup(STDOUT_FILENO);
+    gMsgTarget.stderrCode = dup(STDERR_FILENO);
+
+    // Open /dev/null for writing
+    int dev_null = open("/dev/null", O_WRONLY);
+    if (dev_null < 0) {
+        perror("open");
+        return;
+    }
+
+    // Redirect stdout and stderr to /dev/null
+    dup2(dev_null, STDOUT_FILENO);
+    dup2(dev_null, STDERR_FILENO);
+    close(dev_null); // Close /dev/null file descriptor (not needed anymore)
+}
+
+void restoreConsoleOutput() {
+    if (!gMsgTarget.isSupressed) {
+        LOG_WARNING("Trying to restore messages output that wasnt supressed");
+        return;
+    }
+
+    // Restore stdout and stderr from saved descriptors
+    dup2(gMsgTarget.stdoutCode, STDOUT_FILENO);
+    dup2(gMsgTarget.stderrCode, STDERR_FILENO);
+
+    // Close saved descriptors
+    close(gMsgTarget.stdoutCode);
+    close(gMsgTarget.stderrCode);
 }

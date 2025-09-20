@@ -29,7 +29,7 @@ createOutputArray(Json::Value& outputArray, const std::vector<std::string>& used
     }
 
     argsObj["outputDir"] = "./output";
-    argsObj["outputName"] = GEOIP_FILE_NAME;
+    argsObj["outputName"] = GEOIP_FILENAME_DAT;
     argsObj["wantedList"] = wantedList;
 
     outputObj["type"] = "v2rayGeoIPDat";
@@ -50,7 +50,9 @@ static void addPrivateSource(Json::Value& inputArray, std::vector<std::string>& 
 }
 
 std::optional<std::string> downloadV2ipSourceCode() {
-    bool status = true;
+    bool status;
+
+    LOG_INFO("Starting to download V2IP source code...");
 
     if (!tryDownloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME)) {
         LOG_ERROR("Failed to perform API request for V2IP repository");
@@ -61,9 +63,10 @@ std::optional<std::string> downloadV2ipSourceCode() {
     status = readJsonFromFile(V2IP_RELEASE_REQ_FILE_NAME, request);
 
     if (!status) {
-        LOG_ERROR("Deserialization of the repository request failed");
+        LOG_ERROR("Failed to read JSON from API request (V2IP)");
         return std::nullopt;
     }
+
     fs::remove(V2IP_RELEASE_REQ_FILE_NAME);
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
@@ -82,10 +85,14 @@ std::optional<fs::path> runV2ipToolchain(const std::string& rootPath) {
 
     fs::current_path(rootPath.c_str());
 
+    // suppressConsoleOutput();
+
     int result = std::system("go run ./");
 
+    // restoreConsoleOutput();
+
     if (result == 0) {
-        outFilePath = fs::current_path() / "output" / GEOIP_FILE_NAME;
+        outFilePath = fs::current_path() / "output" / GEOIP_FILENAME_DAT;
         LOG_INFO("IP address list building with XRay tools has been successfully completed");
     } else {
         outFilePath = std::nullopt;
