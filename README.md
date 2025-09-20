@@ -1,4 +1,5 @@
 # RuGeolistsCreator
+
 👉 [English version](README.en.md)
 
 ## Назначение
@@ -24,6 +25,10 @@
 * [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) (CC-BY-SA-4.0)
 
 * [v2fly/geoip](https://github.com/v2fly/geoip) (MIT)
+
+Для конвертирования списков используется следующее ПО:
+
+* [Geo](https://github.com/MetaCubeX/geo) (GPL-3.0)
 
 Для корректной работы программного обеспечения **требуется установить Golang**.
 
@@ -52,7 +57,8 @@
   "refilterTime" : 1736426783,
   "ruadlistTime" : 1754766886,
   "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
-  "v2rayTime" : 1736449948
+  "v2rayTime" : 1736449948,
+  "geoMgrBinaryPath" : "/home/uav/.local/lib/geo-linux-amd64"
 }
 ```
 
@@ -64,7 +70,7 @@
 
 ```
 RuGeolistsCreator - Software for automatic assembly of geoip.dat and geosite.dat files for VPN server XRay. Software is focused on blocking in the Russian Federation
-Usage: RuGeolistsCreator [OPTIONS]
+Usage: ./RuGeolistsCreator [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
@@ -75,10 +81,13 @@ Options:
   --init                      Initializing software by creating config and downloading all dependencies
   --show                      Displaying all extra sources from configuration files
   -a,--add                    Adding extra source to download list
+  -f,--format TEXT ...        Formats of geolists to generate
   -r,--remove UINT            Removing extra source from download list
   -o,--out TEXT               Path to out DIR with all lists to create
 
 Notice: When running without arguments, the update-checked mode is used
+
+Available formats of geolists: v2ray, sing
 ```
 
 ## Зависимости
