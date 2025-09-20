@@ -1,13 +1,14 @@
 # RuGeolistsCreator
+
 👉 [Русская версия](README.md)
 
 ## Purpose
 
-Software for automating the assembly of filtering lists for XRay VPN. CLI language: **English**.
+Software for automating the assembly of XRay VPN filtering lists. CLI language: **English**.
 
 ## Sources
 
-The following materials are used as sources for list generation:
+The following materials are used as sources for building the lists:
 
 * [ReFilter](https://github.com/1andrevich/Re-filter-lists)
 
@@ -19,25 +20,27 @@ The following materials are used as sources for list generation:
 
 ## List Building Systems
 
-Official V2Ray software is used for building lists:
+The official V2Ray software is used for building the lists:
 
 * [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) (CC-BY-SA-4.0)
 
 * [v2fly/geoip](https://github.com/v2fly/geoip) (MIT)
 
-For proper operation, **Golang must be installed**.
+The following software is used for converting the lists:
+
+* [Geo](https://github.com/MetaCubeX/geo) (GPL-3.0)
+
+To work correctly, **Golang must be installed**.
 
 ## Configuration File
 
-### Software Initialization
+### Initializing the Software
 
-To create a configuration file, initialize the software with the ```--init``` flag. File location: ```home/***/.config/ru-geolists-creator/config.json```.  
-During initialization, a GitHub API key may be specified (increases the number of allowed requests).  
-The key can also be set later manually in the configuration file under the ```apiToken``` field.
+To create a configuration file, initialization must be performed using the ```--init``` flag. File location: ```home/***/.config/ru-geolists-creator/config.json```. During initialization, a GitHub API key can be specified (increases the allowed number of requests). The key can also be set later manually in the configuration file in the ```apiToken``` field.
 
 ### Example Configuration File
 
-The automatically generated configuration file contains all the keys listed in the example, but the array of additional sources **(extra)** is initially empty.
+The automatically generated configuration file contains all the keys listed in the example, but initially the additional sources array **(extra)** is empty.
 
 ```json
 {
@@ -54,19 +57,20 @@ The automatically generated configuration file contains all the keys listed in t
   "refilterTime" : 1736426783,
   "ruadlistTime" : 1754766886,
   "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
-  "v2rayTime" : 1736449948
+  "v2rayTime" : 1736449948,
+  "geoMgrBinaryPath" : "/home/uav/.local/lib/geo-linux-amd64"
 }
 ```
 
 ### Adding Additional Sources
 
-Additional sources can be added to the configuration file manually or with the ```-a, --add``` flag when running the software. All properties for such a source must then be filled in.
+Additional sources can be added to the configuration file manually or using the ```-a, --add``` flag when running the software. All properties relevant to such a source must then be filled in.
 
 ## Software Help (```--help```)
 
 ```
 RuGeolistsCreator - Software for automatic assembly of geoip.dat and geosite.dat files for VPN server XRay. Software is focused on blocking in the Russian Federation
-Usage: RuGeolistsCreator [OPTIONS]
+Usage: ./RuGeolistsCreator [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
@@ -77,10 +81,13 @@ Options:
   --init                      Initializing software by creating config and downloading all dependencies
   --show                      Displaying all extra sources from configuration files
   -a,--add                    Adding extra source to download list
+  -f,--format TEXT ...        Formats of geolists to generate
   -r,--remove UINT            Removing extra source from download list
   -o,--out TEXT               Path to out DIR with all lists to create
 
 Notice: When running without arguments, the update-checked mode is used
+
+Available formats of geolists: v2ray, sing
 ```
 
 ## Dependencies
