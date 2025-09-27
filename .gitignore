@@ -1,4 +1,6 @@
 **/build
+**/build-arm64
+**/build-amd64
 CMakeLists.txt.user
 *.pb.cc
 *.pb.h
