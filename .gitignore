@@ -1,6 +1,7 @@
 **/build
 **/build-arm64
 **/build-amd64
+**.deb
 CMakeLists.txt.user
 *.pb.cc
 *.pb.h

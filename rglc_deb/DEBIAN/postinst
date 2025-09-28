@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+CONFIG_DEST_FOLDER="/etc/ru-geolists-creator"
+
+CONFIG_SRC_PATH="/usr/share/ru-geolists-creator/config/log4cxx.properties"
+CONFIG_DEST_PATH="${CONFIG_DEST_FOLDER}/log4cxx.properties"
+
+# Creating DEST folder if it doesnt exist
+mkdir -p "$CONFIG_DEST_FOLDER"
+
+# If theres no file - copy default
+if [ ! -f "$CONFIG_DEST_PATH" ]; then
+    cp "$CONFIG_SRC_PATH" "$CONFIG_DEST_PATH"
+    chmod 644 "$CONFIG_DEST_PATH"
+fi
+
+exit 0

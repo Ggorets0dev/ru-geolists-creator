@@ -178,7 +178,7 @@ void checkUrlsAccess() {
         ANTIFILTER_AYN_IPS_URL
     };
 
-    LOG_INFO("Check for all soirce's URLs is requested");
+    LOG_INFO("Check for all sources's URLs is requested");
 
     isAccessed = readConfig(config);
 

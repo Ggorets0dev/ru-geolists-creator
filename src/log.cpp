@@ -14,7 +14,7 @@ struct OutputMessagesTarget {
 
 LoggerPtr gLogger(Logger::getLogger("RGC"));
 
-const fs::path gkLogConfigPath = fs::path(std::getenv("HOME")) / ".config" / "ru-geolists-creator" / "log4cxx.properties";
+const fs::path gkLogConfigPath = "/etc/ru-geolists-creator/log4cxx.properties";
 
 static OutputMessagesTarget gMsgTarget = {
     .isSupressed = false

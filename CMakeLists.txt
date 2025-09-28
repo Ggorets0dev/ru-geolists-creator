@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(RuGeolistsCreator LANGUAGES CXX VERSION 0.15.0)
-
-# Create version string
-set(RGC_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+project(RuGeolistsCreator LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,6 +13,14 @@ set (PROJECT_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
+set(PROJECT_VERSION ${VERSION_STRING})
+set(RGC_VERSION_STRING ${VERSION_STRING})
+message(STATUS "[CMAKE] [!] Project version: ${PROJECT_VERSION}")
+
+# ==============================
+# FINDING DEPENDENCIES
+# ==============================
+
 # Try to find libcurl in system
 find_package(CURL REQUIRED)
 
@@ -24,6 +29,7 @@ find_package(log4cxx REQUIRED)
 
 # Try to find libarchive in system
 find_package(PkgConfig REQUIRED)
+
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 
 # Try to find jsoncpp in systemp
@@ -34,9 +40,15 @@ find_package(Protobuf REQUIRED)
 
 # Try to find abseil in system
 find_package(absl REQUIRED)
+# ==============================
 
-# Set .local as destination for deploy
+# Set Release options
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
+	message(STATUS "[CMAKE] [!] Using Release build...") 
+
+	set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+	set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+
     set(HOME_DIR $ENV{HOME})
     set(CMAKE_INSTALL_PREFIX "${HOME_DIR}/.local")
 endif()
@@ -64,6 +76,9 @@ set(PROTO_SRC_FILES
 # Create directory for generated protobuf files
 file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 
+# ==============================
+# BUILDING PROTOBUF SOURCES
+# ==============================
 # Generate protobuf files using protoc directly at configure time
 set(PROTO_GEN_SRC_FILES)
 set(PROTO_GEN_INC_FILES)
@@ -96,8 +111,9 @@ foreach(PROTO_FILE ${PROTO_SRC_FILES})
     list(APPEND PROTO_GEN_INC_FILES ${GEN_INC_FILE})
 endforeach()
 
-message("(PROTOBUF) Generated sources: ${PROTO_GEN_SRC_FILES}")
-message("(PROTOBUF) Generated headers: ${PROTO_GEN_INC_FILES}")
+message(STATUS "[CMAKE] [!] Generated protobuf sources: ${PROTO_GEN_SRC_FILES}")
+message(STATUS "[CMAKE] [!] Generated protobuf headers: ${PROTO_GEN_INC_FILES}")
+# ==============================
 
 # Get all sources and headers of project
 file(GLOB_RECURSE SRC_FILES "src/*.c" "src/*.cpp" "src/*.cc")
@@ -114,7 +130,6 @@ target_link_libraries(RuGeolistsCreator PRIVATE
         ${LIBARCHIVE_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         ${Protobuf_LIBRARIES}
-        absl::log_internal_check_op
         absl::strings
         absl::base
         pthread
@@ -129,18 +144,20 @@ target_include_directories(RuGeolistsCreator PRIVATE
 # Install software into ~/.local/bin
 install(TARGETS RuGeolistsCreator DESTINATION bin)
 
-# =========== IPC
+# ==============================
+# IPC SETTINGS
+# ==============================
 # Path of header with IPC chains
-set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" PARENT_SCOPE)
+set(RGC_IPC_CHAIN_INC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp" CACHE INTERNAL "IPC CHAIN FILE")
 
 # Path of DIR with IPC stuff
-set(RGC_IPC_CHAIN_DIR "${IPC_DIR}" PARENT_SCOPE)
+set(RGC_IPC_CHAIN_DIR "${IPC_DIR}" CACHE INTERNAL "IPC CHAIN INCLUDE DIR")
 
 set(RGC_IPC_PROTO_GEN_SRC_FILES "${PROTO_GEN_SRC_FILES}" CACHE INTERNAL "PROTOBUF SRC")
 set(RGC_IPC_PROTO_GEN_INC_FILES "${PROTO_GEN_INC_FILES}" CACHE INTERNAL "PROTOBUF INC")
 
-set(RGC_IPC_PROTO_INC_DIR "${PROTO_GEN_DIR}" PARENT_SCOPE)
-# ===========
+set(RGC_IPC_PROTO_INC_DIR "${PROTO_GEN_DIR}" CACHE INTERNAL "PROTOBUF INCLUDE DIR")
+# ==============================
 
 # Install log config into ~./config/..
 install(CODE "

@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
 # ===============
 # GLOBAL VARIABLES (SETTINGS)
@@ -28,7 +29,7 @@ apt-get -o Acquire::AllowInsecureRepositories=true \
 
 apt-get install -y --allow-unauthenticated gpgv
 apt-get install -y --allow-unauthenticated --no-install-recommends \
-    libcurl4-openssl-dev libarchive-dev libjsoncpp-dev wget liblog4cxx12 libprotobuf23 protobuf-compiler libprotobuf-dev liblog4cxx-dev
+    libcurl4-openssl-dev libarchive-dev libjsoncpp-dev wget liblog4cxx12 libprotobuf23 protobuf-compiler libprotobuf-dev liblog4cxx-dev libabsl-dev
 
 echo "====== Exiting arm64 sysroot (chroot) ======"
 CHROOT_EOF
