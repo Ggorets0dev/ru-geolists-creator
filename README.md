@@ -72,7 +72,7 @@
 }
 ```
 
-<img title="" src="img/config_example.png" alt="img" width="698">
+<img title="Config example" src="img/config_example.png" alt="img" width="820">
 
 ### Добавление дополнительных источников
 
@@ -82,7 +82,7 @@
 
 ```
 RuGeolistsCreator - Software for automatic assembly of geoip.dat and geosite.dat files for VPN server XRay. Software is focused on blocking in the Russian Federation
-Usage: ./RuGeolistsCreator [OPTIONS]
+Usage: rglc [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit

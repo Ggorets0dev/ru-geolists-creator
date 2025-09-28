@@ -19,12 +19,6 @@ fi
 # Including global project settings
 source scripts/software_info.sh
 
-# ===============
-# GLOBAL VARIABLES (SETTINGS)
-
-DEB_PACKAGE_DIR="rglc_deb"
-# ==============
-
 # Parse arguments
 for arg in "$@"; do
   case $arg in
@@ -47,8 +41,16 @@ if [ -z "$ARCH" ]; then
   exit 1
 fi
 
-BUILD_FOLDER_NAME="build-$ARCH"  
-TARGET_BINARY_PATH="${BUILD_FOLDER_NAME}/rglc_${SI_PROJECT_VERSION}_$ARCH" 
+# ===============
+# GLOBAL VARIABLES (SETTINGS)
+
+BUILD_FOLDER_NAME="build-$ARCH"
+  
+TARGET_BINARY_PATH="${BUILD_FOLDER_NAME}/rglc_${SI_PROJECT_VERSION}_$ARCH"
+LOG4CXX_CONFIG_PATH="log4cxx.properties"
+
+DEB_PACKAGE_DIR="rglc_deb"
+# ==============
 
 # Branching arch logic
 case "$ARCH" in
@@ -60,7 +62,7 @@ case "$ARCH" in
   arm64)
     # Do something for arm64
     echo "[!] Selected arch: arm64"
-    # Extra options for AMD-64 arch...
+    # Extra options for ARM-64 arch...
     ;;
   *)
     # Fallback if unknown arch
@@ -75,6 +77,9 @@ mkdir -p "${DEB_PACKAGE_DIR}/usr/bin"
 
 # Copy just built binary
 cp "$TARGET_BINARY_PATH" "${DEB_PACKAGE_DIR}/usr/bin/rglc"
+
+# Copy log4cxx configuration
+cp "$LOG4CXX_CONFIG_PATH" "${DEB_PACKAGE_DIR}/usr/share/ru-geolists-creator/config"
 
 # Creating control file for package
 cat > "${DEB_PACKAGE_DIR}/DEBIAN/control" << EOF

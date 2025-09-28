@@ -4,43 +4,51 @@
 
 ## Purpose
 
-Software for automating the assembly of XRay VPN filtering lists. CLI language: **English**.
+Software for automating the assembly of filtering lists for XRay VPN. CLI language: **English**.
 
 ## Sources
 
-The following materials are used as sources for building the lists:
+The following materials are used as sources for list building:
 
 * [ReFilter](https://github.com/1andrevich/Re-filter-lists)
-
 * [V2Ray official](https://github.com/Loyalsoldier/v2ray-rules-dat)
-
 * [Ruadlist](https://github.com/easylist/ruadlist)
-
 * [Antifilter](https://antifilter.download/)
 
 ## List Building Systems
 
-The official V2Ray software is used for building the lists:
+> **Note:** To run the software that assembles lists, Golang must be installed.
+
+The official V2Ray software is used for building lists:
 
 * [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) (CC-BY-SA-4.0)
-
 * [v2fly/geoip](https://github.com/v2fly/geoip) (MIT)
 
-The following software is used for converting the lists:
+The following software is used for converting lists:
 
 * [Geo](https://github.com/MetaCubeX/geo) (GPL-3.0)
 
-To work correctly, **Golang must be installed**.
+## Build Automation
+
+The following scripts can be used to automate the build of the project for different architectures:
+
+| Script                  | Purpose                                                       |
+|:----------------------- | ------------------------------------------------------------- |
+| build.sh                | Build project for different architectures                     |
+| build_deb.sh            | Build Debian installation package                             |
+| setup_arm64_sysroot.sh  | Prepare sysroot for proper cross-compilation under arm64      |
 
 ## Configuration File
 
-### Initializing the Software
+### Software Initialization
 
-To create a configuration file, initialization must be performed using the ```--init``` flag. File location: ```home/***/.config/ru-geolists-creator/config.json```. During initialization, a GitHub API key can be specified (increases the allowed number of requests). The key can also be set later manually in the configuration file in the ```apiToken``` field.
+To create a configuration file, initialize the software with the ```--init``` flag. File location: ```home/***/.config/ru-geolists-creator/config.json```.  
+During initialization, a GitHub API key may be provided (this increases the allowed number of requests).  
+The key can also be set later manually in the configuration file in the ```apiToken``` field.
 
 ### Example Configuration File
 
-The automatically generated configuration file contains all the keys listed in the example, but initially the additional sources array **(extra)** is empty.
+The automatically generated configuration file contains all keys shown in the example, but the array of additional sources **(extra)** is empty by default.
 
 ```json
 {
@@ -62,22 +70,25 @@ The automatically generated configuration file contains all the keys listed in t
 }
 ```
 
+<img title="Config example" src="img/config_example.png" alt="img" width="820">
+
 ### Adding Additional Sources
 
-Additional sources can be added to the configuration file manually or using the ```-a, --add``` flag when running the software. All properties relevant to such a source must then be filled in.
+Additional sources can be added to the configuration file manually or with the ```-a, --add``` flag when running the software.  
+All properties required for such a source must then be filled in.
 
 ## Software Help (```--help```)
 
 ```
 RuGeolistsCreator - Software for automatic assembly of geoip.dat and geosite.dat files for VPN server XRay. Software is focused on blocking in the Russian Federation
-Usage: ./RuGeolistsCreator [OPTIONS]
+Usage: rglc [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
   --force                     Starts source download and build even if no updates are detected
   --about                     Displaying software information
   --check                     Checking access of all source's URLs from config
-  --child                     Sending release notes to parent proccess (for work in chain)
+  --child                     Sending release notes to parent process (for work in chain)
   --init                      Initializing software by creating config and downloading all dependencies
   --show                      Displaying all extra sources from configuration files
   -a,--add                    Adding extra source to download list
@@ -95,9 +106,6 @@ Available formats of geolists: v2ray, sing
 The project uses the following dependencies:
 
 * [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
-
 * [libcurl](https://curl.se/libcurl/)
-
 * [libarchive](https://libarchive.org/)
-
 * [CLI11](https://github.com/CLIUtils/CLI11)
