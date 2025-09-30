@@ -2,7 +2,7 @@ Package: ru-geolists-creator
 Version: 0.16.0
 Section: utils
 Priority: optional
-Architecture: amd64
+Architecture: arm64
 Maintainer: Ggorets0dev <nikgorets4work@gmail.com>
 Depends: libcurl4, libarchive13, libjsoncpp25, libprotobuf23, liblog4cxx12
 Description: RuGeolistsCreator - Software for automatic assembly of geoip and geosite files for VPN server XRay. Software is focused on blocking in the Russian Federation

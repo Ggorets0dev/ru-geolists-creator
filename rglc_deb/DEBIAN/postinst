@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 CONFIG_DEST_FOLDER="/etc/ru-geolists-creator"
 
 CONFIG_SRC_PATH="/usr/share/ru-geolists-creator/config/log4cxx.properties"
 CONFIG_DEST_PATH="${CONFIG_DEST_FOLDER}/log4cxx.properties"
+
+TARGET_VERSION="1.24.0" # Needed by v2ray toolchains
 
 # Creating DEST folder if it doesnt exist
 mkdir -p "$CONFIG_DEST_FOLDER"
@@ -15,4 +17,48 @@ if [ ! -f "$CONFIG_DEST_PATH" ]; then
     chmod 644 "$CONFIG_DEST_PATH"
 fi
 
-exit 0
+# ==============================
+# INSTALLING GOLANG
+# ==============================
+# Check if the exact Go version is already installed
+if command -v go &> /dev/null; then
+    CURRENT_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+(\.[0-9]+)?' 2>/dev/null)
+    if [ "$CURRENT_VERSION" == "$TARGET_VERSION" ]; then
+        echo "[+] Go $TARGET_VERSION is already installed"
+        exit 0
+    fi
+fi
+
+# If go is not installed - determine ARCH
+ARCH=$(uname -m)
+case "$ARCH" in
+	x86_64)
+		ARCH="amd64"
+		;;
+	aarch64)
+		ARCH="arm64"
+		;;
+	*)
+		echo "[-] Unsupported arch, failed to auto install Go (please, do it manually)"
+		exit 1
+		;;
+esac
+
+GO_TAR_FILE="go${TARGET_VERSION}.linux-${ARCH}.tar.gz"
+
+echo "[!] Installing Go $TARGET_VERSION..."
+if ! wget "https://go.dev/dl/${GO_TAR_FILE}" -O "$GO_TAR_FILE"; then
+    echo "[-] Error: Failed to download Go. Failed to auto install Go (please, do it manually)"
+    exit 1
+fi
+
+if ! sudo tar -C /usr/local -xzf "$GO_TAR_FILE"; then
+    echo "[-] Error: Failed to extract Go. Failed to auto install Go (please, do it manually)"
+    exit 1
+fi
+
+rm -f "$GO_TAR_FILE"
+export PATH="/usr/local/go/bin:$PATH"
+ln -s /usr/local/go/bin/go /usr/bin/go
+echo "[+] Installation complete: $(go version)"
+# ==============================
