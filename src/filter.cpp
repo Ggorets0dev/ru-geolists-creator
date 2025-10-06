@@ -1,4 +1,5 @@
 #include "filter.hpp"
+#include <regex>
 
 const std::vector<std::string> kKeywordWhitelist = {
     "google",
@@ -10,8 +11,14 @@ const std::vector<std::string> kKeywordWhitelist = {
     "alfabank.ru"
 };
 
-bool
-checkKeywordWhitelist(std::string_view domain) {
+bool isUrl(const std::string& str) {
+    static const std::regex url_regex(
+        R"(^[a-zA-Z][a-zA-Z0-9+.\-]*://)"
+    );
+    return std::regex_search(str, url_regex);
+}
+
+bool checkKeywordWhitelist(std::string_view domain) {
     for (uint8_t i(0); i < kKeywordWhitelist.size(); ++i) {
         if (domain.find(kKeywordWhitelist[i]) != std::string::npos) {
             return true;
