@@ -7,3 +7,4 @@ CMakeLists.txt.user
 *.pb.h
 software_info.hpp
 ipc_chain.hpp
+**/rglc_deb

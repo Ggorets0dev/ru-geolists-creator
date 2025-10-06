@@ -48,6 +48,7 @@ BUILD_FOLDER_NAME="build-$ARCH"
   
 TARGET_BINARY_PATH="${BUILD_FOLDER_NAME}/rglc_${SI_PROJECT_VERSION}_$ARCH"
 LOG4CXX_CONFIG_PATH="log4cxx.properties"
+POSTINST_SCRIPT_PATH="scripts/postinst"
 
 DEB_PACKAGE_DIR="rglc_deb"
 # ==============
@@ -74,12 +75,16 @@ esac
 # Creating package structure
 mkdir -p "${DEB_PACKAGE_DIR}/DEBIAN"
 mkdir -p "${DEB_PACKAGE_DIR}/usr/bin"
+mkdir -p "${DEB_PACKAGE_DIR}/usr/share/ru-geolists-creator/config"
 
 # Copy just built binary
 cp "$TARGET_BINARY_PATH" "${DEB_PACKAGE_DIR}/usr/bin/rglc"
 
 # Copy log4cxx configuration
 cp "$LOG4CXX_CONFIG_PATH" "${DEB_PACKAGE_DIR}/usr/share/ru-geolists-creator/config"
+
+# Copy postinst script
+cp "$POSTINST_SCRIPT_PATH" "${DEB_PACKAGE_DIR}/DEBIAN"
 
 # Creating control file for package
 cat > "${DEB_PACKAGE_DIR}/DEBIAN/control" << EOF
