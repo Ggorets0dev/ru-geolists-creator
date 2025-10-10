@@ -56,6 +56,15 @@ endif()
 # Path of binary for parent project (need for IPC)
 set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator")
 
+# ==============================
+# CONFIGURING HEADER FILES
+# ==============================
+execute_process(
+    COMMAND git rev-parse --short HEAD
+    OUTPUT_VARIABLE RGC_GIT_COMMIT_SHA
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # Genereate software_info.hpp with correct version
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/software_info.hpp.in
@@ -69,16 +78,17 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/ipc_chain.hpp
     @ONLY
 )
+# ==============================
 
+# ==============================
+# BUILDING PROTOBUF SOURCES
+# ==============================
 set(PROTO_SRC_FILES
     ${IPC_DIR}/proto/release_notes.proto)
 
 # Create directory for generated protobuf files
 file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 
-# ==============================
-# BUILDING PROTOBUF SOURCES
-# ==============================
 # Generate protobuf files using protoc directly at configure time
 set(PROTO_GEN_SRC_FILES)
 set(PROTO_GEN_INC_FILES)

@@ -1,0 +1,6 @@
+#ifndef PRINT_ABOUT_HANDLER_HPP
+#define PRINT_ABOUT_HANDLER_HPP
+
+void printAbout();
+
+#endif // PRINT_ABOUT_HANDLER_HPP

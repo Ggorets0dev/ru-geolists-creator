@@ -1,7 +1,9 @@
 #ifndef SOFTWARE_INFO_HPP
 #define SOFTWARE_INFO_HPP
 
-#define RGC_VERSION_STRING "@RGC_VERSION_STRING@"
+#define RGC_GIT_COMMIT_SHA  "@RGC_GIT_COMMIT_SHA@"
+
+#define RGC_VERSION_STRING  "@RGC_VERSION_STRING@"
 
 #define RGC_DEVELOPER       "Ggorets0dev"
 #define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"

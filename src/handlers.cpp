@@ -31,15 +31,6 @@
         return false; \
     }
 
-void printSoftwareInfo() {
-    std::cout << PRINT_DELIMETER << std::endl;
-    std::cout << "ru-geolists-creator v" << RGC_VERSION_STRING << std::endl;
-    std::cout << "Developer: " << RGC_DEVELOPER << std::endl;
-    std::cout << "License: " << RGC_LICENSE << std::endl;
-    std::cout << "GitHub: " << RGC_REPOSITORY << std::endl;
-    std::cout << PRINT_DELIMETER << std::endl;
-}
-
 void printHelp(const CLI::App& app) {
     std::cout << app.help() << std::endl; // Standard help
     std::cout << "Notice: When running without arguments, the update-checked mode is used\n\n";

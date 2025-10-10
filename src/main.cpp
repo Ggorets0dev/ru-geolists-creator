@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 
     // Print software information
     if (gCmdArgs.isShowAbout) {
-        printSoftwareInfo();
+        printAbout();
         return 0;
     }
 
