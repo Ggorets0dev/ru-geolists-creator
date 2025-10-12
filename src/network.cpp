@@ -6,6 +6,10 @@
 #include <fstream>
 #include <algorithm>
 #include <thread>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #define GITHUB_TOKEN_HEADER         "Authorization: Bearer "
 
@@ -189,6 +193,46 @@ bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std
             }
         }
     }
+
+    return true;
+}
+
+bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs) {
+    struct addrinfo hints;
+    struct addrinfo *result = nullptr;
+
+    std::memset(&hints, 0, sizeof(hints));
+
+    hints.ai_family = AF_UNSPEC;      // AF_INET or AF_INET6 or AF_UNSPEC
+    hints.ai_socktype = SOCK_STREAM;  // default SOCK_STREAM, but can be 0
+
+    int s = getaddrinfo(hostname.c_str(), nullptr, &hints, &result);
+    if (s != 0) {
+        LOG_ERROR("Failed to get address info: " + std::string(gai_strerror(s)));
+        return false;
+    }
+
+    char ipstr[INET6_ADDRSTRLEN];
+
+    for (struct addrinfo *rp = result; rp != nullptr; rp = rp->ai_next) {
+        void *addr = nullptr;
+
+        if (rp->ai_family == AF_INET) { // IPv4
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)rp->ai_addr;
+            addr = &(ipv4->sin_addr);
+        } else if (rp->ai_family == AF_INET6) { // IPv6
+            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)rp->ai_addr;
+            addr = &(ipv6->sin6_addr);
+        } else {
+            continue;
+        }
+
+        if (inet_ntop(rp->ai_family, addr, ipstr, sizeof(ipstr)) != nullptr) {
+            uniqueIPs.insert(std::string(ipstr));
+        }
+    }
+
+    freeaddrinfo(result);
 
     return true;
 }

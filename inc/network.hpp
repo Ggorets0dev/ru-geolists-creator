@@ -3,6 +3,7 @@
 
 #include <string>
 #include <curl/curl.h>
+#include <set>
 
 #include "json_io.hpp"
 
@@ -13,5 +14,7 @@ bool tryAccessUrl(const std::string& url, const char* httpHeader = nullptr);
 bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
 bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken);
+
+bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs);
 
 #endif // NETWORK_HPP
