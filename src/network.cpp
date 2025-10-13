@@ -24,6 +24,8 @@
 #define DOWNLOAD_ATTEMPT_COUNT          3u
 #define DOWNLOAD_ATTEMPT_DELAY_SEC      3u
 
+#define IPV6_PARTS_COUNT                8u
+
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
     size_t totalSize = size * nmemb;
@@ -147,6 +149,23 @@ bool tryAccessUrl(const std::string& url, const char* httpHeader) {
     return false;
 }
 
+template <typename T>
+static void parseSubnetIP(const std::string& ip, T& mask) {
+    int buffer;
+    const auto pos = ip.find('/');
+
+    mask.set();
+
+    if (pos != std::string::npos) {
+        // Subnet is specified
+        buffer = std::stoi(ip.substr(pos + 1, 2));
+
+        for (uint8_t i(0); i < buffer; ++i) {
+            mask.reset(i);
+        }
+    }
+}
+
 bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken) {
     std::string tokenHeader = genGithubTokenHeader(apiToken);
 
@@ -235,4 +254,93 @@ bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs
     freeaddrinfo(result);
 
     return true;
+}
+
+void parseIPv4(const std::string& ip, NetTypes::IPv4& out) {
+    uint8_t buffer;
+    size_t pos;
+    size_t start_pos(0);
+    int8_t part_offset(24);
+
+    out.ip.reset();
+
+    parseSubnetIP(ip, out.mask);
+
+    do {
+        if (part_offset) {
+            pos = ip.find('.', start_pos);
+        } else {
+            pos = ip.find('/', start_pos);
+        }
+
+        if (!part_offset && pos == std::string::npos) {
+            pos = std::distance(ip.begin() + start_pos, ip.end());
+        }
+
+        if (pos == std::string::npos) {
+            // Throw exception
+        }
+
+        buffer = std::stoi(ip.substr(start_pos, pos - start_pos));
+
+        out.ip |= (buffer << part_offset);
+
+        part_offset -= 8;
+        start_pos = pos + 1;
+    } while (part_offset >= 0);
+}
+
+void parseIPv6(const std::string& ip, NetTypes::IPv6& out) {
+    uint16_t buffer[IPV6_PARTS_COUNT] = {0};
+
+    size_t pos;
+    size_t start_pos(0);
+
+    uint8_t i(0), j(0);
+    uint8_t zero_secs_count(IPV6_PARTS_COUNT);
+    uint8_t part_offset((IPV6_PARTS_COUNT - 1) * 16);
+
+    out.ip.reset();
+\
+    parseSubnetIP(ip, out.mask);
+
+    while (true) {
+        pos = ip.find(':', start_pos);
+
+        if (pos == std::string::npos) {
+            pos = ip.find('/', start_pos);
+
+            if (pos == std::string::npos) {
+                break;
+            }
+        }
+
+        auto substr = ip.substr(start_pos, pos - start_pos);
+
+        if (substr.length() > 1) {
+            buffer[i] = std::stoi(substr, nullptr, 16);
+            --zero_secs_count;
+        } else {
+            buffer[i] = 0;
+        }
+
+        ++i;
+
+        start_pos = pos + 1;
+    };
+
+    while (j < i) {
+        if (buffer[j]) {
+            out.ip |= (buffer[j] << part_offset);
+            ++j;
+        } else {
+            --zero_secs_count;
+
+            if (!zero_secs_count) {
+                ++j;
+            }
+        }
+
+        part_offset -= 16;
+    }
 }

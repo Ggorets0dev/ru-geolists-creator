@@ -24,6 +24,8 @@ struct RgcConfig {
     std::string apiToken;
 
     std::forward_list<ExtraSource> extraSources;
+
+    std::string whitelistPath;
 };
 
 bool writeConfig(const RgcConfig& config);

@@ -145,6 +145,11 @@ target_link_libraries(RuGeolistsCreator PRIVATE
         pthread
         log4cxx)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_link_libraries(RuGeolistsCreator PRIVATE
+        absl::log_internal_check_op)
+endif()
+
 target_include_directories(RuGeolistsCreator PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
