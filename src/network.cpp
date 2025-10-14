@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <regex>
 
 #define GITHUB_TOKEN_HEADER         "Authorization: Bearer "
 
@@ -256,15 +257,15 @@ bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs
     return true;
 }
 
-void parseIPv4(const std::string& ip, NetTypes::IPv4& out) {
+void parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out) {
     uint8_t buffer;
     size_t pos;
     size_t start_pos(0);
     int8_t part_offset(24);
 
-    out.ip.reset();
-
     parseSubnetIP(ip, out.mask);
+
+    out.ip.reset();
 
     do {
         if (part_offset) {
@@ -290,7 +291,7 @@ void parseIPv4(const std::string& ip, NetTypes::IPv4& out) {
     } while (part_offset >= 0);
 }
 
-void parseIPv6(const std::string& ip, NetTypes::IPv6& out) {
+void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out) {
     uint16_t buffer[IPV6_PARTS_COUNT] = {0};
 
     size_t pos;
@@ -300,9 +301,9 @@ void parseIPv6(const std::string& ip, NetTypes::IPv6& out) {
     uint8_t zero_secs_count(IPV6_PARTS_COUNT);
     uint8_t part_offset((IPV6_PARTS_COUNT - 1) * 16);
 
-    out.ip.reset();
-\
     parseSubnetIP(ip, out.mask);
+
+    out.ip.reset();
 
     while (true) {
         pos = ip.find(':', start_pos);
@@ -342,5 +343,57 @@ void parseIPv6(const std::string& ip, NetTypes::IPv6& out) {
         }
 
         part_offset -= 16;
+    }
+}
+
+//template <typename T>
+//bool NetTypes::IPvx<T>::isSubnetIncludes(const IPvx<T>& ipvx) const {
+//    return (this->ip & this->mask) == (ipvx.ip & ipvx.mask);
+//}
+
+//template <typename T>
+//bool NetTypes::IPvx<T>::operator<(const IPvx<T>& other) const {
+//    if (ip != other.ip) {
+//        return ip < other.ip;
+//    }
+
+//    return mask < other.mask;
+//}
+
+NetTypes::AddressType getAddressType(const std::string& input) {
+    // IPv4: 4 numbers from 0 to 255, separated by dots
+    static const std::regex kPatternIPv4(
+        R"(^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+        R"(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+        R"(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+        R"(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$)"
+    );
+
+    // IPv6: 8 groups of 1-4 hexadecimal digits, separated by colons (allowing ::)
+    static const std::regex kPatternIPv6(
+        R"(^(([0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|"
+        R"(([0-9A-Fa-f]{1,4}:){1,7}:|"
+        R"(([0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|"
+        R"(([0-9A-Fa-f]{1,4}:){1,5}(:[0-9A-Fa-f]{1,4}){1,2}|"
+        R"(([0-9A-Fa-f]{1,4}:){1,4}(:[0-9A-Fa-f]{1,4}){1,3}|"
+        R"(([0-9A-Fa-f]{1,4}:){1,3}(:[0-9A-Fa-f]{1,4}){1,4}|"
+        R"(([0-9A-Fa-f]{1,4}:){1,2}(:[0-9A-Fa-f]{1,4}){1,5}|"
+        R"([0-9A-Fa-f]{1,4}:((:[0-9A-Fa-f]{1,4}){1,6})|"
+        R"(:((:[0-9A-Fa-f]{1,4}){1,7}|:))$)"
+    );
+
+    // Domain: letters, numbers, hyphens and periods, but does not start or end with a period/hyphen
+    static const std::regex kDomainPattern(
+        R"(^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)"
+    );
+
+    if (std::regex_match(input, kPatternIPv4)) {
+        return NetTypes::AddressType::IPV4;
+    } else if (std::regex_match(input, kPatternIPv6)) {
+        return NetTypes::AddressType::IPV6;
+    } else if (std::regex_match(input, kDomainPattern)) {
+        return NetTypes::AddressType::DOMAIN;
+    } else {
+        return NetTypes::AddressType::UNKNOWN;
     }
 }

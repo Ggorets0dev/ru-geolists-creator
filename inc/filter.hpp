@@ -5,9 +5,10 @@
 #include <vector>
 #include <fs_utils.hpp>
 
-extern const std::vector<std::string> kKeywordWhitelist;
+#include "network.hpp"
 
-extern bool
-checkKeywordWhitelist(std::string_view domain);
+bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6);
+
+bool checkFileByLists(const fs::path& path, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6);
 
 #endif // FILTER_HPP

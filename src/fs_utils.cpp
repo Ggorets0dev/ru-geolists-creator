@@ -91,11 +91,13 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
 
 void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath) {
     std::ifstream fileB(fileBPath, std::ios::binary);
+
     if (!fileB.is_open()) {
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + fileBPath);
     }
 
     std::ofstream fileA(fileAPath, std::ios::binary | std::ios::app);
+
     if (!fileA.is_open()) {
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + fileAPath);
     }

@@ -38,7 +38,7 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
 
             currentDomain = match.str();
 
-            if (currentDomain == lastFoundDomain || checkKeywordWhitelist(currentDomain)) {
+            if (currentDomain == lastFoundDomain) {
                 continue;
             }
 
