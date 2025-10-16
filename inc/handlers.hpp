@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include "main_sources.hpp"
 #include "print_about_handler.hpp"
+#include "download_sources_handler.hpp"
 
 void showExtraSources();
 

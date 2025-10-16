@@ -4,6 +4,8 @@
 #include <fstream>
 #include <string>
 
+#define FILTER_FILENAME_POSTFIX     "temp_filter"
+
 static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6) {
     NetTypes::AddressType type;
     NetTypes::IPvx<NetTypes::bitsetIPv4> bufferIPv4;
@@ -42,7 +44,7 @@ static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, Ne
     return true;
 }
 
-static void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6) {
+void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6) {
     std::ifstream file(path);
     std::string buffer;
     bool status;
@@ -97,26 +99,52 @@ bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4
         }
     }
 
-    return true;
+    return false;
 }
 
-bool checkFileByLists(const fs::path& path, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6) {
-    std::ifstream file(path);
+bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6, bool applyFix) {
+    const fs::path tempFilePath = addPathPostfix(path, FILTER_FILENAME_POSTFIX);
+
+    std::ifstream file;
+    std::ofstream fileTemp;
     std::string buffer;
     bool status;
     bool isFoundAny = false;
 
+    file.open(path);
+
     if (!file.is_open()) {
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + path.string());
+    }
+
+    if (applyFix) {
+        fileTemp.open(path);
+
+        if (!fileTemp.is_open()) {
+            throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + path.string());
+        }
     }
 
     while (std::getline(file, buffer)) {
         status = checkAddressByLists(buffer, ipv4, ipv6);
 
         if (!status) {
+            fileTemp << buffer;
+        } else {
             isFoundAny = true;
             LOG_INFO("Detection in search between file and IP lists: " + buffer + " --> " + path.string());
         }
+    }
+
+    if (file.is_open()) {
+        file.close();
+    }
+
+    if (applyFix && fileTemp.is_open()) {
+        fileTemp.close();
+
+        fs::remove(path);
+        fs::rename(tempFilePath, path);
     }
 
     return isFoundAny;

@@ -11,4 +11,6 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
 
 void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath);
 
+fs::path addPathPostfix(const fs::path path, const std::string& postfix);
+
 #endif // FS_UTILS_H

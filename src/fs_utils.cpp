@@ -112,3 +112,9 @@ void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath) {
     fileA.close();
     fileB.close();
 }
+
+fs::path addPathPostfix(const fs::path path, const std::string& postfix) {
+    return path.parent_path() /
+                (path.stem().string() + "_" + postfix +
+                 path.extension().string());
+}
