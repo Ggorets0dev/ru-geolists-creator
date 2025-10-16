@@ -20,12 +20,12 @@ static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, Ne
 
     if (type == NetTypes::AddressType::IPV4) {
         parseIPv4(buffer, bufferIPv4);
-        ipv4.insert(bufferIPv4);
+        ipv4.push_front(bufferIPv4);
     } else if (type == NetTypes::AddressType::IPV6) {
         parseIPv6(buffer, bufferIPv6);
-        ipv6.insert(bufferIPv6);
+        ipv6.push_front(bufferIPv6);
     } else { // NetTypes::AddressType::DOMAIN
-        std::set<std::string> uniqueIPs;
+        std::forward_list<std::string> uniqueIPs;
 
         status = resolveDomain(buffer, uniqueIPs);
 
@@ -49,6 +49,9 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
     std::string buffer;
     bool status;
 
+    size_t ipv4Size;
+    size_t ipv6Size;
+
     if (!file.is_open()) {
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + path.string());
     }
@@ -60,6 +63,11 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
             LOG_WARNING("An unknown entry was found in file with addresses, the type could not be determined: " + buffer);
         }
     }
+
+    ipv4Size = std::distance(ipv4.begin(), ipv4.end());
+    ipv6Size = std::distance(ipv6.begin(), ipv6.end());
+
+    LOG_INFO("File " + path.string() + " parsed to " + std::to_string(ipv4Size) + " IPv4 entities and " + std::to_string(ipv6Size) + " IPv6 entities");
 }
 
 bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6) {
@@ -80,7 +88,7 @@ bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4
     // Check all IPv4
     for (const auto& checkIP : currIPv4) {
         for (const auto& listIP : ipv4) {
-            status = !listIP.isSubnetIncludes(checkIP);
+            status = listIP.isSubnetIncludes(checkIP);
 
             if (status) {
                 return true;
@@ -91,7 +99,7 @@ bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4
     // Check all IPv6
     for (const auto& checkIP : currIPv6) {
         for (const auto& listIP : ipv6) {
-            status = !listIP.isSubnetIncludes(checkIP);
+            status = listIP.isSubnetIncludes(checkIP);
 
             if (status) {
                 return true;
@@ -118,10 +126,10 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPv4& ipv4, c
     }
 
     if (applyFix) {
-        fileTemp.open(path);
+        fileTemp.open(tempFilePath);
 
         if (!fileTemp.is_open()) {
-            throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + path.string());
+            throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + tempFilePath.string());
         }
     }
 

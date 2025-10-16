@@ -1,6 +1,7 @@
 #include "network.hpp"
 #include "exception.hpp"
 #include "log.hpp"
+#include "common.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -217,7 +218,7 @@ bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std
     return true;
 }
 
-bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs) {
+bool resolveDomain(const std::string &hostname, std::forward_list<std::string>& uniqueIPs) {
     struct addrinfo hints;
     struct addrinfo *result = nullptr;
 
@@ -248,11 +249,13 @@ bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs
         }
 
         if (inet_ntop(rp->ai_family, addr, ipstr, sizeof(ipstr)) != nullptr) {
-            uniqueIPs.insert(std::string(ipstr));
+            uniqueIPs.push_front(std::string(ipstr));
         }
     }
 
     freeaddrinfo(result);
+
+    removeListDuplicates(uniqueIPs);
 
     return true;
 }
@@ -346,54 +349,44 @@ void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out)
     }
 }
 
-//template <typename T>
-//bool NetTypes::IPvx<T>::isSubnetIncludes(const IPvx<T>& ipvx) const {
-//    return (this->ip & this->mask) == (ipvx.ip & ipvx.mask);
-//}
 
-//template <typename T>
-//bool NetTypes::IPvx<T>::operator<(const IPvx<T>& other) const {
-//    if (ip != other.ip) {
-//        return ip < other.ip;
-//    }
-
-//    return mask < other.mask;
-//}
 
 NetTypes::AddressType getAddressType(const std::string& input) {
-    // IPv4: 4 numbers from 0 to 255, separated by dots
-    static const std::regex kPatternIPv4(
-        R"(^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
-        R"(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
-        R"(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
-        R"(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$)"
-    );
+    try {
+        // IPv4 с маской /0–32
+        static const std::regex kPatternIPv4(
+            R"(^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.)"
+            R"((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.)"
+            R"((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.)"
+            R"((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d))"
+            R"((/(3[0-2]|[12]?\d))?$)"
+        );
 
-    // IPv6: 8 groups of 1-4 hexadecimal digits, separated by colons (allowing ::)
-    static const std::regex kPatternIPv6(
-        R"(^(([0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|"
-        R"(([0-9A-Fa-f]{1,4}:){1,7}:|"
-        R"(([0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|"
-        R"(([0-9A-Fa-f]{1,4}:){1,5}(:[0-9A-Fa-f]{1,4}){1,2}|"
-        R"(([0-9A-Fa-f]{1,4}:){1,4}(:[0-9A-Fa-f]{1,4}){1,3}|"
-        R"(([0-9A-Fa-f]{1,4}:){1,3}(:[0-9A-Fa-f]{1,4}){1,4}|"
-        R"(([0-9A-Fa-f]{1,4}:){1,2}(:[0-9A-Fa-f]{1,4}){1,5}|"
-        R"([0-9A-Fa-f]{1,4}:((:[0-9A-Fa-f]{1,4}){1,6})|"
-        R"(:((:[0-9A-Fa-f]{1,4}){1,7}|:))$)"
-    );
+        // IPv6 (упрощённый, ECMAScript-совместимый)
+        // Заменили non-capturing (?:) на обычные capture-группы.
+        static const std::regex kPatternIPv6(
+            R"(^(?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,7}|::([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,6})?)(/(12[0-8]|1[01][0-9]|\d{1,2}))?$)"
+        );
 
-    // Domain: letters, numbers, hyphens and periods, but does not start or end with a period/hyphen
-    static const std::regex kDomainPattern(
-        R"(^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)"
-    );
+        // Домен (здесь использована привычная форма с (?:...) — заменим на обычную группу)
+        static const std::regex kPatternDomain(
+            R"(^(?!-)([A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,63}$)"
+        );
 
-    if (std::regex_match(input, kPatternIPv4)) {
-        return NetTypes::AddressType::IPV4;
-    } else if (std::regex_match(input, kPatternIPv6)) {
-        return NetTypes::AddressType::IPV6;
-    } else if (std::regex_match(input, kDomainPattern)) {
-        return NetTypes::AddressType::DOMAIN;
-    } else {
+        if (std::regex_match(input, kPatternIPv4)) {
+            return NetTypes::AddressType::IPV4;
+        }
+        if (std::regex_match(input, kPatternIPv6)) {
+            return NetTypes::AddressType::IPV6;
+        }
+        if (std::regex_match(input, kPatternDomain)) {
+            return NetTypes::AddressType::DOMAIN;
+        }
+
+        return NetTypes::AddressType::UNKNOWN;
+    }
+    catch (const std::regex_error& e) {
+        std::cerr << "Regex error: " << e.what() << std::endl;
         return NetTypes::AddressType::UNKNOWN;
     }
 }

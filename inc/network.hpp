@@ -3,8 +3,8 @@
 
 #include <string>
 #include <curl/curl.h>
-#include <set>
 #include <bitset>
+#include "forward_list"
 
 #include "json_io.hpp"
 
@@ -21,15 +21,10 @@ namespace NetTypes {
         bool isSubnetIncludes(const IPvx<T>& ipvx) const {
             return (this->ip & this->mask) == (ipvx.ip & ipvx.mask);
         };
-
-        bool operator<(const IPvx<T>& other) const {
-            // Placeholder logic, just need for std::set to work. No real sort needed
-            return this->ip == other.ip;
-        }
     };
 
-    using ListIPv4 = std::set<NetTypes::IPvx<NetTypes::bitsetIPv4>>;
-    using ListIPv6 = std::set<NetTypes::IPvx<NetTypes::bitsetIPv6>>;
+    using ListIPv4 = std::forward_list<NetTypes::IPvx<NetTypes::bitsetIPv4>>;
+    using ListIPv6 = std::forward_list<NetTypes::IPvx<NetTypes::bitsetIPv6>>;
 
     enum class AddressType {
         DOMAIN,
@@ -53,6 +48,6 @@ void parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out)
 
 void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out);
 
-bool resolveDomain(const std::string &hostname, std::set<std::string>& uniqueIPs);
+bool resolveDomain(const std::string &hostname, std::forward_list<std::string>& uniqueIPs);
 
 #endif // NETWORK_HPP
