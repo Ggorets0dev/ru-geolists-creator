@@ -7,7 +7,8 @@
 
 extern const std::vector<std::string> kKeywordWhitelist;
 
-extern bool
-checkKeywordWhitelist(std::string_view domain);
+bool isUrl(const std::string& str);
+
+bool checkKeywordWhitelist(std::string_view domain);
 
 #endif // FILTER_HPP

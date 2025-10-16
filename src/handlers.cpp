@@ -91,10 +91,23 @@ void addExtraSource() {
     getStringInput("Section", source.section, false);
     getStringInput("URL", source.url, false);
 
-    status = tryAccessUrl(source.url);
+    if (!isUrl(source.url)) {
+        // ===== Local source
+        try {
+            status = fs::exists(source.url);
+        } catch (const fs::filesystem_error& e) {
+            LOG_ERROR("Filesystem error: " + std::string(e.what()));
+            status = false;
+        }
+        // =====
+    } else {
+        // ===== Remote source
+        status = tryAccessUrl(source.url);
+        // =====
+    }
 
     if (!status) {
-        LOG_WARNING("Unable to access the list at the specified URL, resource not added");
+        LOG_WARNING("Unable to access the list at the specified URL, resource was not added");
         return;
     }
 
@@ -181,7 +194,21 @@ void checkUrlsAccess() {
     }
 
     for (const std::string& url : urls) {
-        isAccessed = tryAccessUrl(url);
+        if (!isUrl(url)) {
+            // ===== Local source
+            try {
+                isAccessed = fs::exists(url);
+            } catch (const fs::filesystem_error& e) {
+                LOG_ERROR("Filesystem error: " + std::string(e.what()));
+                isAccessed = false;
+            }
+            // =====
+        } else {
+            // ===== Remote source
+            isAccessed = tryAccessUrl(url);
+            // =====
+        }
+
         logUrlAccess(url, isAccessed);
     }
 }
@@ -513,15 +540,42 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, std::vector<
 
     for (const auto& source : config.extraSources) {
         fileName = genSourceFileName(source);
+
+        // ======== If path in system specified, no need to download
+        if (!isUrl(source.url)) {
+            try {
+                status = fs::exists(source.url);
+
+                if (status) {
+                    fs::copy(source.url, kCurrentDir / fileName);
+                }
+            } catch (const fs::filesystem_error& e) {
+                LOG_ERROR("Filesystem error: " + std::string(e.what()));
+                status = false;
+            }
+
+            if (!status) {
+                LOG_WARNING("Failed to locate local extra source (ignored): " + source.url);
+                continue;
+            }
+
+            downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
+            LOG_INFO("Local extra source was added successfully: " + source.url);
+            continue;
+        }
+        // ========
+
+        // ======== Downloading extra source via URL
         status = tryDownloadFile(source.url, fileName);
 
         if (!status) {
-            LOG_WARNING("Failed to downloaded extra source: " + source.url);
+            LOG_WARNING("Failed to downloaded extra source (ignored): " + source.url);
             continue;
         }
 
         downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
-        LOG_INFO("Extra source was downloaded successfully: " + source.url);
+        LOG_INFO("Remote extra source was downloaded successfully: " + source.url);
+        // ========
     }
     // !SECTION
 
