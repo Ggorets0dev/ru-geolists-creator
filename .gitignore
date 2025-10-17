@@ -8,3 +8,4 @@ CMakeLists.txt.user
 software_info.hpp
 ipc_chain.hpp
 **/rglc_deb
+**/test

@@ -12,7 +12,7 @@ struct OutputMessagesTarget {
     bool isSupressed;
 };
 
-LoggerPtr gLogger(Logger::getLogger("RGC"));
+LoggerPtr gLogger(Logger::getLogger("RGLC"));
 
 const fs::path gkLogConfigPath = "/etc/ru-geolists-creator/log4cxx.properties";
 
@@ -31,9 +31,9 @@ void initLogging() {
 
 void logUrlAccess(const std::string& url, bool status) {
     if (status) {
-        LOG_INFO("Successfully accessed the resource at the following link: " + url);
+        LOG_INFO("Successfully accessed resource: " + url);
     } else {
-        LOG_ERROR("Failed to access the resource at the following link: " + url);
+        LOG_ERROR("Failed to access resource: " + url);
     }
 }
 

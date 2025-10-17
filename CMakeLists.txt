@@ -35,6 +35,9 @@ pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 # Try to find jsoncpp in systemp
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
+# Try to find c-ares in system
+pkg_check_modules(CARES REQUIRED libcares)
+
 # Try to find protobuf in system
 find_package(Protobuf REQUIRED)
 
@@ -142,6 +145,7 @@ target_link_libraries(RuGeolistsCreator PRIVATE
         ${Protobuf_LIBRARIES}
         absl::strings
         absl::base
+        ${CARES_LIBRARIES}
         pthread
         log4cxx)
 
@@ -154,6 +158,7 @@ target_include_directories(RuGeolistsCreator PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
     ${PROTO_GEN_DIR}
+    ${CARES_INCLUDE_DIRS}
 )
 
 # Install software into ~/.local/bin

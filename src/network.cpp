@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <ares.h>
 #include <regex>
 
 #define GITHUB_TOKEN_HEADER         "Authorization: Bearer "
@@ -218,47 +219,113 @@ bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std
     return true;
 }
 
-bool resolveDomain(const std::string &hostname, std::forward_list<std::string>& uniqueIPs) {
-    struct addrinfo hints;
-    struct addrinfo *result = nullptr;
-
-    std::memset(&hints, 0, sizeof(hints));
-
-    hints.ai_family = AF_UNSPEC;      // AF_INET or AF_INET6 or AF_UNSPEC
-    hints.ai_socktype = SOCK_STREAM;  // default SOCK_STREAM, but can be 0
-
-    int s = getaddrinfo(hostname.c_str(), nullptr, &hints, &result);
-    if (s != 0) {
-        LOG_ERROR("Failed to get address info: " + std::string(gai_strerror(s)));
+bool resolveDomain(const std::string &hostname, std::forward_list<std::string> &uniqueIPs) {
+    ares_channel channel;
+    int status = ares_library_init(ARES_LIB_INIT_ALL);
+    if (status != ARES_SUCCESS) {
+        std::cerr << "ares_library_init failed: " << ares_strerror(status) << std::endl;
         return false;
     }
 
-    char ipstr[INET6_ADDRSTRLEN];
+    struct ares_options options;
+    int optmask = 0;
 
-    for (struct addrinfo *rp = result; rp != nullptr; rp = rp->ai_next) {
-        void *addr = nullptr;
+    options.timeout = 2000; // ms
+    optmask |= ARES_OPT_TIMEOUTMS;
 
-        if (rp->ai_family == AF_INET) { // IPv4
-            struct sockaddr_in *ipv4 = (struct sockaddr_in *)rp->ai_addr;
-            addr = &(ipv4->sin_addr);
-        } else if (rp->ai_family == AF_INET6) { // IPv6
-            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)rp->ai_addr;
-            addr = &(ipv6->sin6_addr);
-        } else {
-            continue;
-        }
+    status = ares_init_options(&channel, &options, optmask);
 
-        if (inet_ntop(rp->ai_family, addr, ipstr, sizeof(ipstr)) != nullptr) {
-            uniqueIPs.push_front(std::string(ipstr));
-        }
+    if (status != ARES_SUCCESS) {
+        std::cerr << "ares_init failed: " << ares_strerror(status) << std::endl;
+        ares_library_cleanup();
+        return false;
     }
 
-    freeaddrinfo(result);
+    // структура для результата
+    struct CallbackData {
+        bool finished = false;
+        bool success = false;
+        std::forward_list<std::string> *ipList;
+    } cbData;
+    cbData.ipList = &uniqueIPs;
 
-    removeListDuplicates(uniqueIPs);
+    auto callback = [](void *arg, int status, int /*timeouts*/, struct ares_addrinfo *res) {
+        auto *data = static_cast<CallbackData*>(arg);
+        if (status != ARES_SUCCESS) {
+            std::cerr << "Failed to resolve: " << ares_strerror(status) << std::endl;
+            data->finished = true;
+            data->success = false;
+            return;
+        }
 
-    return true;
+        char ipstr[INET6_ADDRSTRLEN];
+        for (auto *node = res->nodes; node != nullptr; node = node->ai_next) {
+            void *addr = nullptr;
+            if (node->ai_family == AF_INET) {
+                struct sockaddr_in *ipv4 = (struct sockaddr_in *)node->ai_addr;
+                addr = &(ipv4->sin_addr);
+            } else if (node->ai_family == AF_INET6) {
+                struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)node->ai_addr;
+                addr = &(ipv6->sin6_addr);
+            } else {
+                continue;
+            }
+
+            if (inet_ntop(node->ai_family, addr, ipstr, sizeof(ipstr)) != nullptr) {
+                data->ipList->push_front(std::string(ipstr));
+            }
+        }
+
+        ares_freeaddrinfo(res);
+        data->finished = true;
+        data->success = true;
+    };
+
+    struct ares_addrinfo_hints hints;
+    std::memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;      // IPv4 и IPv6
+    hints.ai_socktype = SOCK_STREAM;  // как и в исходной функции
+
+    ares_getaddrinfo(channel, hostname.c_str(), nullptr, &hints, callback, &cbData);
+
+    // blocking mode
+    while (!cbData.finished) {
+        fd_set read_fds, write_fds;
+        FD_ZERO(&read_fds);
+        FD_ZERO(&write_fds);
+
+        int socks[ARES_GETSOCK_MAXNUM];
+        int bitmask = ares_getsock(channel, socks, ARES_GETSOCK_MAXNUM);
+
+        int maxfd = -1;
+        for (int i = 0; i < ARES_GETSOCK_MAXNUM; ++i) {
+            if (ARES_GETSOCK_READABLE(bitmask, i)) {
+                FD_SET(socks[i], &read_fds);
+                if (socks[i] > maxfd) maxfd = socks[i];
+            }
+            if (ARES_GETSOCK_WRITABLE(bitmask, i)) {
+                FD_SET(socks[i], &write_fds);
+                if (socks[i] > maxfd) maxfd = socks[i];
+            }
+        }
+
+        struct timeval tv, *tvp;
+        tvp = ares_timeout(channel, NULL, &tv);
+        int rc = select(maxfd + 1, &read_fds, &write_fds, NULL, tvp);
+        if (rc < 0) {
+            perror("select");
+            break;
+        }
+
+        ares_process(channel, &read_fds, &write_fds);
+    }
+
+    ares_destroy(channel);
+    ares_library_cleanup();
+
+    return cbData.success;
 }
+
 
 void parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out) {
     uint8_t buffer;
@@ -353,7 +420,7 @@ void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out)
 
 NetTypes::AddressType getAddressType(const std::string& input) {
     try {
-        // IPv4 с маской /0–32
+        // IPv4 with mask /0–32
         static const std::regex kPatternIPv4(
             R"(^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.)"
             R"((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.)"
@@ -362,13 +429,11 @@ NetTypes::AddressType getAddressType(const std::string& input) {
             R"((/(3[0-2]|[12]?\d))?$)"
         );
 
-        // IPv6 (упрощённый, ECMAScript-совместимый)
-        // Заменили non-capturing (?:) на обычные capture-группы.
+        // IPv6 (simplified, ECMAScript-compatible)
         static const std::regex kPatternIPv6(
-            R"(^(?:[0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,7}|::([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,6})?)(/(12[0-8]|1[01][0-9]|\d{1,2}))?$)"
+            R"(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
         );
 
-        // Домен (здесь использована привычная форма с (?:...) — заменим на обычную группу)
         static const std::regex kPatternDomain(
             R"(^(?!-)([A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,63}$)"
         );
@@ -386,7 +451,7 @@ NetTypes::AddressType getAddressType(const std::string& input) {
         return NetTypes::AddressType::UNKNOWN;
     }
     catch (const std::regex_error& e) {
-        std::cerr << "Regex error: " << e.what() << std::endl;
+        LOG_ERROR("Regex error occured after trying to get address type: " << e.what());
         return NetTypes::AddressType::UNKNOWN;
     }
 }
