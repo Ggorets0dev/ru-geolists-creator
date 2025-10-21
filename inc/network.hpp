@@ -32,6 +32,8 @@ namespace NetTypes {
         IPV6,
         UNKNOWN
     };
+
+    using ListAddress = std::forward_list<std::string>;
 }
 
 NetTypes::AddressType getAddressType(const std::string& input);
@@ -48,6 +50,6 @@ void parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out)
 
 void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out);
 
-bool resolveDomain(const std::string &hostname, std::forward_list<std::string>& uniqueIPs);
+bool resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs);
 
 #endif // NETWORK_HPP

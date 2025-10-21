@@ -6,7 +6,7 @@
 
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
 
-static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6) {
+static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6, NetTypes::ListAddress* accumulateBuffer=nullptr) {
     NetTypes::AddressType type;
     NetTypes::IPvx<NetTypes::bitsetIPv4> bufferIPv4;
     NetTypes::IPvx<NetTypes::bitsetIPv6> bufferIPv6;
@@ -14,20 +14,16 @@ static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, Ne
 
     type = getAddressType(buffer);
 
-    if (type == NetTypes::AddressType::UNKNOWN) {
-        return false;
-    }
-
     if (type == NetTypes::AddressType::IPV4) {
         parseIPv4(buffer, bufferIPv4);
         ipv4.push_front(bufferIPv4);
     } else if (type == NetTypes::AddressType::IPV6) {
         parseIPv6(buffer, bufferIPv6);
         ipv6.push_front(bufferIPv6);
-    } else { // NetTypes::AddressType::DOMAIN
+    } else if (type == NetTypes::AddressType::DOMAIN && (accumulateBuffer == nullptr)) {
         std::forward_list<std::string> uniqueIPs;
 
-        status = resolveDomain(buffer, uniqueIPs);
+        status = resolveDomains({buffer}, uniqueIPs);
 
         if (!status) {
             // Resolve failed, nothing to parse
@@ -39,6 +35,11 @@ static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, Ne
         }
 
         return status;
+    } else if (type == NetTypes::AddressType::DOMAIN && (accumulateBuffer != nullptr)) {
+        accumulateBuffer->push_front(buffer);
+    } else { // NetTypes::AddressType::UNKNOWN
+        // Failed to get address type
+        return false;
     }
 
     return true;
@@ -49,6 +50,9 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
     std::string buffer;
     bool status;
 
+    NetTypes::ListAddress domainsBuffer;
+    NetTypes::ListAddress uniqueIPs;
+
     size_t ipv4Size;
     size_t ipv6Size;
 
@@ -57,12 +61,22 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
     }
 
     while (std::getline(file, buffer)) {
-        status = parseAddress(buffer, ipv4, ipv6);
+        status = parseAddress(buffer, ipv4, ipv6, &domainsBuffer);
 
         if (!status) {
             LOG_WARNING("An unknown entry was found in file with addresses, the type could not be determined: " + buffer);
         }
     }
+
+    // ======== Convert all domains to IPv4 or IPv6
+    resolveDomains(domainsBuffer, uniqueIPs);
+
+    domainsBuffer.clear();
+
+    for (const auto& IP : uniqueIPs) {
+        status = parseAddress(IP, ipv4, ipv6);
+    }
+    // ========
 
     ipv4Size = std::distance(ipv4.begin(), ipv4.end());
     ipv6Size = std::distance(ipv6.begin(), ipv6.end());

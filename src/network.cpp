@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <ares.h>
 #include <regex>
+#include <future>
 
 #define GITHUB_TOKEN_HEADER         "Authorization: Bearer "
 
@@ -28,6 +29,29 @@
 #define DOWNLOAD_ATTEMPT_DELAY_SEC      3u
 
 #define IPV6_PARTS_COUNT                8u
+
+struct ResolveQueryData {
+    std::string host;
+    std::promise<NetTypes::ListAddress> promise;
+};
+
+static void CaresResolveCallback(void *arg, int status, int, struct ares_addrinfo *res) {
+    auto *qd = static_cast<ResolveQueryData*>(arg);
+    NetTypes::ListAddress ips;
+    if (status == ARES_SUCCESS) {
+        char ipstr[INET6_ADDRSTRLEN];
+        for (auto *node = res->nodes; node; node = node->ai_next) {
+            void *addr = (node->ai_family == AF_INET)
+            ? (void*)&((struct sockaddr_in*)node->ai_addr)->sin_addr
+            : (void*)&((struct sockaddr_in6*)node->ai_addr)->sin6_addr;
+            if (inet_ntop(node->ai_family, addr, ipstr, sizeof(ipstr)))
+                ips.push_front(ipstr);
+        }
+        ares_freeaddrinfo(res);
+    }
+
+    qd->promise.set_value(std::move(ips));
+}
 
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
@@ -219,111 +243,98 @@ bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std
     return true;
 }
 
-bool resolveDomain(const std::string &hostname, std::forward_list<std::string> &uniqueIPs) {
+bool resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs) {
     ares_channel channel;
+    std::vector<ResolveQueryData> queries;
+    std::vector<std::future<std::forward_list<std::string>>> futures;
+
+    const size_t hostsSize = std::distance(hosts.begin(), hosts.end());
+
+    queries.reserve(hostsSize);
+    futures.reserve(hostsSize);
+
     int status = ares_library_init(ARES_LIB_INIT_ALL);
+
     if (status != ARES_SUCCESS) {
-        std::cerr << "ares_library_init failed: " << ares_strerror(status) << std::endl;
+        LOG_ERROR("Failed to init C-Ares library: " + std::string(ares_strerror(status)));
         return false;
     }
 
     struct ares_options options;
     int optmask = 0;
 
-    options.timeout = 2000; // ms
+    options.timeout = 2000; //  ms // FIXME: TAKE FROM CONFIG OR MACRO
     optmask |= ARES_OPT_TIMEOUTMS;
 
     status = ares_init_options(&channel, &options, optmask);
 
     if (status != ARES_SUCCESS) {
-        std::cerr << "ares_init failed: " << ares_strerror(status) << std::endl;
+        LOG_ERROR("Failed to init C-Ares control block: " + std::string(ares_strerror(status)));
         ares_library_cleanup();
         return false;
     }
 
-    // структура для результата
-    struct CallbackData {
-        bool finished = false;
-        bool success = false;
-        std::forward_list<std::string> *ipList;
-    } cbData;
-    cbData.ipList = &uniqueIPs;
+    // Performing queries using C-Ares and adding futures for sync
+    for (auto &h : hosts) {
+        queries.push_back({h});
+        futures.push_back(queries.back().promise.get_future());
 
-    auto callback = [](void *arg, int status, int /*timeouts*/, struct ares_addrinfo *res) {
-        auto *data = static_cast<CallbackData*>(arg);
-        if (status != ARES_SUCCESS) {
-            std::cerr << "Failed to resolve: " << ares_strerror(status) << std::endl;
-            data->finished = true;
-            data->success = false;
-            return;
-        }
+        ares_addrinfo_hints hints{};
+        hints.ai_family = AF_UNSPEC;
+        ares_getaddrinfo(channel, h.c_str(), nullptr, &hints, CaresResolveCallback, &queries.back());
+    }
 
-        char ipstr[INET6_ADDRSTRLEN];
-        for (auto *node = res->nodes; node != nullptr; node = node->ai_next) {
-            void *addr = nullptr;
-            if (node->ai_family == AF_INET) {
-                struct sockaddr_in *ipv4 = (struct sockaddr_in *)node->ai_addr;
-                addr = &(ipv4->sin_addr);
-            } else if (node->ai_family == AF_INET6) {
-                struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)node->ai_addr;
-                addr = &(ipv6->sin6_addr);
-            } else {
-                continue;
-            }
+    //=================
 
-            if (inet_ntop(node->ai_family, addr, ipstr, sizeof(ipstr)) != nullptr) {
-                data->ipList->push_front(std::string(ipstr));
-            }
-        }
-
-        ares_freeaddrinfo(res);
-        data->finished = true;
-        data->success = true;
-    };
-
-    struct ares_addrinfo_hints hints;
-    std::memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;      // IPv4 и IPv6
-    hints.ai_socktype = SOCK_STREAM;  // как и в исходной функции
-
-    ares_getaddrinfo(channel, hostname.c_str(), nullptr, &hints, callback, &cbData);
-
-    // blocking mode
-    while (!cbData.finished) {
-        fd_set read_fds, write_fds;
-        FD_ZERO(&read_fds);
-        FD_ZERO(&write_fds);
+    // единый event loop
+    bool done = false;
+    while (!done) {
+        fd_set rfds, wfds;
+        FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
 
         int socks[ARES_GETSOCK_MAXNUM];
         int bitmask = ares_getsock(channel, socks, ARES_GETSOCK_MAXNUM);
-
         int maxfd = -1;
-        for (int i = 0; i < ARES_GETSOCK_MAXNUM; ++i) {
+        for (int i = 0; i < ARES_GETSOCK_MAXNUM; i++) {
             if (ARES_GETSOCK_READABLE(bitmask, i)) {
-                FD_SET(socks[i], &read_fds);
+                FD_SET(socks[i], &rfds);
                 if (socks[i] > maxfd) maxfd = socks[i];
             }
             if (ARES_GETSOCK_WRITABLE(bitmask, i)) {
-                FD_SET(socks[i], &write_fds);
+                FD_SET(socks[i], &wfds);
                 if (socks[i] > maxfd) maxfd = socks[i];
             }
         }
 
-        struct timeval tv, *tvp;
-        tvp = ares_timeout(channel, NULL, &tv);
-        int rc = select(maxfd + 1, &read_fds, &write_fds, NULL, tvp);
-        if (rc < 0) {
-            perror("select");
-            break;
+        timeval tv;
+        auto tvp = ares_timeout(channel, nullptr, &tv);
+
+        int nfds = (maxfd >= 0) ? maxfd + 1 : 0;
+        int rc = select(nfds, &rfds, &wfds, nullptr, tvp);
+
+        if (rc >= 0) {
+            ares_process(channel, &rfds, &wfds);
         }
 
-        ares_process(channel, &read_fds, &write_fds);
+        // Check if all requests are performed
+        done = std::all_of(futures.begin(), futures.end(),
+                           [](auto &f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; });
+    }
+
+    for (auto &f : futures) {
+        auto ips = f.get();
+        for (auto &ip : ips) {
+            uniqueIPs.push_front(ip);
+        }
     }
 
     ares_destroy(channel);
     ares_library_cleanup();
 
-    return cbData.success;
+    removeListDuplicates(uniqueIPs);
+
+    return (std::distance(uniqueIPs.begin(), uniqueIPs.end()) != 0);
 }
 
 
