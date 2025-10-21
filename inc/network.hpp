@@ -8,6 +8,12 @@
 
 #include "json_io.hpp"
 
+// ====================
+// Settings for C-Ares resolving
+// ====================
+#define RESOLVE_BATCH_SIZE              200u
+// ====================
+
 namespace NetTypes {
     using bitsetIPv4 = std::bitset<32>;
     using bitsetIPv6 = std::bitset<128>;
@@ -23,8 +29,16 @@ namespace NetTypes {
         };
     };
 
+    template <typename T>
+    using ListIPvx = std::forward_list<NetTypes::IPvx<T>>;
+
     using ListIPv4 = std::forward_list<NetTypes::IPvx<NetTypes::bitsetIPv4>>;
     using ListIPv6 = std::forward_list<NetTypes::IPvx<NetTypes::bitsetIPv6>>;
+
+    struct ListIPvxPair {
+        ListIPv4& v4;
+        ListIPv6& v6;
+    };
 
     enum class AddressType {
         DOMAIN,

@@ -1,12 +1,13 @@
 #include "filter.hpp"
 #include "log.hpp"
+#include "common.hpp"
 #include <set>
 #include <fstream>
 #include <string>
 
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
 
-static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6, NetTypes::ListAddress* accumulateBuffer=nullptr) {
+static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6, NetTypes::ListAddress* domainBuffer=nullptr) {
     NetTypes::AddressType type;
     NetTypes::IPvx<NetTypes::bitsetIPv4> bufferIPv4;
     NetTypes::IPvx<NetTypes::bitsetIPv6> bufferIPv6;
@@ -20,29 +21,26 @@ static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, Ne
     } else if (type == NetTypes::AddressType::IPV6) {
         parseIPv6(buffer, bufferIPv6);
         ipv6.push_front(bufferIPv6);
-    } else if (type == NetTypes::AddressType::DOMAIN && (accumulateBuffer == nullptr)) {
-        std::forward_list<std::string> uniqueIPs;
-
-        status = resolveDomains({buffer}, uniqueIPs);
-
-        if (!status) {
-            // Resolve failed, nothing to parse
-            return false;
-        }
-
-        for (const auto& uip : uniqueIPs) {
-            status &= parseAddress(uip, ipv4, ipv6);
-        }
-
-        return status;
-    } else if (type == NetTypes::AddressType::DOMAIN && (accumulateBuffer != nullptr)) {
-        accumulateBuffer->push_front(buffer);
+    } else if (type == NetTypes::AddressType::DOMAIN && (domainBuffer != nullptr)) {
+        domainBuffer->push_front(buffer);
+    } else if (type == NetTypes::AddressType::DOMAIN && (domainBuffer == nullptr)) {
+        // Nothing to do, skipping
     } else { // NetTypes::AddressType::UNKNOWN
         // Failed to get address type
         return false;
     }
 
     return true;
+}
+
+static bool parseAddress(const NetTypes::ListAddress& addrs, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6) {
+    bool status = true;
+
+    for (const auto& addr : addrs) {
+        status &= parseAddress(addr, ipv4, ipv6);
+    }
+
+    return status;
 }
 
 void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6) {
@@ -84,54 +82,53 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
     LOG_INFO("File " + path.string() + " parsed to " + std::to_string(ipv4Size) + " IPv4 entities and " + std::to_string(ipv6Size) + " IPv6 entities");
 }
 
-bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6) {
-    bool status;
+template <typename T>
+static bool checkIPvxByLists(NetTypes::ListIPvx<T>& current, const NetTypes::ListIPvx<T>& lists, std::forward_list<uint32_t>* removeIndices=nullptr) {
+    bool checkResult = false;
+    size_t index = 0;
 
-    static NetTypes::ListIPv4 currIPv4;
-    static NetTypes::ListIPv6 currIPv6;
+    for (const auto& cIP : current) {
+        for (const auto& lIP : lists) {
+            bool status = lIP.isSubnetIncludes(cIP);
 
-    currIPv4.clear();
-    currIPv6.clear();
-
-    status = parseAddress(addr, currIPv4, currIPv6);
-
-    if (!status) {
-        return false;
-    }
-
-    // Check all IPv4
-    for (const auto& checkIP : currIPv4) {
-        for (const auto& listIP : ipv4) {
-            status = listIP.isSubnetIncludes(checkIP);
-
-            if (status) {
+            if (status && (removeIndices == nullptr)) {
                 return true;
+            } else if (status) {
+                checkResult = true;
+                removeIndices->push_front(index);
+
+                break;
             }
         }
+        ++index;
     }
 
-    // Check all IPv6
-    for (const auto& checkIP : currIPv6) {
-        for (const auto& listIP : ipv6) {
-            status = listIP.isSubnetIncludes(checkIP);
-
-            if (status) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return checkResult;
 }
 
-bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6, bool applyFix) {
+
+bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& listsPair, bool applyFix) {
     const fs::path tempFilePath = addPathPostfix(path, FILTER_FILENAME_POSTFIX);
+
+    NetTypes::ListIPv4 currIPv4;
+    NetTypes::ListIPv6 currIPv6;
+    NetTypes::ListAddress uniqueIPs;
 
     std::ifstream file;
     std::ofstream fileTemp;
+
     std::string buffer;
+    NetTypes::ListAddress domainBatch;
+
+    std::forward_list<uint32_t> removeIndicies;
+
     bool status;
-    bool isFoundAny = false;
+    bool isFoundAny(false);
+
+    float progress;
+    const size_t linesCount = countLinesInFile(path);
+    size_t currSize(0);
+    size_t currPerfCount(0);
 
     file.open(path);
 
@@ -148,14 +145,72 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPv4& ipv4, c
     }
 
     while (std::getline(file, buffer)) {
-        status = checkAddressByLists(buffer, ipv4, ipv6);
+        auto type = getAddressType(buffer);
+        bool isTypeDomain = type == NetTypes::AddressType::DOMAIN;
 
-        if (!status) {
-            fileTemp << buffer;
+        status = false;
+
+        removeIndicies.clear();
+
+        if (type == NetTypes::AddressType::UNKNOWN) {
+            LOG_WARNING("An unknown entry was found in file with addresses, the type could not be determined: " + buffer);
+            continue;
+        }
+
+        if (isTypeDomain) {
+            domainBatch.push_front(buffer);
+            ++currSize;
+        }
+
+        if (isTypeDomain && currSize == RESOLVE_BATCH_SIZE) {
+            resolveDomains(domainBatch, uniqueIPs);
+            parseAddress(uniqueIPs, currIPv4, currIPv6);
+
+            status |= checkIPvxByLists(currIPv4, listsPair.v4, &removeIndicies);
+            status |= checkIPvxByLists(currIPv6, listsPair.v6, &removeIndicies);
+
+            currPerfCount += RESOLVE_BATCH_SIZE;
+        } else if (isTypeDomain) {
+            // Not enough recording in batch, skipping
+            continue;
         } else {
-            isFoundAny = true;
+            parseAddress(buffer, currIPv4, currIPv6);
+
+            status |= checkIPvxByLists(currIPv4, listsPair.v4);
+            status |= checkIPvxByLists(currIPv6, listsPair.v6);
+
+            ++currPerfCount;
+        }
+
+        // На данном этапе
+        // IPv4 / IPv6 - в status лежит состояние
+        // Domain - в status лежит состояние, в removeIndicies индексы к удалению
+
+        isFoundAny |= status;
+
+        if (status && !applyFix) {
+            // Record is valid, skipping
+            continue;
+        } else if (status) {
+            if (isTypeDomain) {
+                removeListItemsForInxs(domainBatch, removeIndicies);
+
+                for (const auto& domain : domainBatch) {
+                    fileTemp << buffer;
+                }
+
+                domainBatch.clear();
+            } else {
+                fileTemp << buffer;
+            }
+        }
+
+        if (status) {
             LOG_INFO("Detection in search between file and IP lists: " + buffer + " --> " + path.string());
         }
+
+        progress = std::min(float(currPerfCount) / float(linesCount), 100.0f);
+        logResolveProgress(progress);
     }
 
     if (file.is_open()) {

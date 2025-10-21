@@ -15,9 +15,9 @@
 #include <regex>
 #include <future>
 
-#define GITHUB_TOKEN_HEADER         "Authorization: Bearer "
+#define GITHUB_TOKEN_HEADER             "Authorization: Bearer "
 
-#define USER_AGENT                  "ru-geolists-creator"
+#define USER_AGENT                      "RGLC"
 
 #define CURL_OPERATION_TIMEOUT_SEC      10u
 #define CURL_CONNECTION_TIMEOUT_SEC     5u

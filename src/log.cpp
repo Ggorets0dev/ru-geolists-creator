@@ -5,6 +5,13 @@
 #include "log.hpp"
 #include "fs_utils.hpp"
 
+// ====================
+// Settings for C-Ares resolving logs
+// ====================
+#define RESOLVE_PROGRESS_STEP      10.0f
+constexpr float gkResolveProgressStep = RESOLVE_PROGRESS_STEP / 100.0f;
+// ====================
+
 struct OutputMessagesTarget {
     int stdoutCode;
     int stderrCode;
@@ -34,6 +41,24 @@ void logUrlAccess(const std::string& url, bool status) {
         LOG_INFO("Successfully accessed resource: " + url);
     } else {
         LOG_ERROR("Failed to access resource: " + url);
+    }
+}
+
+void logResolveProgress(float progress) {
+    static float prevProgress;
+
+    std::ostringstream oss;
+
+    if (prevProgress > progress) {
+        prevProgress = 0.0f;
+    }
+
+    if ((progress - prevProgress) >= gkResolveProgressStep) {
+        oss << std::fixed << std::setprecision(2) << progress * 100.0f;
+
+        LOG_INFO("Domain resolving in progress:  " + oss.str() + " %");
+
+        prevProgress = progress;
     }
 }
 

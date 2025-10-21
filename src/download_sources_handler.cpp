@@ -15,12 +15,17 @@ static void filterDownloadedFiles(RgcConfig& config, const std::vector<Downloade
     NetTypes::ListIPv6 ipv6;
     bool status;
 
+    NetTypes::ListIPvxPair listsPair = {
+        ipv4,
+        ipv6
+    };
+
     parseAddressFile(config.whitelistPath, ipv4, ipv6);
 
     for (const auto& file : downloadedFiles) {
         LOG_INFO("Checking for whitelist entries: " + file.second.string());
 
-        status = checkFileByIPvLists(file.second, ipv4, ipv6, true);
+        status = checkFileByIPvLists(file.second, listsPair, true);
 
         if (!status) {
             LOG_INFO("File [" + file.second.filename().string() + "] was checked successfully, no filter applied");
