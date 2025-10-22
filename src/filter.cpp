@@ -68,7 +68,14 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
     }
 
     // ======== Convert all domains to IPv4 or IPv6
-    resolveDomains(domainsBuffer, uniqueIPs);
+    NetUtils::CAresResolver resolver(2000);
+
+    if (!resolver.isInitialized()) {
+        std::cerr << "Failed to init resolver\n";
+        return;
+    }
+
+    resolver.resolveDomains(domainsBuffer, uniqueIPs);
 
     domainsBuffer.clear();
 
@@ -131,6 +138,13 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
     size_t currSize(0);
     size_t currPerfCount(0);
 
+    NetUtils::CAresResolver resolver(2000);
+
+    if (!resolver.isInitialized()) {
+        std::cerr << "Failed to init resolver\n";
+        return 1;
+    }
+
     file.open(path);
 
     if (!file.is_open()) {
@@ -164,10 +178,8 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
         }
 
         if (isTypeDomain && (currSize == RESOLVE_BATCH_SIZE || currPerfCount == linesCount - 1)) {
-            resolveDomains(domainBatch, uniqueIPs);
+            resolver.resolveDomains(domainBatch, uniqueIPs);
             parseAddress(uniqueIPs, currIPv4, currIPv6);
-
-            std::cout << "Hi there!" << std::endl;
 
             status |= checkIPvxByLists(currIPv4, listsPair.v4, &removeIndicies);
             status |= checkIPvxByLists(currIPv6, listsPair.v6, &removeIndicies);

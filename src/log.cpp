@@ -54,7 +54,7 @@ void logFilterCheckProgress(float progress) {
     }
 
     if ((progress - prevProgress) >= gkResolveProgressStep) {
-        oss << std::fixed << std::setprecision(2) << progress * 100.0f;
+        oss << std::fixed << std::setprecision(1) << progress * 100.0f;
 
         LOG_INFO("File filter-check in progress:  " + oss.str() + " %");
 

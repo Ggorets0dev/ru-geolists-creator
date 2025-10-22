@@ -1,17 +1,20 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
+#include <algorithm>
 #include <string>
 #include <curl/curl.h>
 #include <bitset>
-#include "forward_list"
+#include <forward_list>
+#include <future>
+#include <ares.h>
 
 #include "json_io.hpp"
 
 // ====================
 // Settings for C-Ares resolving
 // ====================
-#define RESOLVE_BATCH_SIZE              200u
+#define RESOLVE_BATCH_SIZE              300u
 // ====================
 
 namespace NetTypes {
@@ -50,6 +53,49 @@ namespace NetTypes {
     using ListAddress = std::forward_list<std::string>;
 }
 
+namespace NetUtils {
+
+    // Здесь должны быть твои типы и коллбэк
+    // void CaresResolveCallback(...)
+
+    class CAresResolver {
+    public:
+        struct ResolveQueryData {
+            std::string host;
+            std::promise<NetTypes::ListAddress> promise;
+        };
+
+        CAresResolver(unsigned int timeoutMs = 2000)
+            : m_timeoutMs(timeoutMs), m_initialized(false)
+        {
+            m_initialized = init();
+        }
+
+        ~CAresResolver() {
+            cleanup();
+        }
+
+        bool isInitialized() const {
+            return m_initialized;
+        }
+
+        bool resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs);
+
+    private:
+        ares_channel m_channel{};
+        unsigned int m_timeoutMs;
+        bool m_initialized;
+
+        static void resolveCallback(void *arg, int status, int, struct ares_addrinfo *res);
+
+        bool init();
+
+        void cleanup();
+
+        void runEventLoop(std::vector<std::future<std::forward_list<std::string>>>& futures);
+    };
+}
+
 NetTypes::AddressType getAddressType(const std::string& input);
 
 bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames);
@@ -63,7 +109,5 @@ bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, 
 void parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out);
 
 void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out);
-
-bool resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs);
 
 #endif // NETWORK_HPP
