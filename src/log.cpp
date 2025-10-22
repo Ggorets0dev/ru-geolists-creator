@@ -44,7 +44,7 @@ void logUrlAccess(const std::string& url, bool status) {
     }
 }
 
-void logResolveProgress(float progress) {
+void logFilterCheckProgress(float progress) {
     static float prevProgress;
 
     std::ostringstream oss;
@@ -56,7 +56,7 @@ void logResolveProgress(float progress) {
     if ((progress - prevProgress) >= gkResolveProgressStep) {
         oss << std::fixed << std::setprecision(2) << progress * 100.0f;
 
-        LOG_INFO("Domain resolving in progress:  " + oss.str() + " %");
+        LOG_INFO("File filter-check in progress:  " + oss.str() + " %");
 
         prevProgress = progress;
     }

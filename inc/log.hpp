@@ -45,7 +45,7 @@ void initLogging();
 
 void logUrlAccess(const std::string& url, bool status);
 
-void logResolveProgress(float progress);
+void logFilterCheckProgress(float progress);
 
 void logWithMark(const std::string& msg, const std::string& mark, uint32_t level);
 

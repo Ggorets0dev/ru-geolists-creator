@@ -3,6 +3,7 @@
 #include "common.hpp"
 #include <set>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
@@ -162,14 +163,16 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
             ++currSize;
         }
 
-        if (isTypeDomain && currSize == RESOLVE_BATCH_SIZE) {
+        if (isTypeDomain && (currSize == RESOLVE_BATCH_SIZE || currPerfCount == linesCount - 1)) {
             resolveDomains(domainBatch, uniqueIPs);
             parseAddress(uniqueIPs, currIPv4, currIPv6);
+
+            std::cout << "Hi there!" << std::endl;
 
             status |= checkIPvxByLists(currIPv4, listsPair.v4, &removeIndicies);
             status |= checkIPvxByLists(currIPv6, listsPair.v6, &removeIndicies);
 
-            currPerfCount += RESOLVE_BATCH_SIZE;
+            currPerfCount += currSize;
         } else if (isTypeDomain) {
             // Not enough recording in batch, skipping
             continue;
@@ -198,11 +201,14 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
                 for (const auto& domain : domainBatch) {
                     fileTemp << buffer;
                 }
-
-                domainBatch.clear();
             } else {
                 fileTemp << buffer;
             }
+        }
+
+        if (isTypeDomain) {
+            domainBatch.clear();
+            currSize = 0;
         }
 
         if (status) {
@@ -210,7 +216,7 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
         }
 
         progress = std::min(float(currPerfCount) / float(linesCount), 100.0f);
-        logResolveProgress(progress);
+        logFilterCheckProgress(progress);
     }
 
     if (file.is_open()) {
