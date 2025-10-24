@@ -379,6 +379,7 @@ bool NetUtils::CAresResolver::resolveDomains(const NetTypes::ListAddress& hosts,
     std::vector<std::future<std::forward_list<std::string>>> futures;
 
     const size_t hostsSize = std::distance(hosts.begin(), hosts.end());
+
     queries.reserve(hostsSize);
     futures.reserve(hostsSize);
 
@@ -401,6 +402,7 @@ bool NetUtils::CAresResolver::resolveDomains(const NetTypes::ListAddress& hosts,
     }
 
     removeListDuplicates(uniqueIPs);
+
     return (std::distance(uniqueIPs.begin(), uniqueIPs.end()) != 0);
 }
 

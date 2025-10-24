@@ -203,18 +203,18 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
 
         isFoundAny |= status;
 
-        if (status && !applyFix) {
+        if (!status && !applyFix) {
             // Record is valid, skipping
             continue;
-        } else if (status) {
+        } else if (!status) {
             if (isTypeDomain) {
                 removeListItemsForInxs(domainBatch, removeIndicies);
 
                 for (const auto& domain : domainBatch) {
-                    fileTemp << buffer;
+                    fileTemp << domain << '\n';
                 }
             } else {
-                fileTemp << buffer;
+                fileTemp << buffer << '\n';
             }
         }
 

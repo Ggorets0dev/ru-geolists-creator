@@ -3,22 +3,21 @@
 #include "software_info.hpp"
 #include "log.hpp"
 
-#include <iterator>
-
 #define FORCE_OPTION_DESCRIPTION                "Starts source download and build even if no updates are detected"
-#define ABOUT_OPTION_DESCRIPTION                "Displaying software information"
-#define CHECK_OPTION_DESCRIPTION                "Checking access of all source's URLs from config"
-#define CHILD_OPTION_DESCRIPTION                "Sending release notes to parent proccess (for work in chain)"
-#define INIT_OPTION_DESCRIPTION                 "Initializing software by creating config and downloading all dependencies"
-#define SHOW_OPTION_DESCRIPTION                 "Displaying all extra sources from configuration files"
-#define ADD_EXTRA_OPTION_DESCRIPTION            "Adding extra source to download list"
-#define REMOVE_EXTRA_OPTION_DESCRIPTION         "Removing extra source from download list"
+#define ABOUT_OPTION_DESCRIPTION                "Display software information"
+#define CHECK_OPTION_DESCRIPTION                "Check access of all source's URLs from config"
+#define CHILD_OPTION_DESCRIPTION                "Send release notes to parent proccess (for work in chain)"
+#define INIT_OPTION_DESCRIPTION                 "Initialize software by creating config and downloading all dependencies"
+#define SHOW_OPTION_DESCRIPTION                 "Display all extra sources from configuration files"
+#define ADD_EXTRA_OPTION_DESCRIPTION            "Add extra source to download list"
+#define REMOVE_EXTRA_OPTION_DESCRIPTION         "Remove extra source from download list"
 #define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
 #define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate"
+#define NO_WHITELIST_OPTION_DESCRIPTION         "Disable whitelist filtering for current session"
 
 #define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
-#define ASK_MARK "❔"
+#define ASK_MARK                                "❔"
 
 CmdArgs gCmdArgs = { 0 };
 
@@ -45,6 +44,8 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
 
     app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
     app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
+
+    app.add_flag("--no-whitelist", gCmdArgs.isNoWhitelist, NO_WHITELIST_OPTION_DESCRIPTION);
 
     app.add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
         ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);

@@ -24,18 +24,18 @@ void removeListDuplicates(std::forward_list<T>& list) {
 }
 
 template <typename T>
-void removeListItemsForInxs(std::forward_list<T>& lst, const std::forward_list<uint32_t>& indexes) {
-    if (indexes.empty()) {
+void removeListItemsForInxs(std::forward_list<T>& lst, const std::forward_list<uint32_t>& indicies) {
+    if (indicies.empty()) {
         return;
     }
 
     auto prev = lst.before_begin();
     auto curr = lst.begin();
 
-    auto idx_it = indexes.begin(); // iterator over indexes to remove
+    auto idx_it = indicies.begin(); // iterator over indexes to remove
     size_t i = 0;                  // current element index
 
-    while (curr != lst.end() && idx_it != indexes.end()) {
+    while (curr != lst.end() && idx_it != indicies.end()) {
         if (i == *idx_it) {
             // Remove current element
             curr = lst.erase_after(prev);

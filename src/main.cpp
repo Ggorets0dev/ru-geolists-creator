@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
 
     // SECTION - Download latest available sources
     LOG_INFO("Process of downloading the latest versions of the sources begins...");
-    status = downloadNewestSources(config, true, true, downloadedSources);
+    status = downloadNewestSources(config, true, !gCmdArgs.isNoWhitelist, downloadedSources);
 
     if (!status) {
         LOG_ERROR("Failed to download newest sources to build lists");
