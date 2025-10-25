@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <regex>
 
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
 
@@ -63,7 +64,7 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
         status = parseAddress(buffer, ipv4, ipv6, &domainsBuffer);
 
         if (!status) {
-            LOG_WARNING("An unknown entry was found in file with addresses, the type could not be determined: " + buffer);
+            LOG_WARNING("An unknown entry was found in file with addresses, type could not be determined: " + buffer);
         }
     }
 
@@ -88,6 +89,13 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::
     ipv6Size = std::distance(ipv6.begin(), ipv6.end());
 
     LOG_INFO("File " + path.string() + " parsed to " + std::to_string(ipv4Size) + " IPv4 entities and " + std::to_string(ipv6Size) + " IPv6 entities");
+}
+
+bool isUrl(const std::string& str) {
+    static const std::regex url_regex(
+        R"(^[a-zA-Z][a-zA-Z0-9+.\-]*://)"
+    );
+    return std::regex_search(str, url_regex);
 }
 
 template <typename T>

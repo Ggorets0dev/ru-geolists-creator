@@ -152,15 +152,42 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, bool useFilt
 
     for (const auto& source : config.extraSources) {
         fileName = genSourceFileName(source);
+
+        // ======== If path in system specified, no need to download
+        if (!isUrl(source.url)) {
+            try {
+                status = fs::exists(source.url);
+
+                if (status) {
+                    fs::copy(source.url, kCurrentDir / fileName);
+                }
+            } catch (const fs::filesystem_error& e) {
+                LOG_ERROR("Filesystem error: " + std::string(e.what()));
+                status = false;
+            }
+
+            if (!status) {
+                LOG_WARNING("Failed to locate local extra source (ignored): " + source.url);
+                continue;
+            }
+
+            downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
+            LOG_INFO("Local extra source was added successfully: " + source.url);
+            continue;
+        }
+        // ========
+
+        // ======== Downloading extra source via URL
         status = tryDownloadFile(source.url, fileName);
 
         if (!status) {
-            LOG_WARNING("Failed to downloaded extra source: " + source.url);
+            LOG_WARNING("Failed to downloaded extra source (ignored): " + source.url);
             continue;
         }
 
         downloadedFiles.push_back(DownloadedSourcePair(Source(source.type, source.section), kCurrentDir / fileName));
-        LOG_INFO("Extra source was downloaded successfully: " + source.url);
+        LOG_INFO("Remote extra source was downloaded successfully: " + source.url);
+        // ========
     }
     // !SECTION
 

@@ -102,4 +102,4 @@ EOF
 dpkg-deb --build "$DEB_PACKAGE_DIR"
 mv "${DEB_PACKAGE_DIR}.deb" "rglc_${SI_PROJECT_VERSION}_${ARCH}.deb"
 
-echo "[+] DEB package build completed"
+echo "[+] DEB package build completed: rglc_${SI_PROJECT_VERSION}_${ARCH}.deb"
