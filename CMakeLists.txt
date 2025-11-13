@@ -21,22 +21,10 @@ message(STATUS "[CMAKE] [!] Project version: ${PROJECT_VERSION}")
 # FINDING DEPENDENCIES
 # ==============================
 
-# Try to find libcurl in system
-find_package(CURL REQUIRED)
-
-# Try to find log4cxx in system
-find_package(log4cxx REQUIRED)
-
 # Try to find libarchive in system
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
-
-# Try to find jsoncpp in systemp
-pkg_check_modules(JSONCPP REQUIRED jsoncpp)
-
-# Try to find c-ares in system
-pkg_check_modules(CARES REQUIRED libcares)
 
 # Try to find protobuf in system
 find_package(Protobuf REQUIRED)
@@ -84,105 +72,14 @@ configure_file(
 # ==============================
 
 # ==============================
-# CREATING EXCEPTION STATIC LIBRARY
+# BUILDING STATIC LIBRARIES (MODULES)
 # ==============================
-add_library(exception_lib STATIC
-    lib/exception/src/exception.cpp
-)
-
-target_include_directories(exception_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/exception/inc
-)
-
-target_compile_features(exception_lib PUBLIC cxx_std_17)
-# ==============================
-
-# ==============================
-# CREATING COMMON STATIC LIBRARY
-# ==============================
-add_library(common_lib STATIC
-    lib/common/src/common.cpp
-)
-
-target_include_directories(common_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/common/inc
-)
-
-target_compile_features(common_lib PUBLIC cxx_std_17)
-# ==============================
-
-# ==============================
-# CREATING LOG STATIC LIBRARY
-# ==============================
-add_library(log_lib STATIC
-    lib/log/src/log.cpp
-)
-
-target_include_directories(log_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/log/inc
-)
-
-target_link_libraries(log_lib PUBLIC
-    fs_lib
-    log4cxx)
-
-target_compile_features(log_lib PUBLIC cxx_std_17)
-# ==============================
-
-# ==============================
-# CREATING FS STATIC LIBRARY
-# ==============================
-add_library(fs_lib STATIC
-    lib/fs/src/fs_utils.cpp
-)
-
-target_include_directories(fs_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/fs/inc
-)
-
-target_link_libraries(fs_lib PUBLIC
-    log_lib)
-
-target_compile_features(fs_lib PUBLIC cxx_std_17)
-# ==============================
-
-# ==============================
-# CREATING JSON_IO STATIC LIBRARY
-# ==============================
-add_library(json_io_lib STATIC
-    lib/json_io/src/json_io.cpp
-)
-
-target_include_directories(json_io_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/json_io/inc
-)
-
-target_link_libraries(json_io_lib PUBLIC
-    ${JSONCPP_LIBRARIES}
-    log_lib)
-
-target_compile_features(json_io_lib PUBLIC cxx_std_17)
-# ==============================
-
-# ==============================
-# CREATING NETWORK STATIC LIBRARY
-# ==============================
-add_library(network_lib STATIC
-    lib/network/src/network.cpp
-)
-
-target_include_directories(network_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/network/inc
-)
-
-target_link_libraries(network_lib PUBLIC
-    CURL::libcurl
-    ${CARES_LIBRARIES}
-    json_io_lib
-    exception_lib
-    common_lib)
-
-target_compile_features(network_lib PUBLIC cxx_std_17)
+add_subdirectory(lib/exception)
+add_subdirectory(lib/common)
+add_subdirectory(lib/log)
+add_subdirectory(lib/fs)
+add_subdirectory(lib/json_io)
+add_subdirectory(lib/network)
 # ==============================
 
 # ==============================
