@@ -84,6 +84,108 @@ configure_file(
 # ==============================
 
 # ==============================
+# CREATING EXCEPTION STATIC LIBRARY
+# ==============================
+add_library(exception_lib STATIC
+    lib/exception/src/exception.cpp
+)
+
+target_include_directories(exception_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/exception/inc
+)
+
+target_compile_features(exception_lib PUBLIC cxx_std_17)
+# ==============================
+
+# ==============================
+# CREATING COMMON STATIC LIBRARY
+# ==============================
+add_library(common_lib STATIC
+    lib/common/src/common.cpp
+)
+
+target_include_directories(common_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/common/inc
+)
+
+target_compile_features(common_lib PUBLIC cxx_std_17)
+# ==============================
+
+# ==============================
+# CREATING LOG STATIC LIBRARY
+# ==============================
+add_library(log_lib STATIC
+    lib/log/src/log.cpp
+)
+
+target_include_directories(log_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/log/inc
+)
+
+target_link_libraries(log_lib PUBLIC
+    fs_lib
+    log4cxx)
+
+target_compile_features(log_lib PUBLIC cxx_std_17)
+# ==============================
+
+# ==============================
+# CREATING FS STATIC LIBRARY
+# ==============================
+add_library(fs_lib STATIC
+    lib/fs/src/fs_utils.cpp
+)
+
+target_include_directories(fs_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/fs/inc
+)
+
+target_link_libraries(fs_lib PUBLIC
+    log_lib)
+
+target_compile_features(fs_lib PUBLIC cxx_std_17)
+# ==============================
+
+# ==============================
+# CREATING JSON_IO STATIC LIBRARY
+# ==============================
+add_library(json_io_lib STATIC
+    lib/json_io/src/json_io.cpp
+)
+
+target_include_directories(json_io_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/json_io/inc
+)
+
+target_link_libraries(json_io_lib PUBLIC
+    ${JSONCPP_LIBRARIES}
+    log_lib)
+
+target_compile_features(json_io_lib PUBLIC cxx_std_17)
+# ==============================
+
+# ==============================
+# CREATING NETWORK STATIC LIBRARY
+# ==============================
+add_library(network_lib STATIC
+    lib/network/src/network.cpp
+)
+
+target_include_directories(network_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/network/inc
+)
+
+target_link_libraries(network_lib PUBLIC
+    CURL::libcurl
+    ${CARES_LIBRARIES}
+    json_io_lib
+    exception_lib
+    common_lib)
+
+target_compile_features(network_lib PUBLIC cxx_std_17)
+# ==============================
+
+# ==============================
 # BUILDING PROTOBUF SOURCES
 # ==============================
 set(PROTO_SRC_FILES
@@ -139,15 +241,15 @@ file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
 
 target_link_libraries(RuGeolistsCreator PRIVATE
-        CURL::libcurl
         ${LIBARCHIVE_LIBRARIES}
-        ${JSONCPP_LIBRARIES}
         ${Protobuf_LIBRARIES}
         absl::strings
         absl::base
-        ${CARES_LIBRARIES}
         pthread
-        log4cxx)
+        log4cxx
+        network_lib
+        json_io_lib
+        log_lib)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(RuGeolistsCreator PRIVATE
@@ -158,7 +260,6 @@ target_include_directories(RuGeolistsCreator PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
     ${PROTO_GEN_DIR}
-    ${CARES_INCLUDE_DIRS}
 )
 
 # Install software into ~/.local/bin
