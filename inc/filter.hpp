@@ -4,7 +4,7 @@
 #include <string>
 #include <fs_utils.hpp>
 
-#include "network.hpp"
+#include "net_types_base.hpp"
 
 bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4, const NetTypes::ListIPv6& ipv6);
 

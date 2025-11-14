@@ -1,10 +1,9 @@
 #include "geo_manager.hpp"
 
-#include "network.hpp"
+#include "url_handle.hpp"
 #include "log.hpp"
 
 #include <signal.h>
-#include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -27,7 +26,7 @@ std::optional<std::string> setupGeoManagerBinary() {
 
     LOG_INFO("Starting to setup Geo manager binary...");
 
-    if (!tryDownloadFile(GEO_MGR_LAST_RELEASE_URL, GEO_MGR_RELEASE_REQ_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(GEO_MGR_LAST_RELEASE_URL, GEO_MGR_RELEASE_REQ_FILE_NAME)) {
         LOG_ERROR("Failed to perform API request for V2IP repository");
         return std::nullopt;
     }
@@ -42,7 +41,7 @@ std::optional<std::string> setupGeoManagerBinary() {
 
     fs::remove(GEO_MGR_RELEASE_REQ_FILE_NAME);
 
-    status = downloadGithubReleaseAssets(request, { geoMgrBinary });
+    status = NetUtils::downloadGithubReleaseAssets(request, { geoMgrBinary });
 
     if (!status) {
         LOG_ERROR("Failed to download Geo manager release assets");

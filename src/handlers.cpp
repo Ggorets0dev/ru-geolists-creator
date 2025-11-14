@@ -5,8 +5,7 @@
 #include "log.hpp"
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
-#include "network.hpp"
-#include "software_info.hpp"
+#include "url_handle.hpp"
 #include "geo_manager.hpp"
 
 #include <string>
@@ -96,7 +95,7 @@ void addExtraSource() {
         // =====
     } else {
         // ===== Remote source
-        status = tryAccessUrl(source.url);
+        status = NetUtils::tryAccessUrl(source.url);
         // =====
     }
 
@@ -199,7 +198,7 @@ void checkUrlsAccess() {
             // =====
         } else {
             // ===== Remote source
-            isAccessed = tryAccessUrl(url);
+            isAccessed = NetUtils::tryAccessUrl(url);
             // =====
         }
 
@@ -328,7 +327,7 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     std::optional<std::time_t> lastReleaseTime;
 
     // SECTION - Check ReFilter for updates
-    status = tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for ReFilter lists");
@@ -358,7 +357,7 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check XRAY rules for updates
-    status = tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for XRay lists");
@@ -387,7 +386,7 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check RUADLIST for updates
-    status = tryDownloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+    status = NetUtils::tryDownloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for RuAdList");

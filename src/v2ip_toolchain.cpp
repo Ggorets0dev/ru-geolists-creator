@@ -1,7 +1,7 @@
 #include "v2ip_toolchain.hpp"
 #include "build_tools.hpp"
 #include "log.hpp"
-#include "network.hpp"
+#include "url_handle.hpp"
 
 #include <unistd.h>
 
@@ -46,7 +46,7 @@ static void addPrivateSource(Json::Value& inputArray, std::vector<std::string>& 
     obj["action"] = "add";
 
     inputArray.append(obj);
-    usedSections.push_back("private");
+    usedSections.emplace_back("private");
 }
 
 std::optional<std::string> downloadV2ipSourceCode() {
@@ -54,7 +54,7 @@ std::optional<std::string> downloadV2ipSourceCode() {
 
     LOG_INFO("Starting to download V2IP source code...");
 
-    if (!tryDownloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME)) {
         LOG_ERROR("Failed to perform API request for V2IP repository");
         return std::nullopt;
     }
@@ -71,7 +71,7 @@ std::optional<std::string> downloadV2ipSourceCode() {
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
-    if (!tryDownloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME)) {
         LOG_ERROR("V2IP source code could not be downloaded after several attempts");
         return std::nullopt;
     }

@@ -1,7 +1,7 @@
 #include "dlc_toolchain.hpp"
 #include "log.hpp"
 #include "json_io.hpp"
-#include "network.hpp"
+#include "url_handle.hpp"
 
 #define DLC_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/domain-list-community/releases/latest"
 
@@ -12,7 +12,7 @@ std::optional<std::string> downloadDlcSourceCode() {
 
     LOG_INFO("Starting to download DLC source code...");
 
-    if (!tryDownloadFile(DLC_API_LAST_RELEASE_URL, DLC_RELEASE_REQ_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(DLC_API_LAST_RELEASE_URL, DLC_RELEASE_REQ_FILE_NAME)) {
         LOG_ERROR("Failed to perform API request for DLC repository");
         return std::nullopt;
     }
@@ -29,7 +29,7 @@ std::optional<std::string> downloadDlcSourceCode() {
 
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
-    if (tryDownloadFile(lastReleaseUrl, DLC_SRC_FILE_NAME)) {
+    if (NetUtils::tryDownloadFile(lastReleaseUrl, DLC_SRC_FILE_NAME)) {
         LOG_INFO("DLC source code was successfully downloaded");
     } else {
         LOG_ERROR("DLC source code could not be downloaded after several attempts");

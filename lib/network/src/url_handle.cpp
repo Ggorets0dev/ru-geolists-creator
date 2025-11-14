@@ -1,16 +1,11 @@
-#include "network.hpp"
-#include "exception.hpp"
+#include "url_handle.hpp"
 #include "log.hpp"
-#include "common.hpp"
+#include "exception.hpp"
 
-#include <iostream>
+#include <curl/curl.h>
 #include <fstream>
 #include <algorithm>
 #include <thread>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <regex>
 
 #define GITHUB_TOKEN_HEADER             "Authorization: Bearer "
@@ -25,26 +20,6 @@
 
 #define DOWNLOAD_ATTEMPT_COUNT          3u
 #define DOWNLOAD_ATTEMPT_DELAY_SEC      3u
-
-#define IPV6_PARTS_COUNT                8u
-
-void NetUtils::CAresResolver::resolveCallback(void *arg, int status, int, struct ares_addrinfo *res) {
-    auto *qd = static_cast<ResolveQueryData*>(arg);
-    NetTypes::ListAddress ips;
-    if (status == ARES_SUCCESS) {
-        char ipstr[INET6_ADDRSTRLEN];
-        for (auto *node = res->nodes; node; node = node->ai_next) {
-            void *addr = (node->ai_family == AF_INET)
-            ? (void*)&((struct sockaddr_in*)node->ai_addr)->sin_addr
-            : (void*)&((struct sockaddr_in6*)node->ai_addr)->sin6_addr;
-            if (inet_ntop(node->ai_family, addr, ipstr, sizeof(ipstr)))
-                ips.push_front(ipstr);
-        }
-        ares_freeaddrinfo(res);
-    }
-
-    qd->promise.set_value(std::move(ips));
-}
 
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile = static_cast<std::ofstream*>(userp);
@@ -66,7 +41,7 @@ static bool isUrlAccessible(const std::string& url, const char* httpHeader = nul
         curl_easy_cleanup(curl);
         throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
-    
+
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_OPERATION_TIMEOUT_SEC);
@@ -97,7 +72,7 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
     CURLcode res;
     bool isAccessed;
 
-    isAccessed = tryAccessUrl(url, httpHeader);
+    isAccessed = NetUtils::tryAccessUrl(url, httpHeader);
 
     if (!isAccessed) {
         throw CurlError("Failed to access URL in download handler", CURLE_COULDNT_CONNECT);
@@ -153,7 +128,7 @@ static std::string genGithubTokenHeader(const std::string& token) {
     return GITHUB_TOKEN_HEADER + token;
 }
 
-bool tryAccessUrl(const std::string& url, const char* httpHeader) {
+bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader) {
     for(uint8_t i(0); i < CONNECT_ATTEMPTS_COUNT; ++i) {
         if (isUrlAccessible(url, httpHeader)) {
             return true;
@@ -169,24 +144,7 @@ bool tryAccessUrl(const std::string& url, const char* httpHeader) {
     return false;
 }
 
-template <typename T>
-static void parseSubnetIP(const std::string& ip, T& mask) {
-    int buffer;
-    const auto pos = ip.find('/');
-
-    mask.set();
-
-    if (pos != std::string::npos) {
-        // Subnet is specified
-        buffer = std::stoi(ip.substr(pos + 1, 2));
-
-        for (uint8_t i(0); i < buffer; ++i) {
-            mask.reset(i);
-        }
-    }
-}
-
-bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken) {
+bool NetUtils::tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken) {
     std::string tokenHeader = genGithubTokenHeader(apiToken);
 
     if (!apiToken.empty()) {
@@ -196,7 +154,7 @@ bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, 
     }
 }
 
-bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
+bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
     for(uint8_t i(0); i < DOWNLOAD_ATTEMPT_COUNT; ++i) {
         try {
             downloadFile(url, filePath, httpHeader);
@@ -215,7 +173,7 @@ bool tryDownloadFile(const std::string& url, const std::string& filePath, const 
     return false;
 }
 
-bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
+bool NetUtils::downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
     bool status;
 
     if (value.isMember("assets") && value["assets"].isArray()) {
@@ -236,99 +194,7 @@ bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std
     return true;
 }
 
-
-void parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out) {
-    uint8_t buffer;
-    size_t pos;
-    size_t start_pos(0);
-    int8_t part_offset(24);
-
-    parseSubnetIP(ip, out.mask);
-
-    out.ip.reset();
-
-    do {
-        if (part_offset) {
-            pos = ip.find('.', start_pos);
-        } else {
-            pos = ip.find('/', start_pos);
-        }
-
-        if (!part_offset && pos == std::string::npos) {
-            pos = std::distance(ip.begin() + start_pos, ip.end());
-        }
-
-        if (pos == std::string::npos) {
-            // Throw exception
-        }
-
-        buffer = std::stoi(ip.substr(start_pos, pos - start_pos));
-
-        out.ip |= (buffer << part_offset);
-
-        part_offset -= 8;
-        start_pos = pos + 1;
-    } while (part_offset >= 0);
-}
-
-void parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out) {
-    uint16_t buffer[IPV6_PARTS_COUNT] = {0};
-
-    size_t pos;
-    size_t start_pos(0);
-
-    uint8_t i(0), j(0);
-    uint8_t zero_secs_count(IPV6_PARTS_COUNT);
-    uint8_t part_offset((IPV6_PARTS_COUNT - 1) * 16);
-
-    parseSubnetIP(ip, out.mask);
-
-    out.ip.reset();
-
-    while (true) {
-        pos = ip.find(':', start_pos);
-
-        if (pos == std::string::npos) {
-            pos = ip.find('/', start_pos);
-
-            if (pos == std::string::npos) {
-                break;
-            }
-        }
-
-        auto substr = ip.substr(start_pos, pos - start_pos);
-
-        if (substr.length() > 1) {
-            buffer[i] = std::stoi(substr, nullptr, 16);
-            --zero_secs_count;
-        } else {
-            buffer[i] = 0;
-        }
-
-        ++i;
-
-        start_pos = pos + 1;
-    };
-
-    while (j < i) {
-        if (buffer[j]) {
-            out.ip |= (buffer[j] << part_offset);
-            ++j;
-        } else {
-            --zero_secs_count;
-
-            if (!zero_secs_count) {
-                ++j;
-            }
-        }
-
-        part_offset -= 16;
-    }
-}
-
-
-
-NetTypes::AddressType getAddressType(const std::string& input) {
+NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {
     try {
         // IPv4 with mask /0–32
         static const std::regex kPatternIPv4(
@@ -365,111 +231,3 @@ NetTypes::AddressType getAddressType(const std::string& input) {
         return NetTypes::AddressType::UNKNOWN;
     }
 }
-
-// ===========================
-// NET_UTILS
-// ===========================
-bool NetUtils::CAresResolver::resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs) {
-    if (!m_initialized) {
-        LOG_ERROR("CAresResolver: not initialized");
-        return false;
-    }
-
-    std::vector<ResolveQueryData> queries;
-    std::vector<std::future<std::forward_list<std::string>>> futures;
-
-    const size_t hostsSize = std::distance(hosts.begin(), hosts.end());
-
-    queries.reserve(hostsSize);
-    futures.reserve(hostsSize);
-
-    for (auto &h : hosts) {
-        queries.push_back({h});
-        futures.push_back(queries.back().promise.get_future());
-
-        ares_addrinfo_hints hints{};
-        hints.ai_family = AF_UNSPEC;
-        ares_getaddrinfo(m_channel, h.c_str(), nullptr, &hints, resolveCallback, &queries.back());
-    }
-
-    runEventLoop(futures);
-
-    for (auto &f : futures) {
-        auto ips = f.get();
-        for (auto &ip : ips) {
-            uniqueIPs.push_front(ip);
-        }
-    }
-
-    removeListDuplicates(uniqueIPs);
-
-    return (std::distance(uniqueIPs.begin(), uniqueIPs.end()) != 0);
-}
-
-bool NetUtils::CAresResolver::init() {
-    int status = ares_library_init(ARES_LIB_INIT_ALL);
-    if (status != ARES_SUCCESS) {
-        LOG_ERROR("Failed to init C-Ares library: " + std::string(ares_strerror(status)));
-        return false;
-    }
-
-    struct ares_options options;
-    int optmask = 0;
-    options.timeout = m_timeoutMs;
-    optmask |= ARES_OPT_TIMEOUTMS;
-
-    status = ares_init_options(&m_channel, &options, optmask);
-    if (status != ARES_SUCCESS) {
-        LOG_ERROR("Failed to init C-Ares control block: " + std::string(ares_strerror(status)));
-        ares_library_cleanup();
-        return false;
-    }
-
-    return true;
-}
-
-void NetUtils::CAresResolver::runEventLoop(std::vector<std::future<std::forward_list<std::string>>>& futures) {
-    bool done = false;
-    while (!done) {
-        fd_set rfds, wfds;
-        FD_ZERO(&rfds);
-        FD_ZERO(&wfds);
-
-        int socks[ARES_GETSOCK_MAXNUM];
-        int bitmask = ares_getsock(m_channel, socks, ARES_GETSOCK_MAXNUM);
-        int maxfd = -1;
-
-        for (int i = 0; i < ARES_GETSOCK_MAXNUM; i++) {
-            if (ARES_GETSOCK_READABLE(bitmask, i)) {
-                FD_SET(socks[i], &rfds);
-                if (socks[i] > maxfd) maxfd = socks[i];
-            }
-            if (ARES_GETSOCK_WRITABLE(bitmask, i)) {
-                FD_SET(socks[i], &wfds);
-                if (socks[i] > maxfd) maxfd = socks[i];
-            }
-        }
-
-        timeval tv;
-        auto tvp = ares_timeout(m_channel, nullptr, &tv);
-
-        int nfds = (maxfd >= 0) ? maxfd + 1 : 0;
-        int rc = select(nfds, &rfds, &wfds, nullptr, tvp);
-
-        if (rc >= 0) {
-            ares_process(m_channel, &rfds, &wfds);
-        }
-
-        done = std::all_of(futures.begin(), futures.end(),
-                           [](auto &f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; });
-    }
-}
-
-void NetUtils::CAresResolver::cleanup() {
-    if (m_initialized) {
-        ares_destroy(m_channel);
-        ares_library_cleanup();
-        m_initialized = false;
-    }
-}
-// ===========================

@@ -10,10 +10,8 @@
 
 #define RUADLIST_VERSION_SIZE 12
 
-extern bool
-extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath);
+bool extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath);
 
-extern bool
-parseRuadlistUpdateDatetime(const Json::Value &value, std::time_t& dtOut);
+bool parseRuadlistUpdateDatetime(const Json::Value &value, std::time_t& dtOut);
 
 #endif /* RUADLIST_HPP */

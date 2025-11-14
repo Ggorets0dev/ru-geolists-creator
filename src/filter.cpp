@@ -1,31 +1,34 @@
-#include "filter.hpp"
-#include "log.hpp"
-#include "common.hpp"
 #include <set>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <regex>
 
+#include "filter.hpp"
+#include "log.hpp"
+#include "common.hpp"
+#include "net_convert.hpp"
+#include "url_handle.hpp"
+#include "cares_resolver.hpp"
+
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
 
 static bool parseAddress(const std::string& buffer, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6, NetTypes::ListAddress* domainBuffer=nullptr) {
     NetTypes::AddressType type;
-    NetTypes::IPvx<NetTypes::bitsetIPv4> bufferIPv4;
-    NetTypes::IPvx<NetTypes::bitsetIPv6> bufferIPv6;
-    bool status;
+    NetTypes::IPv4Subnet bufferIPv4;
+    NetTypes::IPv6Subnet bufferIPv6;
 
-    type = getAddressType(buffer);
+    type = NetUtils::getAddressType(buffer);
 
     if (type == NetTypes::AddressType::IPV4) {
-        parseIPv4(buffer, bufferIPv4);
+        NetUtils::Convert::parseIPv4(buffer, bufferIPv4);
         ipv4.push_front(bufferIPv4);
     } else if (type == NetTypes::AddressType::IPV6) {
-        parseIPv6(buffer, bufferIPv6);
+        NetUtils::Convert::parseIPv6(buffer, bufferIPv6);
         ipv6.push_front(bufferIPv6);
     } else if (type == NetTypes::AddressType::DOMAIN && (domainBuffer != nullptr)) {
         domainBuffer->push_front(buffer);
-    } else if (type == NetTypes::AddressType::DOMAIN && (domainBuffer == nullptr)) {
+    } else if (type == NetTypes::AddressType::DOMAIN) {
         // Nothing to do, skipping
     } else { // NetTypes::AddressType::UNKNOWN
         // Failed to get address type
@@ -168,7 +171,7 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
     }
 
     while (std::getline(file, buffer)) {
-        auto type = getAddressType(buffer);
+        auto type = NetUtils::getAddressType(buffer);
         bool isTypeDomain = type == NetTypes::AddressType::DOMAIN;
 
         status = false;

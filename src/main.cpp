@@ -9,7 +9,7 @@
 #include "build_tools.hpp"
 #include "ipc_chain.hpp"
 #include "geo_manager.hpp"
-#include "network.hpp"
+#include "net_types_base.hpp"
 
 #include <unistd.h>
 #include <signal.h>

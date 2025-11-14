@@ -1,4 +1,5 @@
 **/build
+**/.idea
 **/build-arm64
 **/build-amd64
 **.deb
