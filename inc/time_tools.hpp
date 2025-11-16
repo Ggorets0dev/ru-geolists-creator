@@ -4,7 +4,6 @@
 #include <string>
 #include <ctime>
 
-extern std::string
-parseUnixTime(const std::time_t& timeU);
+std::string parseUnixTime(const std::time_t& timeU);
 
 #endif // TIME_TOOLS_HPP

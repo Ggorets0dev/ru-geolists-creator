@@ -10,7 +10,7 @@ bool checkAddressByLists(const std::string& addr, const NetTypes::ListIPv4& ipv4
 
 bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& listsPair, bool applyFix);
 
-void parseAddressFile(const fs::path& path, NetTypes::ListIPv4& ipv4, NetTypes::ListIPv6& ipv6);
+void parseAddressFile(const fs::path& path, NetTypes::ListIPvxPair& listsPair);
 
 bool isUrl(const std::string& str);
 

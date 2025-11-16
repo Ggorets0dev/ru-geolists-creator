@@ -32,7 +32,7 @@ target_include_directories(network_lib PUBLIC
 target_link_libraries(network_lib PUBLIC
     CURL::libcurl
     ${CARES_LIBRARIES}
-    ${BGPDUMP_LIBRARIES}
+    ${BGPDUMP_LIBRARY}
     RGLC::json_io
     RGLC::exception
     RGLC::common

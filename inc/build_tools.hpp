@@ -3,13 +3,13 @@
 
 #include "config.hpp"
 
-#define GEOSITE_FILENAME_DAT       "geosite.dat"
-#define GEOIP_FILENAME_DAT         "geoip.dat"
+#define GEOSITE_FILENAME_DAT        "geosite.dat"
+#define GEOIP_FILENAME_DAT          "geoip.dat"
 
-#define GEOSITE_FILENAME_DB       "geosite.db"
-#define GEOIP_FILENAME_DB         "geoip.db"
+#define GEOSITE_FILENAME_DB         "geosite.db"
+#define GEOIP_FILENAME_DB           "geoip.db"
 
-#define RELEASE_NOTES_FILENAME  "release_notes.txt"
+#define RELEASE_NOTES_FILENAME      "release_notes.txt"
 
 struct GeoReleasePack {
     GeoReleasePack(const fs::path& listDomain, const fs::path& listIP) :

@@ -11,6 +11,7 @@
 // Settings for C-Ares resolving
 // ====================
 #define RESOLVE_BATCH_SIZE              300u
+#define RESOLVE_DEFAULT_TIMEOUT_MS      2000
 // ====================
 
 namespace NetUtils {
@@ -21,7 +22,7 @@ namespace NetUtils {
             std::promise<NetTypes::ListAddress> promise;
         };
 
-        CAresResolver(unsigned int timeoutMs = 2000)
+        explicit CAresResolver(const int timeoutMs = RESOLVE_DEFAULT_TIMEOUT_MS)
             : m_timeoutMs(timeoutMs), m_initialized(false)
         {
             m_initialized = init();
@@ -40,7 +41,7 @@ namespace NetUtils {
 
     private:
         ares_channel m_channel{};
-        unsigned int m_timeoutMs;
+        int m_timeoutMs;
         bool m_initialized;
 
         static void resolveCallback(void *arg, int status, int, struct ares_addrinfo *res);

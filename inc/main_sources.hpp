@@ -39,10 +39,10 @@ public:
     };
 
     std::string section;
-    Source::Type type;
+    Type type;
 
-    Source() {};
-    Source(Source::Type type, const std::string& section);
+    Source() = default;
+    Source(Type type, const std::string& section);
 
     virtual void print(std::ostream& stream) const;
 };

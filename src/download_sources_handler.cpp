@@ -20,7 +20,7 @@ static void filterDownloadedFiles(RgcConfig& config, const std::vector<Downloade
         ipv6
     };
 
-    parseAddressFile(config.whitelistPath, ipv4, ipv6);
+    parseAddressFile(config.whitelistPath, listsPair);
 
     for (const auto& file : downloadedFiles) {
         LOG_INFO("Checking for whitelist entries: " + file.second.string());

@@ -26,6 +26,7 @@ struct RgcConfig {
     std::forward_list<ExtraSource> extraSources;
 
     std::string whitelistPath;
+    std::string bgpDumpPath;
 };
 
 bool writeConfig(const RgcConfig& config);

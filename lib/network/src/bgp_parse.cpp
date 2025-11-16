@@ -8,9 +8,11 @@
 using namespace NetTypes;
 using namespace NetUtils;
 
+static TriePair gCacheTrie;
+
 static std::optional<SubnetVariant> extractSubnetFromEntry(BGPDUMP_ENTRY *entry);
 
-void parse_BGP_dump(const std::string& path, TriePair& outPair) {
+void BGP::parseDump(const std::string& path, TriePair& outPair) {
     BGPDUMP* dump = nullptr;
     BGPDUMP_ENTRY* entry = nullptr;
 
@@ -48,9 +50,19 @@ void parse_BGP_dump(const std::string& path, TriePair& outPair) {
     bgpdump_close_dump(dump);
 }
 
+void BGP::parseDumpToCache(const std::string& path) {
+    parseDump(path, gCacheTrie);
+}
+
+const TriePair* BGP::getTrieFromCache() {
+    return &gCacheTrie;
+}
+
 static std::optional<SubnetVariant> extractSubnetFromEntry(BGPDUMP_ENTRY *entry)
 {
-    if (!entry) return std::nullopt;
+    if (!entry) {
+        return std::nullopt;
+    }
 
     // ===========================
     // TYPE: MRTD_TABLE_DUMP

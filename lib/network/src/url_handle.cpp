@@ -1,6 +1,7 @@
 #include "url_handle.hpp"
 #include "log.hpp"
 #include "exception.hpp"
+#include "libnetwork_settings.hpp"
 
 #include <curl/curl.h>
 #include <fstream>
@@ -12,17 +13,8 @@
 
 #define USER_AGENT                      "RGLC"
 
-#define CURL_OPERATION_TIMEOUT_SEC      10u
-#define CURL_CONNECTION_TIMEOUT_SEC     5u
-
-#define CONNECT_ATTEMPTS_COUNT          3u
-#define CONNECT_ATTEMPT_DELAY_SEC       3u
-
-#define DOWNLOAD_ATTEMPT_COUNT          3u
-#define DOWNLOAD_ATTEMPT_DELAY_SEC      3u
-
 static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    std::ofstream* outFile = static_cast<std::ofstream*>(userp);
+    auto* outFile = static_cast<std::ofstream*>(userp);
     size_t totalSize = size * nmemb;
 
     if (outFile->is_open()) {
@@ -44,8 +36,8 @@ static bool isUrlAccessible(const std::string& url, const char* httpHeader = nul
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_OPERATION_TIMEOUT_SEC);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONNECTION_TIMEOUT_SEC);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, gLibNetworkSettings.curlOperationTimeoutSec);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, gLibNetworkSettings.curlConnectionTimeoutSec);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
@@ -94,8 +86,8 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
 
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_OPERATION_TIMEOUT_SEC);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONNECTION_TIMEOUT_SEC);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, gLibNetworkSettings.curlOperationTimeoutSec);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, gLibNetworkSettings.curlConnectionTimeoutSec);
 
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); // Follow redirects
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
@@ -129,13 +121,13 @@ static std::string genGithubTokenHeader(const std::string& token) {
 }
 
 bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader) {
-    for(uint8_t i(0); i < CONNECT_ATTEMPTS_COUNT; ++i) {
+    for(unsigned int i(0); i < gLibNetworkSettings.connectAttemptsCount; ++i) {
         if (isUrlAccessible(url, httpHeader)) {
             return true;
         } else {
             LOG_WARNING("Failed to access URL, performing another attempt...");
 
-            std::this_thread::sleep_for(std::chrono::seconds(CONNECT_ATTEMPT_DELAY_SEC));
+            std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.connectAttemptDelaySec));
 
             continue;
         }
@@ -155,14 +147,14 @@ bool NetUtils::tryDownloadFromGithub(const std::string& url, const std::string& 
 }
 
 bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
-    for(uint8_t i(0); i < DOWNLOAD_ATTEMPT_COUNT; ++i) {
+    for(unsigned int i(0); i < gLibNetworkSettings.downloadAttemptCount; ++i) {
         try {
             downloadFile(url, filePath, httpHeader);
         }  catch (std::exception& e) {
             LOG_ERROR(e.what());
             LOG_WARNING("Failed to download requested file, performing another attempt...");
 
-            std::this_thread::sleep_for(std::chrono::seconds(DOWNLOAD_ATTEMPT_DELAY_SEC));
+            std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.downloadAttemptDelaySec));
 
             continue;
         }

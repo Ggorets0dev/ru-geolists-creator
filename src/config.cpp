@@ -25,8 +25,8 @@ bool writeConfig(const RgcConfig& config) {
     value["ruadlistTime"] = config.ruadlistTime;
 
     SET_NULL_IF_EMPTY(value["apiToken"], config.apiToken);
-
     SET_NULL_IF_EMPTY(value["whitelistPath"], config.whitelistPath);
+    SET_NULL_IF_EMPTY(value["bgpDumpPath"], config.bgpDumpPath);
 
     for (const auto& source : config.extraSources) {
         Json::Value obj;
@@ -79,10 +79,12 @@ bool readConfig(RgcConfig& config) {
 
     config.whitelistPath = value["whitelistPath"].asString();
 
+    config.bgpDumpPath = value["bgpDumpPath"].asString();
+
     if (value["extra"].isArray() && !value["extra"].isNull()) {
         const Json::Value& sources = value["extra"];
         for (const auto& source : sources) {
-            config.extraSources.push_front(ExtraSource(source));
+            config.extraSources.emplace_front(source);
         }
     }
 

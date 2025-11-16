@@ -1,33 +1,62 @@
 #include "net_convert.hpp"
+#include "libnetwork_settings.hpp"
+#include "bgp_parse.hpp"
 
-#include <stdint.h>
+#include <cstdint>
+
+#include "log.hpp"
 
 #define IPV6_PARTS_COUNT                8u
 
+using namespace NetTypes;
+using namespace NetUtils;
+
 template <typename T>
-static void parseSubnetIP(const std::string& ip, T& mask) {
+static void parseSubnetIP(const std::string& ip, T& outIPVx) {
     int buffer;
     const auto pos = ip.find('/');
 
-    mask.set();
+    outIPVx.mask.set();
 
     if (pos != std::string::npos) {
         // Subnet is specified
         buffer = std::stoi(ip.substr(pos + 1, 2));
 
-        for (uint8_t i(0); i < buffer; ++i) {
-            mask.reset(i);
+        for (int i(0); i < buffer; ++i) {
+            outIPVx.mask.reset(i);
+        }
+    } else if (gLibNetworkSettings.isSearchSubnetByBGP) {
+        auto ptrie = BGP::getTrieFromCache();
+
+        if (ptrie->isEmpty()) {
+            if (gLibNetworkSettings.bgpDumpPath.empty()) {
+                LOG_WARNING("Subnet cant be found using BGP dump because of incorrect dump path");
+                return;
+            }
+
+            BGP::parseDumpToCache(gLibNetworkSettings.bgpDumpPath);
+        }
+
+        if constexpr (std::is_same_v<T, IPv4Subnet>) {
+            if (auto ipb = ptrie->v4.lookup(outIPVx.ip)) {
+                outIPVx.mask = ipb->mask;
+            }
+
+        } else if (std::is_same_v<T, IPv6Subnet>) {
+            if (auto ipb = ptrie->v6.lookup(outIPVx.ip)) {
+                outIPVx.mask = ipb->mask;
+            }
         }
     }
 }
 
-NetTypes::bitsetIPv4 NetUtils::Convert::inetv4ToBitset(const in_addr& a) {
+bitsetIPv4 Convert::inetv4ToBitset(const in_addr& a) {
     uint32_t v = ntohl(a.s_addr);
     return {v};
 }
 
-NetTypes::bitsetIPv6 NetUtils::Convert::inetv6ToBitset(const in6_addr& a) {
-    NetTypes::bitsetIPv6 b;
+bitsetIPv6 Convert::inetv6ToBitset(const in6_addr& a) {
+    bitsetIPv6 b;
     for (int i = 0; i < 16; i++) {
         const uint8_t byte = a.s6_addr[i];
         for (int bit = 0; bit < 8; ++bit) {
@@ -37,26 +66,24 @@ NetTypes::bitsetIPv6 NetUtils::Convert::inetv6ToBitset(const in6_addr& a) {
     return b;
 }
 
-NetTypes::bitsetIPv4 NetUtils::Convert::lengthv4ToBitset(const int len) {
+bitsetIPv4 Convert::lengthv4ToBitset(const int len) {
     uint32_t m = (len == 0) ? 0 : (0xFFFFFFFFu << (32 - len));
     return {m};
 }
 
-NetTypes::bitsetIPv6 NetUtils::Convert::lengthv6ToBitset(const int len) {
-    NetTypes::bitsetIPv6 m;
+bitsetIPv6 Convert::lengthv6ToBitset(const int len) {
+    bitsetIPv6 m;
     for (int i = 0; i < len; i++) {
         m[127 - i] = true;
     }
     return m;
 }
 
-void NetUtils::Convert::parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv4>& out) {
+void Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
     uint8_t buffer;
     size_t pos;
     size_t start_pos(0);
     int8_t part_offset(24);
-
-    parseSubnetIP(ip, out.mask);
 
     out.ip.reset();
 
@@ -82,9 +109,11 @@ void NetUtils::Convert::parseIPv4(const std::string& ip, NetTypes::IPvx<NetTypes
         part_offset -= 8;
         start_pos = pos + 1;
     } while (part_offset >= 0);
+
+    parseSubnetIP(ip, out);
 }
 
-void NetUtils::Convert::parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes::bitsetIPv6>& out) {
+void Convert::parseIPv6(const std::string& ip, IPv6Subnet& out) {
     uint16_t buffer[IPV6_PARTS_COUNT] = {0};
 
     size_t pos;
@@ -93,8 +122,6 @@ void NetUtils::Convert::parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes
     uint8_t i(0), j(0);
     uint8_t zero_secs_count(IPV6_PARTS_COUNT);
     uint8_t part_offset((IPV6_PARTS_COUNT - 1) * 16);
-
-    parseSubnetIP(ip, out.mask);
 
     out.ip.reset();
 
@@ -137,4 +164,6 @@ void NetUtils::Convert::parseIPv6(const std::string& ip, NetTypes::IPvx<NetTypes
 
         part_offset -= 16;
     }
+
+    parseSubnetIP(ip, out);
 }

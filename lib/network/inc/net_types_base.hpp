@@ -6,9 +6,12 @@
 #include <bitset>
 #include <forward_list>
 
+#define IPV4_BITS_COUNT 32
+#define IPV6_BITS_COUNT 128
+
 namespace NetTypes {
-    using bitsetIPv4 = std::bitset<32>;
-    using bitsetIPv6 = std::bitset<128>;
+    using bitsetIPv4 = std::bitset<IPV4_BITS_COUNT>;
+    using bitsetIPv6 = std::bitset<IPV6_BITS_COUNT>;
 
     template <typename T>
     class IPvx {

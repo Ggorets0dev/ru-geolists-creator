@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+#include <array>
 
 #include "bgp_trie.hpp"
 
@@ -76,16 +77,40 @@ namespace NetTypes {
         std::optional<IPvxT> best;
 
         for (int i = BITS - 1; i >= 0; --i) {
-            if (cur->route) best = cur->route;
+            if (cur->route) {
+                best = cur->route;
+            }
+
             int bit = (addr >> i) & 1;
-            if (!cur->child[bit]) break;
+
+            if (!cur->child[bit]) {
+                break;
+            }
+
             cur = cur->child[bit];
         }
-        if (cur->route) best = cur->route;
+
+        if (cur->route) {
+            best = cur->route;
+        }
+
         return best;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Other
+    // ──────────────────────────────────────────────────────────────
+    template <size_t BITS>
+    bool BGPRadixTrie<BITS>::isEmpty() const {
+        return root == nullptr;
     }
 
     // Явная инстанциация для компиляции
     template class BGPRadixTrie<32>;
     template class BGPRadixTrie<128>;
+
+    bool TriePair::isEmpty() const {
+        return v4.isEmpty() && v6.isEmpty();
+    }
+
 }

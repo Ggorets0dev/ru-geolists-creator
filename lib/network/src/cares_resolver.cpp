@@ -24,7 +24,7 @@ void NetUtils::CAresResolver::resolveCallback(void *arg, int status, int, struct
 
 bool NetUtils::CAresResolver::resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs) {
     if (!m_initialized) {
-        LOG_ERROR("CAresResolver: not initialized");
+        LOG_ERROR("Tried to call not initialized CAres domain reslover");
         return false;
     }
 
@@ -61,12 +61,14 @@ bool NetUtils::CAresResolver::resolveDomains(const NetTypes::ListAddress& hosts,
 
 bool NetUtils::CAresResolver::init() {
     int status = ares_library_init(ARES_LIB_INIT_ALL);
+
     if (status != ARES_SUCCESS) {
-        LOG_ERROR("Failed to init C-Ares library: " + std::string(ares_strerror(status)));
+        LOG_ERROR("Failed to init CAres library: " + std::string(ares_strerror(status)));
         return false;
     }
 
-    struct ares_options options;
+    ares_options options{};
+
     int optmask = 0;
     options.timeout = m_timeoutMs;
     optmask |= ARES_OPT_TIMEOUTMS;
@@ -103,7 +105,7 @@ void NetUtils::CAresResolver::runEventLoop(std::vector<std::future<std::forward_
             }
         }
 
-        timeval tv;
+        timeval tv{};
         auto tvp = ares_timeout(m_channel, nullptr, &tv);
 
         int nfds = (maxfd >= 0) ? maxfd + 1 : 0;

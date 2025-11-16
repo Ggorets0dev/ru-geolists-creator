@@ -5,8 +5,11 @@
 
 #include "bgp_trie.hpp"
 
-namespace NetUtils {
-    void parse_BGP_dump(const std::string& path, NetTypes::TriePair& outPair);
+namespace NetUtils::BGP {
+    void parseDump(const std::string& path, NetTypes::TriePair& outPair);
+    void parseDumpToCache(const std::string& path);
+
+    const NetTypes::TriePair* getTrieFromCache();
 } // namespace NetUtils
 
 #endif // BGP_PARSE_HPP
