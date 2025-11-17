@@ -14,6 +14,14 @@ struct LibNetworkSettings {
     /** @brief Path to the BGP dump file (used when isSearchSubnetByBGP == true). */
     std::string bgpDumpPath;
 
+    /** @brief Limit of IP mask, which can be fixed using BGP dump */
+    struct AutoFixMaskLimitByBGP {
+        unsigned int v4 = 20u;
+        unsigned int v6 = 32u;
+    };
+
+    AutoFixMaskLimitByBGP autoFixMaskLimitByBGP;
+
     /** @brief Maximum time (seconds) for the whole cURL operation to complete. */
     unsigned int curlOperationTimeoutSec = 10u;
 

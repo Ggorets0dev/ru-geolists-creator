@@ -38,11 +38,11 @@ namespace NetTypes {
         Node* root = nullptr;
 
         // UTILS
-        static int mask_length(const Bitset& mask);
+        static int getMaskLength(const Bitset& mask);
     };
 
-    using IPv4Trie = BGPRadixTrie<32>;
-    using IPv6Trie = BGPRadixTrie<128>;
+    using IPv4Trie = BGPRadixTrie<IPV4_BITS_COUNT>;
+    using IPv6Trie = BGPRadixTrie<IPV6_BITS_COUNT>;
 
     struct TriePair {
         IPv4Trie v4;

@@ -14,6 +14,7 @@
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
 
 static bool parseAddress(const std::string& buffer, const NetTypes::ListIPvxPair& listsPair, NetTypes::ListAddress* domainBuffer=nullptr) {
+    bool status;
     NetTypes::AddressType type;
     NetTypes::IPv4Subnet bufferIPv4;
     NetTypes::IPv6Subnet bufferIPv6;
@@ -21,11 +22,15 @@ static bool parseAddress(const std::string& buffer, const NetTypes::ListIPvxPair
     type = NetUtils::getAddressType(buffer);
 
     if (type == NetTypes::AddressType::IPV4) {
-        NetUtils::Convert::parseIPv4(buffer, bufferIPv4);
-        listsPair.v4.push_front(bufferIPv4);
+        status = NetUtils::Convert::parseIPv4(buffer, bufferIPv4);
+        if (status) {
+            listsPair.v4.push_front(bufferIPv4);
+        }
     } else if (type == NetTypes::AddressType::IPV6) {
-        NetUtils::Convert::parseIPv6(buffer, bufferIPv6);
-        listsPair.v6.push_front(bufferIPv6);
+        status = NetUtils::Convert::parseIPv6(buffer, bufferIPv6);
+        if (status) {
+            listsPair.v6.push_front(bufferIPv6);
+        }
     } else if (type == NetTypes::AddressType::DOMAIN && (domainBuffer != nullptr)) {
         domainBuffer->push_front(buffer);
     } else if (type == NetTypes::AddressType::DOMAIN) {
@@ -72,7 +77,7 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPvxPair& listsPair) {
     }
 
     // ======== Convert all domains to IPv4 or IPv6
-    NetUtils::CAresResolver resolver(2000);
+    NetUtils::CAresResolver resolver;
 
     if (!resolver.isInitialized()) {
         std::cerr << "Failed to init resolver\n";
@@ -83,8 +88,8 @@ void parseAddressFile(const fs::path& path, NetTypes::ListIPvxPair& listsPair) {
 
     domainsBuffer.clear();
 
-    for (const auto& IP : uniqueIPs) {
-        status = parseAddress(IP, listsPair);
+    for (const auto& ip : uniqueIPs) {
+        parseAddress(ip, listsPair);
     }
     // ========
 
@@ -242,7 +247,9 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
             currSize = 0;
         }
 
-        if (status) {
+        if (status && isTypeDomain) {
+            LOG_INFO("Detection in search between file and IP lists: domain batch");
+        } else if (status) {
             LOG_INFO("Detection in search between file and IP lists: " + buffer + " --> " + path.string());
         }
 

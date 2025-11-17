@@ -6,8 +6,10 @@
 #include <bitset>
 #include <forward_list>
 
-#define IPV4_BITS_COUNT 32
-#define IPV6_BITS_COUNT 128
+#define IPV4_BITS_COUNT     32u
+#define IPV6_BITS_COUNT     128u
+
+#define IPV6_PARTS_COUNT    8u
 
 namespace NetTypes {
     using bitsetIPv4 = std::bitset<IPV4_BITS_COUNT>;
@@ -19,12 +21,20 @@ namespace NetTypes {
         T ip;
         T mask;
 
+        [[nodiscard]]
+        bool isCorrupted() const {
+            return ip.none() || mask.none();
+        };
+
         bool isSubnetIncludes(const IPvx<T>& ipvx) const {
-            return (this->ip & this->mask) == (ipvx.ip & ipvx.mask);
+            const bool isAnyCorrupted = this->isCorrupted() || ipvx.isCorrupted();
+            const bool isEqual = (this->ip & this->mask) == (ipvx.ip & ipvx.mask);
+
+            return isEqual && !isAnyCorrupted;
         };
 
         [[nodiscard]]
-        std::string to_string() const = delete;
+        std::string to_string() const;
     };
 
     using IPv4Subnet = IPvx<bitsetIPv4>;

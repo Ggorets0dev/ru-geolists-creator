@@ -10,9 +10,10 @@
 #include "ipc_chain.hpp"
 #include "geo_manager.hpp"
 #include "net_types_base.hpp"
+#include "libnetwork_settings.hpp"
 
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 
 #define EXIT_WITH_CLEANUP(code) \
     performCleanup();           \
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
     GeoReleases releases;
 
     // Init RAND
-    std::srand(std::time(0));
+    std::srand(std::time(nullptr));
 
     // Init logging
     initLogging();
@@ -141,11 +142,16 @@ int main(int argc, char** argv) {
     }
 
     status = readConfig(config);
+
     if (!status) {
         LOG_ERROR(READ_CFG_FAIL_MSG);
-
         EXIT_WITH_CLEANUP(1);
     }
+
+    // ======== Init network lib settings
+    gLibNetworkSettings.isSearchSubnetByBGP = true; // FIXME: Add ability to choose for user
+    gLibNetworkSettings.bgpDumpPath = config.bgpDumpPath;
+    // ========
 
     CREATE_TEMP_DIR();
     ENTER_TEMP_DIR();

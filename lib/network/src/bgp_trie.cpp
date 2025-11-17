@@ -1,8 +1,3 @@
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <stdexcept>
 #include <array>
 
 #include "bgp_trie.hpp"
@@ -31,11 +26,15 @@ namespace NetTypes {
     // Utils
     // ──────────────────────────────────────────────────────────────
     template <size_t BITS>
-    int BGPRadixTrie<BITS>::mask_length(const Bitset& mask) {
-        int len = 0;
-        auto m = mask.to_ullong();
-        while (m) { len++; m <<= 1; }
-        return BITS - len;
+    int BGPRadixTrie<BITS>::getMaskLength(const Bitset& mask) {
+        int n = 0;
+        for (int i = 0; i < BITS; ++i) {
+            if (!mask.test(BITS - 1 - i)) {
+                break;
+            }
+            ++n;
+        }
+        return n;
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -44,25 +43,27 @@ namespace NetTypes {
     template <size_t BITS>
     void BGPRadixTrie<BITS>::insert(const IPvxT& subnet) {
         Node* cur = root;
-        auto addr = subnet.ip.to_ullong();
-        const int prefix_len = mask_length(subnet.mask);  // например, 24
+
+        const int prefix_len = getMaskLength(subnet.mask);
 
         int bit_index = 0;
         for (int i = BITS - 1; i >= 0; --i, ++bit_index) {
-            // Если мы уже прошли все биты префикса → сохраняем маршрут здесь
+
+            // If we already passed prefix, then save
             if (bit_index >= prefix_len) {
                 cur->route = subnet;
                 return;
             }
 
-            int bit = (addr >> i) & 1;
+            int bit = subnet.ip.test(i) ? 1 : 0;
+
             if (!cur->child[bit]) {
                 cur->child[bit] = new Node();
             }
             cur = cur->child[bit];
         }
 
-        // Если дошли до конца (например, /32 или /128)
+        // If prefix is /32 or /128
         cur->route = subnet;
     }
 
@@ -102,15 +103,15 @@ namespace NetTypes {
     // ──────────────────────────────────────────────────────────────
     template <size_t BITS>
     bool BGPRadixTrie<BITS>::isEmpty() const {
-        return root == nullptr;
+        return root->child[0] == nullptr && root->child[1] == nullptr;
+    }
+
+    bool TriePair::isEmpty() const {
+        return v4.isEmpty() && v6.isEmpty();
     }
 
     // Явная инстанциация для компиляции
     template class BGPRadixTrie<32>;
     template class BGPRadixTrie<128>;
-
-    bool TriePair::isEmpty() const {
-        return v4.isEmpty() && v6.isEmpty();
-    }
 
 }

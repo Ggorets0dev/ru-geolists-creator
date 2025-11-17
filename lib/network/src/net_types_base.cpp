@@ -1,12 +1,11 @@
 #include "net_types_base.hpp"
 #include "exception.hpp"
 
-#include <iostream>
 #include <netdb.h>
 #include <regex>
 
 template <>
-std::string NetTypes::IPvx<NetTypes::bitsetIPv4>::to_string() const {
+std::string NetTypes::IPv4Subnet::to_string() const {
     auto v = static_cast<uint32_t>(ip.to_ullong());
     int len = 0;
     auto m = static_cast<uint32_t>(mask.to_ullong());
@@ -22,31 +21,44 @@ std::string NetTypes::IPvx<NetTypes::bitsetIPv4>::to_string() const {
 }
 
 template <>
-std::string NetTypes::IPvx<NetTypes::bitsetIPv6>::to_string() const {
+std::string NetTypes::IPv6Subnet::to_string() const {
     std::ostringstream oss;
     bool started = false;
-    auto hi = static_cast<uint64_t>(ip.to_ullong() >> 64);
-    auto lo = static_cast<uint64_t>(ip.to_ullong());
 
-    auto print_part = [&](uint16_t p) {
-        if (started || p != 0) {
-            if (started) oss << ':';
-            oss << std::hex << p;
-            started = true;
+    // Extract one 16-bit block (hextet) from the 128-bit IPv6 address
+    auto get16 = [&](int block) -> uint16_t {  // block: 0 to 7
+        uint16_t v = 0;
+        int bit_offset = 127 - block * 16;  // starting bit: 127, 111, ..., 15
+        for (int b = 0; b < 16; ++b) {
+            int bit = bit_offset - b;
+            if (ip.test(bit)) {
+                v |= static_cast<uint16_t>(1) << (15 - b);
+            }
         }
+        return v;
     };
 
-    // Simplified output
-    for (int i = 7; i >= 0; --i) print_part((hi >> (i * 16)) & 0xFFFF);
-    for (int i = 7; i >= 0; --i) print_part((lo >> (i * 16)) & 0xFFFF);
+    auto print_part = [&](uint16_t p) {
+        if (started) oss << ':';
+        oss << std::hex << p;
+        started = true;
+    };
 
-    int len = 0;
-    auto m = mask.to_ullong();
-    while (m) { len++; m <<= 1; }
-    len = 128 - len;
+    // Only 8 hextets in IPv6
+    for (int blk = 0; blk < 8; ++blk) {
+        print_part(get16(blk));
+    }
 
-    oss << '/' << std::dec << len;
+    // Count prefix length
+    int prefix = 0;
+    for (int i = 127; i >= 0; --i) {
+        if (mask.test(i)) ++prefix;
+        else break;
+    }
+
+    oss << '/' << std::dec << prefix;
     return oss.str();
 }
+
 
 // ===========================

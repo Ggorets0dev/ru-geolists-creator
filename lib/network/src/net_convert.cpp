@@ -1,20 +1,19 @@
 #include "net_convert.hpp"
 #include "libnetwork_settings.hpp"
+#include "net_types_base.hpp"
 #include "bgp_parse.hpp"
-
-#include <cstdint>
-
 #include "log.hpp"
 
-#define IPV6_PARTS_COUNT                8u
+#include <cstdint>
 
 using namespace NetTypes;
 using namespace NetUtils;
 
 template <typename T>
-static void parseSubnetIP(const std::string& ip, T& outIPVx) {
+static bool parseSubnetIP(const std::string& ip, T& outIPVx) {
     int buffer;
     const auto pos = ip.find('/');
+    bool status = true;
 
     outIPVx.mask.set();
 
@@ -31,7 +30,7 @@ static void parseSubnetIP(const std::string& ip, T& outIPVx) {
         if (ptrie->isEmpty()) {
             if (gLibNetworkSettings.bgpDumpPath.empty()) {
                 LOG_WARNING("Subnet cant be found using BGP dump because of incorrect dump path");
-                return;
+                return false;
             }
 
             BGP::parseDumpToCache(gLibNetworkSettings.bgpDumpPath);
@@ -40,14 +39,26 @@ static void parseSubnetIP(const std::string& ip, T& outIPVx) {
         if constexpr (std::is_same_v<T, IPv4Subnet>) {
             if (auto ipb = ptrie->v4.lookup(outIPVx.ip)) {
                 outIPVx.mask = ipb->mask;
+                status &= Convert::bitsetToLength(ipb->mask) >= gLibNetworkSettings.autoFixMaskLimitByBGP.v4;
+            } else {
+                status = false;
             }
-
         } else if (std::is_same_v<T, IPv6Subnet>) {
             if (auto ipb = ptrie->v6.lookup(outIPVx.ip)) {
                 outIPVx.mask = ipb->mask;
+                status &= Convert::bitsetToLength(ipb->mask) >= gLibNetworkSettings.autoFixMaskLimitByBGP.v6;
+            } else {
+                status = false;
             }
         }
+
+        if (!status) {
+            LOG_WARNING("Failed to find subnet for IP using BGP dump: " + outIPVx.to_string());
+            return false;
+        }
     }
+
+    return status;
 }
 
 bitsetIPv4 Convert::inetv4ToBitset(const in_addr& a) {
@@ -79,7 +90,20 @@ bitsetIPv6 Convert::lengthv6ToBitset(const int len) {
     return m;
 }
 
-void Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
+template <size_t N>
+int Convert::bitsetToLength(const std::bitset<N>& bs) {
+    int prefix = 0;
+
+    for (int i = N - 1; i >= 0; --i) {
+        if (!bs.test(i))
+            break;
+        ++prefix;
+    }
+
+    return prefix;
+}
+
+bool Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
     uint8_t buffer;
     size_t pos;
     size_t start_pos(0);
@@ -110,10 +134,10 @@ void Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
         start_pos = pos + 1;
     } while (part_offset >= 0);
 
-    parseSubnetIP(ip, out);
+    return parseSubnetIP(ip, out);
 }
 
-void Convert::parseIPv6(const std::string& ip, IPv6Subnet& out) {
+bool Convert::parseIPv6(const std::string& ip, IPv6Subnet& out) {
     uint16_t buffer[IPV6_PARTS_COUNT] = {0};
 
     size_t pos;
@@ -165,5 +189,5 @@ void Convert::parseIPv6(const std::string& ip, IPv6Subnet& out) {
         part_offset -= 16;
     }
 
-    parseSubnetIP(ip, out);
+    return parseSubnetIP(ip, out);
 }

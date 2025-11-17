@@ -6,9 +6,9 @@
 #include "net_types_base.hpp"
 
 namespace NetUtils::Convert {
-    void parseIPv4(const std::string& ip, NetTypes::IPv4Subnet& out);
+    bool parseIPv4(const std::string& ip, NetTypes::IPv4Subnet& out);
 
-    void parseIPv6(const std::string& ip, NetTypes::IPv6Subnet& out);
+    bool parseIPv6(const std::string& ip, NetTypes::IPv6Subnet& out);
 
     NetTypes::bitsetIPv4 inetv4ToBitset(const in_addr& a);
 
@@ -17,6 +17,9 @@ namespace NetUtils::Convert {
     NetTypes::bitsetIPv4 lengthv4ToBitset(int len);
 
     NetTypes::bitsetIPv6 lengthv6ToBitset(int len);
+
+    template <size_t N>
+    int bitsetToLength(const std::bitset<N>& bs);
 }
 
 #endif //NET_CONVERT_HPP

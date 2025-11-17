@@ -124,7 +124,7 @@ static std::optional<SubnetVariant> extractSubnetFromEntry(BGPDUMP_ENTRY *entry)
         if (m.address_family == AFI_IP) {
             // Zebra не даёт маску — считаем /32
             const bitsetIPv4 ip = Convert::inetv4ToBitset(m.source_ip.v4_addr);
-            const bitsetIPv4 mask = Convert::lengthv4ToBitset(32);
+            const bitsetIPv4 mask = Convert::lengthv4ToBitset(IPV4_BITS_COUNT);
 
             return IPv4Subnet{ip, mask};
         }
@@ -132,7 +132,7 @@ static std::optional<SubnetVariant> extractSubnetFromEntry(BGPDUMP_ENTRY *entry)
 #ifdef BGPDUMP_HAVE_IPV6
         if (m.address_family == AFI_IP6) {
             const bitsetIPv6 ip = Convert::inetv6ToBitset(m.source_ip.v6_addr);
-            const bitsetIPv6 mask = Convert::lengthv6ToBitset(128);
+            const bitsetIPv6 mask = Convert::lengthv6ToBitset(IPV6_BITS_COUNT);
 
             return IPv6Subnet{ip, mask};
         }
