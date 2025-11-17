@@ -68,11 +68,10 @@
   "ruadlistTime" : 1754766886,
   "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
   "v2rayTime" : 1736449948,
-  "geoMgrBinaryPath" : "/home/uav/.local/lib/geo-linux-amd64"
+  "geoMgrBinaryPath" : "/home/uav/.local/lib/geo-linux-amd64",
+  "whitelistPath" : "/home/ggorets0/Projects/C++/ru-geolists-creator/test/whitelist.txt"
 }
 ```
-
-<img title="Config example" src="img/config_example.png" alt="img" width="820">
 
 ### Добавление дополнительных источников
 
@@ -87,14 +86,15 @@ Usage: rglc [OPTIONS]
 Options:
   -h,--help                   Print this help message and exit
   --force                     Starts source download and build even if no updates are detected
-  --about                     Displaying software information
-  --check                     Checking access of all source's URLs from config
-  --child                     Sending release notes to parent proccess (for work in chain)
-  --init                      Initializing software by creating config and downloading all dependencies
-  --show                      Displaying all extra sources from configuration files
-  -a,--add                    Adding extra source to download list
+  --about                     Display software information
+  --check                     Check access of all source's URLs from config
+  --child                     Send release notes to parent proccess (for work in chain)
+  --init                      Initialize software by creating config and downloading all dependencies
+  --show                      Display all extra sources from configuration files
+  -a,--add                    Add extra source to download list
+  --no-whitelist              Disable whitelist filtering for current session
   -f,--format TEXT ...        Formats of geolists to generate
-  -r,--remove UINT            Removing extra source from download list
+  -r,--remove UINT            Remove extra source from download list
   -o,--out TEXT               Path to out DIR with all lists to create
 
 Notice: When running without arguments, the update-checked mode is used
@@ -113,3 +113,7 @@ Available formats of geolists: v2ray, sing
 * [libarchive](https://libarchive.org/)
 
 * [CLI11](https://github.com/CLIUtils/CLI11)
+
+* [libbgpdump](https://github.com/RIPE-NCC/bgpdump)
+
+* [c-ares](https://github.com/c-ares/c-ares)
