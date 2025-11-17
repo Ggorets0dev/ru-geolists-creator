@@ -6,10 +6,10 @@
 #include <bitset>
 #include <forward_list>
 
-#define IPV4_BITS_COUNT     32u
-#define IPV6_BITS_COUNT     128u
+#define IPV4_BITS_COUNT         32u
+#define IPV6_BITS_COUNT         128u
 
-#define IPV6_PARTS_COUNT    8u
+#define IPV6_HEX_GROUPS_COUNT   8u
 
 namespace NetTypes {
     using bitsetIPv4 = std::bitset<IPV4_BITS_COUNT>;

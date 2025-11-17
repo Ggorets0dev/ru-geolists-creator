@@ -13,7 +13,8 @@ template <typename T>
 static bool parseSubnetIP(const std::string& ip, T& outIPVx) {
     int buffer;
     const auto pos = ip.find('/');
-    bool status = true;
+    bool searchStatus = true;
+    bool filterStatus = true;
 
     outIPVx.mask.set();
 
@@ -39,26 +40,29 @@ static bool parseSubnetIP(const std::string& ip, T& outIPVx) {
         if constexpr (std::is_same_v<T, IPv4Subnet>) {
             if (auto ipb = ptrie->v4.lookup(outIPVx.ip)) {
                 outIPVx.mask = ipb->mask;
-                status &= Convert::bitsetToLength(ipb->mask) >= gLibNetworkSettings.autoFixMaskLimitByBGP.v4;
+                filterStatus = Convert::bitsetToLength(ipb->mask) >= gLibNetworkSettings.autoFixMaskLimitByBGP.v4;
             } else {
-                status = false;
+                searchStatus = false;
             }
         } else if (std::is_same_v<T, IPv6Subnet>) {
             if (auto ipb = ptrie->v6.lookup(outIPVx.ip)) {
                 outIPVx.mask = ipb->mask;
-                status &= Convert::bitsetToLength(ipb->mask) >= gLibNetworkSettings.autoFixMaskLimitByBGP.v6;
+                filterStatus = Convert::bitsetToLength(ipb->mask) >= gLibNetworkSettings.autoFixMaskLimitByBGP.v6;
             } else {
-                status = false;
+                searchStatus = false;
             }
         }
 
-        if (!status) {
+        if (!searchStatus) {
             LOG_WARNING("Failed to find subnet for IP using BGP dump: " + outIPVx.to_string());
+            return false;
+        } else if (!filterStatus) {
+            // TODO: Add log, but not in every tact
             return false;
         }
     }
 
-    return status;
+    return searchStatus && filterStatus;
 }
 
 bitsetIPv4 Convert::inetv4ToBitset(const in_addr& a) {
@@ -138,55 +142,87 @@ bool Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
 }
 
 bool Convert::parseIPv6(const std::string& ip, IPv6Subnet& out) {
-    uint16_t buffer[IPV6_PARTS_COUNT] = {0};
-
-    size_t pos;
-    size_t start_pos(0);
-
-    uint8_t i(0), j(0);
-    uint8_t zero_secs_count(IPV6_PARTS_COUNT);
-    uint8_t part_offset((IPV6_PARTS_COUNT - 1) * 16);
+    // найдём часть до '/': parseSubnetIP сам распарсит префикс
+    size_t slash_pos = ip.find('/');
+    std::string addr = (slash_pos == std::string::npos) ? ip : ip.substr(0, slash_pos);
 
     out.ip.reset();
 
-    while (true) {
-        pos = ip.find(':', start_pos);
-
-        if (pos == std::string::npos) {
-            pos = ip.find('/', start_pos);
-
-            if (pos == std::string::npos) {
-                break;
-            }
+    // split helper (разделитель ':')
+    auto split_by_colon = [](const std::string& s) {
+        std::vector<std::string> res;
+        size_t start = 0;
+        size_t pos;
+        while ((pos = s.find(':', start)) != std::string::npos) {
+            res.push_back(s.substr(start, pos - start));
+            start = pos + 1;
         }
-
-        auto substr = ip.substr(start_pos, pos - start_pos);
-
-        if (substr.length() > 1) {
-            buffer[i] = std::stoi(substr, nullptr, 16);
-            --zero_secs_count;
-        } else {
-            buffer[i] = 0;
-        }
-
-        ++i;
-
-        start_pos = pos + 1;
+        res.push_back(s.substr(start));
+        return res;
     };
 
-    while (j < i) {
-        if (buffer[j]) {
-            out.ip |= (buffer[j] << part_offset);
-            ++j;
-        } else {
-            --zero_secs_count;
+    std::vector<std::string> parts;
 
-            if (!zero_secs_count) {
-                ++j;
-            }
+    size_t dbl_pos = addr.find("::");
+    if (dbl_pos != std::string::npos) {
+        // есть сокращение
+        std::string left = addr.substr(0, dbl_pos);
+        std::string right = addr.substr(dbl_pos + 2);
+
+        std::vector<std::string> left_parts;
+        std::vector<std::string> right_parts;
+        if (!left.empty()) left_parts = split_by_colon(left);
+        if (!right.empty()) right_parts = split_by_colon(right);
+
+        // special case: "::" alone -> left_parts.empty() && right_parts.empty()
+        size_t missing = 8;
+        if (left_parts.size() + right_parts.size() <= 8) {
+            missing = 8 - (left_parts.size() + right_parts.size());
+        } else {
+            return false; // слишком много групп
         }
 
-        part_offset -= 16;
+        parts = left_parts;
+        for (size_t i = 0; i < missing; ++i) parts.emplace_back("0");
+        parts.insert(parts.end(), right_parts.begin(), right_parts.end());
+    } else {
+        parts = split_by_colon(addr);
+    }
+
+    if (parts.size() != 8) {
+        // возможно IPv4-совместимый формат не поддерживаем здесь
+        return false;
+    }
+
+    // Парсим каждую 16-битную группу и записываем в bitset
+    // group_index = 0..7 (0 — самая левая группа), внутри группы j = 0..15 (старший бит — j=0)
+    for (size_t group_index = 0; group_index < 8; ++group_index) {
+        const std::string& grp = parts[group_index];
+        if (grp.empty()) return false; // на всякий случай
+
+        // допускаем 1..4 hex-символа
+        if (grp.size() > 4) return false;
+
+        unsigned long value = 0;
+        try {
+            value = std::stoul(grp, nullptr, 16);
+        } catch (...) {
+            return false;
+        }
+        if (value > 0xFFFFUL) return false;
+
+        // для каждого бита внутри 16-битной группы:
+        // j = 0..15 — это позиция внутри группы, где j=0 соответствует старшему биту группы (1<<15)
+        for (int j = 0; j < 16; ++j) {
+            // проверяем старший первый (1 << (15 - j))
+            if (value & (1u << (15 - j))) {
+                // позиция в 128-битовом числе (0..127), где 127 — самый старший бит всего адреса
+                int ipv6_bit_index = static_cast<int>(group_index * 16 + j); // 0..127 (0 — старший бит группы0)
+                // переводим в индекс std::bitset (где 0 — LSB)
+                int bitset_index = 127 - ipv6_bit_index;
+                out.ip.set(bitset_index);
+            }
+        }
     }
 
     return parseSubnetIP(ip, out);

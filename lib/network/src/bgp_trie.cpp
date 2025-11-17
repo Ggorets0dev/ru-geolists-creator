@@ -73,16 +73,16 @@ namespace NetTypes {
     template <size_t BITS>
     std::optional<typename BGPRadixTrie<BITS>::IPvxT>
     BGPRadixTrie<BITS>::lookup(const Bitset& ip) const {
-        auto addr = ip.to_ullong();
         Node* cur = root;
         std::optional<IPvxT> best;
 
+        // обходим биты от старшего к младшему (BITS-1..0)
         for (int i = BITS - 1; i >= 0; --i) {
             if (cur->route) {
                 best = cur->route;
             }
 
-            int bit = (addr >> i) & 1;
+            int bit = ip[i] ? 1 : 0;
 
             if (!cur->child[bit]) {
                 break;
