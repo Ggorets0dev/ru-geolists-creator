@@ -2,10 +2,11 @@
 #define LOG_HPP
 
 #include <string>
-#include <log4cxx/logger.h>
-#include <log4cxx/propertyconfigurator.h>
-#include <log4cxx/helpers/exception.h>
+#include <spdlog/spdlog.h>
 
+// =========================
+// Message constants
+// =========================
 #define FILE_LOCATE_ERROR_MSG       "Failed to locate file on path: "
 #define FILE_OPEN_ERROR_MSG         "Failed to open file on path: "
 #define JSON_PARSE_ERROR_MSG        "Failed to parse JSON file on path: "
@@ -19,27 +20,24 @@
 #define WRITE_CFG_FAIL_MSG          "Failed to write config file"
 #define GEO_FORMAT_CONVERT_FAIL_MSG "Since the list could not be converted, the requested format was ignored: "
 
-#define LOG_MARK_ERROR      "❌"
-#define LOG_MARK_WARN       "⚠️"
-#define LOG_MARK_INFO       "ℹ️"
+template<typename... Args>
+inline void LOG_ERROR(const std::string& fmt, Args&&... args) {
+    spdlog::error(fmt, std::forward<Args>(args)...);
+}
 
-// Set special emojis before texts in logs
-// #define USE_EMOGI_MARKERS
+template<typename... Args>
+inline void LOG_WARNING(const std::string& fmt, Args&&... args) {
+    spdlog::warn(fmt, std::forward<Args>(args)...);
+}
 
-#ifdef USE_EMOGI_MARKERS
-#define LOG_ERROR(msg)          logWithMark(msg, LOG_MARK_ERROR, log4cxx::Level::ERROR_INT)
-#define LOG_WARNING(msg)        logWithMark(msg, LOG_MARK_WARN, log4cxx::Level::WARN_INT)
-#define LOG_INFO(msg)           logWithMark(msg, LOG_MARK_INFO, log4cxx::Level::INFO_INT)
-#else
-#define LOG_ERROR(msg)          LOG4CXX_ERROR(gLogger, msg)
-#define LOG_WARNING(msg)        LOG4CXX_WARN(gLogger, msg)
-#define LOG_INFO(msg)           LOG4CXX_INFO(gLogger, msg)
-#endif
+template<typename... Args>
+inline void LOG_INFO(const std::string& fmt, Args&&... args) {
+    spdlog::info(fmt, std::forward<Args>(args)...);
+}
 
-using namespace log4cxx;
-using namespace log4cxx::helpers;
-
-extern LoggerPtr gLogger;
+// =========================
+// Functions
+// =========================
 
 void initLogging();
 

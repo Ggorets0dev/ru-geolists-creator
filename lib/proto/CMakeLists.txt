@@ -9,23 +9,16 @@ find_package(absl REQUIRED)
 # ==============================
 set(PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/release_notes.proto")
 
-# генерация CPP и H
 protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES
         ${PROTO_FILES}
 )
 
 #protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES ${PROTO_SRC_FILES})
 
+message(STATUS "[CMAKE] [!] Protoc path: " ${Protobuf_PROTOC_EXECUTABLE})
 message(STATUS "[CMAKE] [!] Generated protobuf sources: ${PROTO_GEN_SRC_FILES}")
 message(STATUS "[CMAKE] [!] Generated protobuf headers: ${PROTO_GEN_INC_FILES}")
 # ==============================
-
-set(PROTO_GEN_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-
-message("!!! ${CMAKE_CURRENT_BINARY_DIR}")
-
-set(PROTOBUF_PROTOC_EXECUTABLE ${Protobuf_PROTOC_EXECUTABLE})
-message("PROTOC PATH: " ${Protobuf_PROTOC_EXECUTABLE})
 
 add_library(proto STATIC
         ${PROTO_GEN_SRC_FILES}

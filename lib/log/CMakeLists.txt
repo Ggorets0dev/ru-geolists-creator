@@ -1,5 +1,5 @@
-# Try to find log4cxx in system
-find_package(log4cxx REQUIRED)
+# Try to find spdlog::spdlog in system
+find_package(spdlog REQUIRED)
 
 add_library(log_lib STATIC
     src/log.cpp
@@ -11,7 +11,7 @@ target_include_directories(log_lib PUBLIC
 
 target_link_libraries(log_lib PUBLIC
     RGLC::fs
-    log4cxx
+    spdlog::spdlog
 )
 
 target_compile_features(log_lib PUBLIC cxx_std_17)

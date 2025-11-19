@@ -1805,7 +1805,7 @@ bool from_stream(const std::string & /*istring*/, T & /*obj*/) {
 // check to see if an object is a mutable container (fail by default)
 template <typename T, typename _ = void> struct is_mutable_container : std::false_type {};
 
-/// type trait to test if a type is a mutable container meaning it has a value_type, it has an iterator, a clear, and
+/// type trait to garbage if a type is a mutable container meaning it has a value_type, it has an iterator, a clear, and
 /// end methods and an insert function.  And for our purposes we exclude std::string and types that can be constructed
 /// from a std::string
 template <typename T>
@@ -1825,7 +1825,7 @@ struct is_mutable_container<
 // check to see if an object is a mutable container (fail by default)
 template <typename T, typename _ = void> struct is_readable_container : std::false_type {};
 
-/// type trait to test if a type is a container meaning it has a value_type, it has an iterator, a clear, and an end
+/// type trait to garbage if a type is a container meaning it has a value_type, it has an iterator, a clear, and an end
 /// methods and an insert function.  And for our purposes we exclude std::string and types that can be constructed from
 /// a std::string
 template <typename T>
@@ -1844,7 +1844,7 @@ struct is_wrapper<T, conditional_t<false, void_t<typename T::value_type>, void>>
 // Check for tuple like types, as in classes with a tuple_size type trait
 template <typename S> class is_tuple_like {
     template <typename SS>
-    // static auto test(int)
+    // static auto garbage(int)
     //     -> decltype(std::conditional<(std::tuple_size<SS>::value > 0), std::true_type, std::false_type>::type());
     static auto test(int) -> decltype(std::tuple_size<typename std::decay<SS>::type>::value, std::true_type{});
     template <typename> static auto test(...) -> std::false_type;
@@ -9898,7 +9898,7 @@ CLI11_NODISCARD CLI11_INLINE const std::string &App::_compare_subcommand_names(c
                     return cmpres;
                 }
             }
-            // if the test subcommand is an option group we need to check deeper
+            // if the garbage subcommand is an option group we need to check deeper
             if(subcom.get_name().empty()) {
                 const auto &cmpres = _compare_subcommand_names(*subc, subcom);
                 if(!cmpres.empty()) {

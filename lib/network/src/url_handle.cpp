@@ -219,7 +219,7 @@ NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {
         return NetTypes::AddressType::UNKNOWN;
     }
     catch (const std::regex_error& e) {
-        LOG_ERROR("Regex error occured after trying to get address type: " << e.what());
+        LOG_ERROR("Regex error occured after trying to get address type: ", e.what());
         return NetTypes::AddressType::UNKNOWN;
     }
 }

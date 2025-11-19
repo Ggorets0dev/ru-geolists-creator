@@ -95,18 +95,16 @@ file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 
 add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
 
-add_dependencies(RuGeolistsCreator all_tests)
+# Set dependency for force build
+add_dependencies(RuGeolistsCreator test_runner)
 
 target_link_libraries(RuGeolistsCreator PRIVATE
         ${LIBARCHIVE_LIBRARIES}
         pthread
-        log4cxx
         RGLC::network
         RGLC::json_io
         RGLC::log
         RGLC::proto)
-
-message("COLLECTED: ${PROTO_GEN_INCLUDE_DIR}")
 
 target_include_directories(RuGeolistsCreator PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
@@ -133,12 +131,3 @@ set(RGC_IPC_PROTO_GEN_INC_FILES "${PROTO_GEN_INC_FILES}" CACHE INTERNAL "PROTOBU
 
 set(RGC_IPC_PROTO_INC_DIR "${PROTO_GEN_DIR}" CACHE INTERNAL "PROTOBUF INCLUDE DIR")
 # ==============================
-
-# Install log config into ~./config/..
-install(CODE "
-  execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory \$ENV{HOME}/.config/ru-geolists-creator)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_CURRENT_SOURCE_DIR}/log4cxx.properties
-    \$ENV{HOME}/.config/ru-geolists-creator/log4cxx.properties
-  )
-")

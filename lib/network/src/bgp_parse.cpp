@@ -1,4 +1,5 @@
 #include <variant>
+#include <fstream>
 
 #include "bgp_parse.hpp"
 #include "net_convert.hpp"

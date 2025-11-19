@@ -69,7 +69,7 @@
   "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
   "v2rayTime" : 1736449948,
   "geoMgrBinaryPath" : "/home/uav/.local/lib/geo-linux-amd64",
-  "whitelistPath" : "/home/ggorets0/Projects/C++/ru-geolists-creator/test/whitelist.txt"
+  "whitelistPath" : "/home/ggorets0/Projects/C++/ru-geolists-creator/garbage/whitelist.txt"
 }
 ```
 
