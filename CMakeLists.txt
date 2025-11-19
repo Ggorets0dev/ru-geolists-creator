@@ -8,7 +8,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(IPC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC")
-set(PROTO_GEN_DIR "${IPC_DIR}/proto/generated")
 
 set (PROJECT_INCLUDE_DIRS
     ${IPC_DIR}
@@ -27,12 +26,6 @@ message(STATUS "[CMAKE] [!] Project version: ${PROJECT_VERSION}")
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
-
-# Try to find protobuf in system
-find_package(protobuf REQUIRED CONFIG)
-
-# Try to find abseil in system
-find_package(absl REQUIRED)
 # ==============================
 
 # Set Release options
@@ -82,42 +75,13 @@ add_subdirectory(lib/log)
 add_subdirectory(lib/fs)
 add_subdirectory(lib/json_io)
 add_subdirectory(lib/network)
+add_subdirectory(lib/proto)
 # ==============================
 
 # ==============================
-# BUILDING PROTOBUF SOURCES
-# ==============================
-set(PROTO_SRC_FILES
-    ${IPC_DIR}/proto/release_notes.proto)
-
-# Create directory for generated protobuf files
-file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
-
-# Generate protobuf files using protoc directly at configure time
-set(PROTO_GEN_SRC_FILES)
-set(PROTO_GEN_INC_FILES)
-
-# генерация CPP и H
-protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES
-        ${PROTO_SRC_FILES}
-)
-
-#protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES ${PROTO_SRC_FILES})
-
-message(STATUS "[CMAKE] [!] Generated protobuf sources: ${PROTO_GEN_SRC_FILES}")
-message(STATUS "[CMAKE] [!] Generated protobuf headers: ${PROTO_GEN_INC_FILES}")
-
-set(PROTO_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/inc/IPC/proto")
-
-set(PROTOBUF_PROTOC_EXECUTABLE ${Protobuf_PROTOC_EXECUTABLE})
-message("PROTOC PATH: " ${Protobuf_PROTOC_EXECUTABLE})
-# ==============================
-
-# ==============================
-# SETUP TESTS USING GOOGLE-TEST LIBRARY
+# SETUP TESTS USING THIRD-PARTY TEST LIBRARY
 # ==============================
 enable_testing()
-
 add_subdirectory(tests)
 # ==============================
 
@@ -135,24 +99,19 @@ add_dependencies(RuGeolistsCreator all_tests)
 
 target_link_libraries(RuGeolistsCreator PRIVATE
         ${LIBARCHIVE_LIBRARIES}
-        ${protobuf_LIBRARIES}
-        absl::strings
-        absl::base
         pthread
         log4cxx
         RGLC::network
         RGLC::json_io
-        RGLC::log)
+        RGLC::log
+        RGLC::proto)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_libraries(RuGeolistsCreator PRIVATE
-        absl::log_internal_check_op)
-endif()
+message("COLLECTED: ${PROTO_GEN_INCLUDE_DIR}")
 
 target_include_directories(RuGeolistsCreator PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
-    ${PROTO_GENERATED_INCLUDE_DIR}
+    ${PROTO_GEN_INCLUDE_DIR}
 )
 
 target_include_directories(RuGeolistsCreator PUBLIC ${protobuf_INCLUDE_DIR})
