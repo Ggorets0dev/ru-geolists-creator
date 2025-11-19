@@ -8,8 +8,6 @@
 using namespace NetTypes;
 using namespace NetUtils;
 
-static TriePair gCacheTrie;
-
 static std::optional<SubnetVariant> extractSubnetFromEntry(BGPDUMP_ENTRY *entry);
 
 void BGP::parseDump(const std::string& path, TriePair& outPair) {
@@ -51,10 +49,12 @@ void BGP::parseDump(const std::string& path, TriePair& outPair) {
 }
 
 void BGP::parseDumpToCache(const std::string& path) {
-    parseDump(path, gCacheTrie);
+    auto ptrie = getTrieFromCache();
+    parseDump(path, *ptrie);
 }
 
-const TriePair* BGP::getTrieFromCache() {
+TriePair* BGP::getTrieFromCache() {
+    static TriePair gCacheTrie;
     return &gCacheTrie;
 }
 

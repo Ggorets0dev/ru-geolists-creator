@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.16)
 
 project(RuGeolistsCreator LANGUAGES CXX)
 
+cmake_policy(SET CMP0135 NEW)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(IPC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC")
-set(PROTO_GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc/IPC/proto")
+set(PROTO_GEN_DIR "${IPC_DIR}/proto/generated")
 
 set (PROJECT_INCLUDE_DIRS
     ${IPC_DIR}
@@ -27,7 +29,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 
 # Try to find protobuf in system
-find_package(Protobuf REQUIRED)
+find_package(protobuf REQUIRED CONFIG)
 
 # Try to find abseil in system
 find_package(absl REQUIRED)
@@ -95,36 +97,28 @@ file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 set(PROTO_GEN_SRC_FILES)
 set(PROTO_GEN_INC_FILES)
 
-foreach(PROTO_FILE ${PROTO_SRC_FILES})
-    get_filename_component(PROTO_ABS_PATH ${PROTO_FILE} ABSOLUTE)
-    get_filename_component(PROTO_NAME_WE ${PROTO_FILE} NAME_WE)
+# генерация CPP и H
+protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES
+        ${PROTO_SRC_FILES}
+)
 
-    set(GEN_SRC_FILE ${PROTO_GEN_DIR}/${PROTO_NAME_WE}.pb.cc)
-    set(GEN_INC_FILE ${PROTO_GEN_DIR}/${PROTO_NAME_WE}.pb.h)
-
-    # Generate files immediately during CMake configuration
-    execute_process(
-        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-        --cpp_out=${PROTO_GEN_DIR}
-        --proto_path=${IPC_DIR}/proto
-        ${PROTO_ABS_PATH}
-        RESULT_VARIABLE PROTOC_RESULT
-        OUTPUT_VARIABLE PROTOC_OUTPUT
-        ERROR_VARIABLE PROTOC_ERROR
-    )
-
-    if(PROTOC_RESULT EQUAL 0)
-        message(STATUS "Successfully generated protobuf files for ${PROTO_NAME_WE}")
-    else()
-        message(FATAL_ERROR "Failed to generate protobuf files: ${PROTOC_ERROR}")
-    endif()
-
-    list(APPEND PROTO_GEN_SRC_FILES ${GEN_SRC_FILE})
-    list(APPEND PROTO_GEN_INC_FILES ${GEN_INC_FILE})
-endforeach()
+#protobuf_generate_cpp(PROTO_GEN_SRC_FILES PROTO_GEN_INC_FILES ${PROTO_SRC_FILES})
 
 message(STATUS "[CMAKE] [!] Generated protobuf sources: ${PROTO_GEN_SRC_FILES}")
 message(STATUS "[CMAKE] [!] Generated protobuf headers: ${PROTO_GEN_INC_FILES}")
+
+set(PROTO_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/inc/IPC/proto")
+
+set(PROTOBUF_PROTOC_EXECUTABLE ${Protobuf_PROTOC_EXECUTABLE})
+message("PROTOC PATH: " ${Protobuf_PROTOC_EXECUTABLE})
+# ==============================
+
+# ==============================
+# SETUP TESTS USING GOOGLE-TEST LIBRARY
+# ==============================
+enable_testing()
+
+add_subdirectory(tests)
 # ==============================
 
 # Get all sources and headers of project
@@ -137,16 +131,18 @@ file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 
 add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
 
+add_dependencies(RuGeolistsCreator all_tests)
+
 target_link_libraries(RuGeolistsCreator PRIVATE
         ${LIBARCHIVE_LIBRARIES}
-        ${Protobuf_LIBRARIES}
+        ${protobuf_LIBRARIES}
         absl::strings
         absl::base
         pthread
         log4cxx
-        network_lib
-        json_io_lib
-        log_lib)
+        RGLC::network
+        RGLC::json_io
+        RGLC::log)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(RuGeolistsCreator PRIVATE
@@ -156,8 +152,10 @@ endif()
 target_include_directories(RuGeolistsCreator PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
-    ${PROTO_GEN_DIR}
+    ${PROTO_GENERATED_INCLUDE_DIR}
 )
+
+target_include_directories(RuGeolistsCreator PUBLIC ${protobuf_INCLUDE_DIR})
 
 # Install software into ~/.local/bin
 install(TARGETS RuGeolistsCreator DESTINATION bin)

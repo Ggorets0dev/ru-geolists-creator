@@ -24,6 +24,9 @@ namespace NetTypes {
         BGPRadixTrie& operator=(const BGPRadixTrie&) = delete;
         // =========
 
+        BGPRadixTrie(BGPRadixTrie&&) = delete;
+        BGPRadixTrie& operator=(BGPRadixTrie&&) = delete;
+
         // Insert Subnet
         void insert(const IPvxT& subnet);
 
@@ -47,6 +50,13 @@ namespace NetTypes {
     struct TriePair {
         IPv4Trie v4;
         IPv6Trie v6;
+
+        TriePair() = default;
+
+        TriePair(const TriePair&) = delete;
+        TriePair& operator=(const TriePair&) = delete;
+        TriePair(TriePair&&) = delete;
+        TriePair& operator=(TriePair&&) = delete;
 
         [[nodiscard]]
         bool isEmpty() const;

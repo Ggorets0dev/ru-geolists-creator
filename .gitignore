@@ -2,10 +2,12 @@
 **/.idea
 **/build-arm64
 **/build-amd64
+**/build-debug
 **.deb
 CMakeLists.txt.user
 *.pb.cc
 *.pb.h
+CMakeUserPresets.json
 software_info.hpp
 ipc_chain.hpp
 **/rglc_deb

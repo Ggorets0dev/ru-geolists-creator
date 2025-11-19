@@ -9,7 +9,7 @@ namespace NetUtils::BGP {
     void parseDump(const std::string& path, NetTypes::TriePair& outPair);
     void parseDumpToCache(const std::string& path);
 
-    const NetTypes::TriePair* getTrieFromCache();
+    NetTypes::TriePair* getTrieFromCache();
 } // namespace NetUtils
 
 #endif // BGP_PARSE_HPP

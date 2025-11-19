@@ -1,4 +1,4 @@
-# Try to find jsoncpp in systemp
+# Try to find jsoncpp in system
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
 add_library(json_io_lib STATIC
