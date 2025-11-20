@@ -124,13 +124,10 @@ bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader) {
     for(unsigned int i(0); i < gLibNetworkSettings.connectAttemptsCount; ++i) {
         if (isUrlAccessible(url, httpHeader)) {
             return true;
-        } else {
-            LOG_WARNING("Failed to access URL, performing another attempt...");
-
-            std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.connectAttemptDelaySec));
-
-            continue;
         }
+
+        LOG_WARNING("Failed to access URL, performing another attempt...");
+        std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.connectAttemptDelaySec));
     }
 
     return false;
@@ -203,7 +200,10 @@ NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {
         );
 
         static const std::regex kPatternDomain(
-            R"(^(?!-)([A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,63}$)"
+            // Доменное имя: одна или более меток, разделённых точкой
+            // Каждая метка: 1–63 символа, не начинается и не заканчивается дефисом
+            // TLD: только буквы, минимум 2 символа
+            R"(^((?![0-9-])[A-Za-z0-9-]{0,62}[A-Za-z0-9]\.)*(?![0-9-])[A-Za-z0-9-]{0,62}[A-Za-z0-9]\.[A-Za-z]{2,63}$)"
         );
 
         if (std::regex_match(input, kPatternIPv4)) {
@@ -212,7 +212,7 @@ NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {
         if (std::regex_match(input, kPatternIPv6)) {
             return NetTypes::AddressType::IPV6;
         }
-        if (std::regex_match(input, kPatternDomain)) {
+        if (std::regex_match(input, kPatternDomain) || input == "localhost") {
             return NetTypes::AddressType::DOMAIN;
         }
 
