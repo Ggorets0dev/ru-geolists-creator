@@ -10,18 +10,13 @@
 #include <json/json.h>
 #endif
 
+bool readJsonFromFile(const std::string& filePath, Json::Value& outValue);
 
-extern bool
-readJsonFromFile(const std::string& filePath, Json::Value& outValue);
-
-extern bool
-writeJsonToFile(const std::string& filePath, const Json::Value& value);
+bool writeJsonToFile(const std::string& filePath, const Json::Value& value);
 
 template<typename Type>
-extern bool
-updateJsonValue(const std::string& filePath, const std::string& key, Type value);
+bool updateJsonValue(const std::string& filePath, const std::string& key, Type value);
 
-extern std::optional<std::time_t>
-parsePublishTime(const Json::Value& value);
+std::optional<std::time_t> parsePublishTime(const Json::Value& value);
 
 #endif // JSON_IO_HPP

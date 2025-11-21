@@ -2,6 +2,7 @@
 #include "log.hpp"
 #include "common.hpp"
 
+#include <algorithm>
 #include <arpa/inet.h>
 
 void NetUtils::CAresResolver::resolveCallback(void *arg, int status, int, struct ares_addrinfo *res) {

@@ -57,11 +57,6 @@ static fs::path getTempTestDir() {
     return dir;
 }
 
-static void cleanup(const fs::path& dir) {
-    if (fs::exists(dir))
-        fs::remove_all(dir);
-}
-
 TEST_CASE("parseIPv4: valid address without prefix", "[ipv4]") {
     DisableParseBGP dp;
 
@@ -134,7 +129,7 @@ TEST_CASE("tryDownloadFile: successfully downloads small reliable file (google.c
     REQUIRE(fs::exists(outPath));
     REQUIRE(fs::file_size(outPath) > 100);
 
-    cleanup(tempDir);
+    removePath(tempDir);
 }
 
 // ======================================================================
@@ -148,7 +143,7 @@ TEST_CASE("tryDownloadFile: successfully downloads tiny known JSON from httpbin.
     REQUIRE(result == true);
     REQUIRE(fs::exists(outPath));
 
-    cleanup(tempDir);
+    removePath(tempDir);
 }
 
 // ======================================================================
@@ -167,7 +162,7 @@ TEST_CASE("tryDownloadFile: fails gracefully and does not create file when URL d
     REQUIRE(result == false);
     REQUIRE(fs::exists(outPath) == false);
 
-    cleanup(tempDir);
+    removePath(tempDir);
 }
 
 TEST_CASE("tryAccessUrl: happy path — 200 OK + redirect chain", "[url]") {

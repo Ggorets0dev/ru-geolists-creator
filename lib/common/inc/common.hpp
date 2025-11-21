@@ -3,8 +3,7 @@
 
 #include <forward_list>
 #include <unordered_set>
-#include <stdint.h>
-#include <algorithm>
+#include <cstdint>
 
 template <typename T>
 void removeListDuplicates(std::forward_list<T>& list) {
@@ -24,18 +23,18 @@ void removeListDuplicates(std::forward_list<T>& list) {
 }
 
 template <typename T>
-void removeListItemsForInxs(std::forward_list<T>& lst, const std::forward_list<uint32_t>& indicies) {
-    if (indicies.empty()) {
+void removeListItemsForInxs(std::forward_list<T>& lst, const std::forward_list<uint32_t>& inxs) {
+    if (inxs.empty()) {
         return;
     }
 
     auto prev = lst.before_begin();
     auto curr = lst.begin();
 
-    auto idx_it = indicies.begin(); // iterator over indexes to remove
+    auto idx_it = inxs.begin(); // iterator over indexes to remove
     size_t i = 0;                  // current element index
 
-    while (curr != lst.end() && idx_it != indicies.end()) {
+    while (curr != lst.end() && idx_it != inxs.end()) {
         if (i == *idx_it) {
             // Remove current element
             curr = lst.erase_after(prev);

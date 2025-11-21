@@ -4,8 +4,7 @@
 #include <iomanip>
 #include <fstream>
 
-bool
-readJsonFromFile(const std::string& filePath, Json::Value& outValue) {
+bool readJsonFromFile(const std::string& filePath, Json::Value& outValue) {
     // Открываем файл для чтения
     std::ifstream file(filePath, std::ifstream::binary);
     if (!file.is_open()) {
@@ -30,8 +29,7 @@ readJsonFromFile(const std::string& filePath, Json::Value& outValue) {
     return true;
 }
 
-bool
-writeJsonToFile(const std::string& filePath, const Json::Value& value) {
+bool writeJsonToFile(const std::string& filePath, const Json::Value& value) {
     std::ofstream fileOut(filePath, std::ofstream::binary);
     if (!fileOut.is_open()) {
         LOG_ERROR(FILE_OPEN_ERROR_MSG + filePath);
@@ -48,8 +46,7 @@ writeJsonToFile(const std::string& filePath, const Json::Value& value) {
 }
 
 template<typename Type>
-bool
-updateJsonValue(const std::string& filePath, const std::string& key, Type value) {
+bool updateJsonValue(const std::string& filePath, const std::string& key, Type value) {
     bool status;
     Json::Value outValue;
 
@@ -92,3 +89,9 @@ parsePublishTime(const Json::Value& value) {
     // Convert to time_t (UNIX-time)
     return std::mktime(&tm);
 }
+
+template bool updateJsonValue<int>        (const std::string&, const std::string&, int);
+template bool updateJsonValue<double>     (const std::string&, const std::string&, double);
+template bool updateJsonValue<bool>       (const std::string&, const std::string&, bool);
+template bool updateJsonValue<std::string>(const std::string&, const std::string&, std::string);
+template bool updateJsonValue<Json::Value>(const std::string&, const std::string&, Json::Value);

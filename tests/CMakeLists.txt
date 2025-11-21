@@ -3,14 +3,20 @@ project(test_runner LANGUAGES CXX VERSION 0.0.0)
 
 find_package(Catch2 3 REQUIRED)
 
+file(GLOB SRC_FILES "*.cpp" "*.cc")
+
+message("HELLO ${SRC_FILES}")
+
 add_executable(test_runner
-    test_libnetwork.cpp
+    ${SRC_FILES}
 )
 
 target_link_libraries(test_runner
         PRIVATE
         Catch2::Catch2WithMain
+        RGLC::common
         RGLC::network
+        RGLC::json_io
 )
 
 target_compile_features(test_runner PRIVATE cxx_std_17)

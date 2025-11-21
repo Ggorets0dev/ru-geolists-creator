@@ -6,6 +6,11 @@
 
 #define TEMP_FILE_NAME "filter_temp.txt"
 
+void removePath(const std::string& path) {
+    if (!path.empty() && fs::exists(path))
+        fs::remove_all(path);
+}
+
 size_t countLinesInFile(const fs::path& filePath) {
     if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
         throw std::ios_base::failure(FILE_LOCATE_ERROR_MSG + filePath.string());
