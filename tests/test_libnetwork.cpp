@@ -1,5 +1,6 @@
 #include <catch2/catch_all.hpp>
 
+#include "fs_utils.hpp"
 #include "net_convert.hpp"
 #include "net_types_base.hpp"
 #include "url_handle.hpp"
@@ -39,11 +40,141 @@ struct FastTimeout {
     long orig_conn = 0, orig_op = 0, orig_conn_at = 0;
 };
 
+struct DisableParseBGP {
+    DisableParseBGP() {
+        orig_bgp_policy = gLibNetworkSettings.isSearchSubnetByBGP;
+        gLibNetworkSettings.isSearchSubnetByBGP = false;
+    }
+    ~DisableParseBGP() {
+        gLibNetworkSettings.isSearchSubnetByBGP = orig_bgp_policy;
+    }
+    bool orig_bgp_policy = false;
+};
+
+static fs::path getTempTestDir() {
+    const fs::path dir = fs::temp_directory_path() / "netutils_test";
+    fs::create_directories(dir);
+    return dir;
+}
+
+static void cleanup(const fs::path& dir) {
+    if (fs::exists(dir))
+        fs::remove_all(dir);
+}
+
+TEST_CASE("parseIPv4: valid address without prefix", "[ipv4]") {
+    DisableParseBGP dp;
+
+    NetTypes::IPv4Subnet sub;
+    const bool ok = NetUtils::Convert::parseIPv4("192.168.10.5", sub);
+
+    REQUIRE(ok == true);
+    REQUIRE(sub.ip.to_ulong() == 0xC0A80A05UL);
+    REQUIRE(sub.mask.count() == 32);
+}
+
+TEST_CASE("parseIPv4: valid address with CIDR prefix", "[ipv4]") {
+    DisableParseBGP dp;
+
+    NetTypes::IPv4Subnet sub;
+    const bool ok = NetUtils::Convert::parseIPv4("10.0.0.0/8", sub);
+
+    REQUIRE(ok == true);
+    REQUIRE(sub.ip.to_ulong() == 0x0A000000UL);
+    REQUIRE(sub.mask.count() == 8);
+}
+
+TEST_CASE("parseIPv4: invalid format returns false", "[ipv4]") {
+    DisableParseBGP dp;
+
+    NetTypes::IPv4Subnet sub;
+    const bool ok = NetUtils::Convert::parseIPv4("256.1.2.3", sub);   // octet > 255
+
+    REQUIRE(ok == false);
+}
+
+TEST_CASE("parseIPv4: missing octet returns false", "[ipv4]") {
+    DisableParseBGP dp;
+
+    NetTypes::IPv4Subnet sub;
+    const bool ok = NetUtils::Convert::parseIPv4("1.2.3", sub);
+
+    REQUIRE(ok == false);
+}
+
+TEST_CASE("parseIPv6: address without prefix", "[ipv6]") {
+    DisableParseBGP dp;
+
+    NetTypes::IPv6Subnet sub;
+    const bool ok = NetUtils::Convert::parseIPv6("2001:db8::1", sub);
+
+    REQUIRE(ok == true);
+    REQUIRE(sub.mask.count() == 128);     // full mask when no /prefix and BGP off
+}
+
+TEST_CASE("parseIPv6: address with /48 prefix", "[ipv6]") {
+    DisableParseBGP dp;
+
+    NetTypes::IPv6Subnet sub;
+    const bool ok = NetUtils::Convert::parseIPv6("2001:db8:abcd::/48", sub);
+
+    REQUIRE(ok == true);
+    REQUIRE(sub.mask.count() == 48);
+}
+
+// ======================================================================
+
+TEST_CASE("tryDownloadFile: successfully downloads small reliable file (google.com/robots.txt)", "[url][download]") {
+    const fs::path tempDir = getTempTestDir();
+    const std::string outPath = (tempDir / "robots.txt").string();
+
+    const bool result = NetUtils::tryDownloadFile("https://www.google.com/robots.txt", outPath);
+
+    REQUIRE(result == true);
+    REQUIRE(fs::exists(outPath));
+    REQUIRE(fs::file_size(outPath) > 100);
+
+    cleanup(tempDir);
+}
+
+// ======================================================================
+
+TEST_CASE("tryDownloadFile: successfully downloads tiny known JSON from httpbin.org/user-agent", "[url][download]") {
+    const fs::path tempDir = getTempTestDir();
+    const std::string outPath = (tempDir / "user-agent.json").string();
+
+    const bool result = NetUtils::tryDownloadFile("https://httpbin.org/user-agent", outPath);
+
+    REQUIRE(result == true);
+    REQUIRE(fs::exists(outPath));
+
+    cleanup(tempDir);
+}
+
+// ======================================================================
+
+TEST_CASE("tryDownloadFile: fails gracefully and does not create file when URL does not exist", "[url][download]") {
+    const fs::path tempDir = getTempTestDir();
+    const std::string outPath = (tempDir / "notfound.txt").string();
+
+    gLibNetworkSettings.downloadAttemptCount = 2;  // ускоряем тест
+
+    const bool result = NetUtils::tryDownloadFile(
+        "https://this-domain-definitely-does-not-exist-483192.net/404.txt",
+        outPath
+    );
+
+    REQUIRE(result == false);
+    REQUIRE(fs::exists(outPath) == false);
+
+    cleanup(tempDir);
+}
+
 TEST_CASE("tryAccessUrl: happy path — 200 OK + redirect chain", "[url]") {
     FastTimeout ft;
 
     REQUIRE(NetUtils::tryAccessUrl("https://httpbin.org/status/200") == true);
-    REQUIRE(NetUtils::tryAccessUrl("https://httpbin.org/redirect/3") == true);  // проверка FOLLOWLOCATION
+    REQUIRE(NetUtils::tryAccessUrl("https://httpbin.org/redirect/3") == true);  // check FOLLOWLOCATION
 }
 
 TEST_CASE("tryAccessUrl: error responses — 4xx и 5xx", "[url]") {

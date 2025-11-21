@@ -9,21 +9,28 @@
 using namespace NetTypes;
 using namespace NetUtils;
 
+static constexpr bool validateOctetIPv4(const int value) {
+    return (value >= 0 && value <= 255);
+}
+
+// TODO: VALIDATION FOR IPV6
+
 template <typename T>
 static bool parseSubnetIP(const std::string& ip, T& outIPVx) {
     int buffer;
     const auto pos = ip.find('/');
+    const auto size = outIPVx.mask.size();
     bool searchStatus = true;
     bool filterStatus = true;
 
-    outIPVx.mask.set();
+    outIPVx.mask.reset();
 
     if (pos != std::string::npos) {
         // Subnet is specified
         buffer = std::stoi(ip.substr(pos + 1, 2));
 
         for (int i(0); i < buffer; ++i) {
-            outIPVx.mask.reset(i);
+            outIPVx.mask.set(size - 1 - i);
         }
     } else if (gLibNetworkSettings.isSearchSubnetByBGP) {
         auto ptrie = BGP::getTrieFromCache();
@@ -60,6 +67,10 @@ static bool parseSubnetIP(const std::string& ip, T& outIPVx) {
             // TODO: Add log, but not in every tact
             return false;
         }
+    }
+
+    if (outIPVx.mask.count() == 0) {
+        outIPVx.mask.set();
     }
 
     return searchStatus && filterStatus;
@@ -108,7 +119,7 @@ int Convert::bitsetToLength(const std::bitset<N>& bs) {
 }
 
 bool Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
-    uint8_t buffer;
+    int buffer;
     size_t pos;
     size_t start_pos(0);
     int8_t part_offset(24);
@@ -127,10 +138,16 @@ bool Convert::parseIPv4(const std::string& ip, IPv4Subnet& out) {
         }
 
         if (pos == std::string::npos) {
-            // Throw exception
+            // Failed to find octet end
+            return false;
         }
 
         buffer = std::stoi(ip.substr(start_pos, pos - start_pos));
+
+        if (!validateOctetIPv4(buffer)) {
+            // Value is out of bound in octet
+            return false;
+        }
 
         out.ip |= (buffer << part_offset);
 
