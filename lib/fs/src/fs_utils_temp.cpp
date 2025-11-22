@@ -63,6 +63,10 @@ void Temp::SessionTempFileRegistry::deleteTempFile(std::weak_ptr<Temp::SessionTe
 
 Temp::SessionTempDirController::SessionTempDirController(const fs::path& dir) {
     m_tempDir = dir / ("rglc_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+
+    if (!fs::exists(m_tempDir)) {
+        fs::create_directories(m_tempDir);
+    }
 }
 
 Temp::SessionTempDirController::~SessionTempDirController() {

@@ -11,7 +11,7 @@
         return false; \
     }
 
-static void filterDownloadedFiles(RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedFiles) {
+static void filterDownloadedFiles(const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedFiles) {
     NetTypes::ListIPv4 ipv4;
     NetTypes::ListIPv6 ipv6;
     bool status;
