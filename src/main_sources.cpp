@@ -79,20 +79,3 @@ void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {
 
     sources.erase(removeIter, sources.end());
 }
-
-std::string genSourceFileName(const Source& source) {
-    std::string result;
-    result.reserve(source.section.length() + SOURCE_FILENAME_SALT_SIZE);
-
-    result += source.section;
-    result += "_";
-
-    const std::string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const uint8_t charsCount = chars.length();
-
-    for (uint8_t i = 0; i < SOURCE_FILENAME_SALT_SIZE; ++i) {
-        result += chars[std::rand() % charsCount];
-    }
-
-    return result;
-}

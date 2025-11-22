@@ -7,6 +7,7 @@
 #include "v2ip_toolchain.hpp"
 #include "url_handle.hpp"
 #include "geo_manager.hpp"
+#include "fs_utils_temp.hpp"
 
 #include <string>
 
@@ -326,18 +327,23 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     std::string logMsg;
     std::optional<std::time_t> lastReleaseTime;
 
+    // ========= Temp files control
+    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+    auto refilterReqFile = tempFileReg.createTempFile("json");
+    auto xrayReqFile = tempFileReg.createTempFile("json");
+    auto ruadlistReqFile = tempFileReg.createTempFile("json");
+    // =========
+
     // SECTION - Check ReFilter for updates
-    status = NetUtils::tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, refilterReqFile.lock()->path, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for ReFilter lists");
         return std::make_tuple(false, false);
     }
 
-    status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
+    status = readJsonFromFile(refilterReqFile.lock()->path, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    fs::remove(REFILTER_RELEASE_REQ_FILE_NAME);
 
     lastReleaseTime = parsePublishTime(value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(lastReleaseTime);
@@ -357,17 +363,15 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check XRAY rules for updates
-    status = NetUtils::tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, xrayReqFile.lock()->path, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for XRay lists");
         return std::make_tuple(false, false);
     }
 
-    status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
+    status = readJsonFromFile(xrayReqFile.lock()->path, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    fs::remove(XRAY_RULES_RELEASE_REQ_FILE_NAME);
 
     lastReleaseTime = parsePublishTime(value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(lastReleaseTime);
@@ -386,14 +390,14 @@ std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
     // !SECTION
 
     // SECTION - Check RUADLIST for updates
-    status = NetUtils::tryDownloadFile(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME);
+    status = NetUtils::tryDownloadFile(RUADLIST_API_MASTER_URL, ruadlistReqFile.lock()->path);
 
     if (!status) {
         LOG_ERROR("Failed to fetch updates for RuAdList");
         return std::make_tuple(false, false);
     }
 
-    status = readJsonFromFile(RUADLIST_FILE_NAME, value);
+    status = readJsonFromFile(ruadlistReqFile.lock()->path, value);
     VALIDATE_CHECK_UPDATES_PART_RESULT(status);
 
     status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);

@@ -1,9 +1,9 @@
 #ifndef FS_UTILS_H
 #define FS_UTILS_H
 
-#include <filesystem>
+#include "fs_utils_types_base.hpp"
 
-namespace fs = std::filesystem;
+#include <string>
 
 size_t countLinesInFile(const fs::path& filePath);
 
@@ -11,7 +11,7 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
 
 void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath);
 
-fs::path addPathPostfix(fs::path path, const std::string& postfix);
+fs::path addPathPostfix(const fs::path& p, const std::string& postfix);
 
 void removePath(const std::string& path);
 

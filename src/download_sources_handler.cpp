@@ -3,9 +3,10 @@
 #include "log.hpp"
 #include "ruadlist.hpp"
 #include "filter.hpp"
+#include "fs_utils_temp.hpp"
 
 #define VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(condition) \
-    if (!condition) { \
+    if (!(condition)) { \
         LOG_ERROR(DOWNLOAD_UPDATES_FAIL_MSG); \
         return false; \
     }
@@ -35,25 +36,34 @@ static void filterDownloadedFiles(RgcConfig& config, const std::vector<Downloade
     }
 }
 
-bool downloadNewestSources(RgcConfig& config, bool useExtraSources, bool useFilter, std::vector<DownloadedSourcePair>& downloadedFiles) {
+bool downloadNewestSources(RgcConfig& config, const bool useExtraSources, const bool useFilter, std::vector<DownloadedSourcePair>& downloadedFiles) {
     bool status;
     Json::Value value;
     std::optional<std::time_t> lastReleaseTime;
     std::string latestRuadlistVersion;
     std::vector<std::string> assetsNames;
+    std::vector<std::string> downloadsRefilter;
+    std::vector<std::string> downloadsXray;
     size_t dupeCnt;
 
-    const fs::path kCurrentDir = fs::current_path();
+    // ========= Temp files control
+    const FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+    auto refilterReqFile = tempFileReg.createTempFileDetached("json");
+    auto xrayReqFile = tempFileReg.createTempFileDetached("json");
+    auto ruadlistReqFile = tempFileReg.createTempFileDetached("txt");
+    auto ruadlistExtractedFile = tempFileReg.createTempFileDetached("txt");
+    auto refilterFile = tempFileReg.createTempFileDetached("txt");
+    // =========
 
     // SECTION - Download newest ReFilter rules
-    status = NetUtils::tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, REFILTER_RELEASE_REQ_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, refilterReqFile->path, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to download ReFilter lists API response");
         return false;
     }
 
-    status = readJsonFromFile(REFILTER_RELEASE_REQ_FILE_NAME, value);
+    status = readJsonFromFile(refilterReqFile->path, value);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     lastReleaseTime = parsePublishTime(value);
@@ -61,24 +71,24 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, bool useFilt
     config.refilterTime = *lastReleaseTime;
 
     assetsNames = {REFILTER_DOMAIN_ASSET_FILE_NAME, REFILTER_IP_ASSET_FILE_NAME};
-    status = NetUtils::downloadGithubReleaseAssets(value, assetsNames);
-    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    downloadsRefilter = NetUtils::downloadGithubReleaseAssets(value, assetsNames, tempFileReg.getTempDir());
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(downloadsRefilter.size() == assetsNames.size());
 
-    downloadedFiles.emplace_back(Source(Source::Type::DOMAIN, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[0]);
-    downloadedFiles.emplace_back(Source(Source::Type::IP, REFILTER_SECTION_NAME), kCurrentDir / assetsNames[1]);
+    downloadedFiles.emplace_back(Source(Source::Type::DOMAIN, REFILTER_SECTION_NAME), downloadsRefilter[0]);
+    downloadedFiles.emplace_back(Source(Source::Type::IP, REFILTER_SECTION_NAME), downloadsRefilter[1]);
 
     LOG_INFO("ReFilter rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download newest XRay rules
-    status = NetUtils::tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, XRAY_RULES_RELEASE_REQ_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, xrayReqFile->path, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to download XRay lists API response");
         return false;
     }
 
-    status = readJsonFromFile(XRAY_RULES_RELEASE_REQ_FILE_NAME, value);
+    status = readJsonFromFile(xrayReqFile->path, value);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     lastReleaseTime = parsePublishTime(value);
@@ -86,51 +96,51 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, bool useFilt
     config.v2rayTime = *lastReleaseTime;
 
     assetsNames = {"reject-list.txt"};
-    status = NetUtils::downloadGithubReleaseAssets(value, assetsNames);
-    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
+    downloadsXray = NetUtils::downloadGithubReleaseAssets(value, assetsNames, tempFileReg.getTempDir());
+    VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(downloadsXray.size() == assetsNames.size());
 
-    downloadedFiles.emplace_back(Source(Source::Type::DOMAIN, XRAY_REJECT_SECTION_NAME), kCurrentDir / assetsNames[0]);
+    downloadedFiles.emplace_back(Source(Source::Type::DOMAIN, XRAY_REJECT_SECTION_NAME), downloadsXray[0]);
 
     LOG_INFO("XRay rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download newest RUADLIST rules
-    status = NetUtils::tryDownloadFromGithub(RUADLIST_API_MASTER_URL, RUADLIST_FILE_NAME, config.apiToken);
+    status = NetUtils::tryDownloadFromGithub(RUADLIST_API_MASTER_URL, ruadlistReqFile->path, config.apiToken);
 
     if (!status) {
         LOG_ERROR("Failed to download RuAdList API response");
         return false;
     }
 
-    status = readJsonFromFile(RUADLIST_FILE_NAME, value);
+    status = readJsonFromFile(ruadlistReqFile->path, value);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
     status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    status = NetUtils::tryDownloadFile(RUADLIST_ADSERVERS_URL, RUADLIST_FILE_NAME);
+    status = NetUtils::tryDownloadFile(RUADLIST_ADSERVERS_URL, ruadlistReqFile->path);
 
     if (!status) {
-        LOG_ERROR("Failed to download RuAdList adservers");
+        LOG_ERROR("Failed to download RuAdList AD servers");
         return false;
     }
 
-    status = extractDomainsFromFile(RUADLIST_FILE_NAME, RUADLIST_EXTRACTED_FILE_NAME);
+    status = extractDomainsFromFile(ruadlistReqFile->path, ruadlistExtractedFile->path);
     VALIDATE_DOWNLOAD_UPDATES_PART_RESULT(status);
 
-    removeDuplicateLines(RUADLIST_EXTRACTED_FILE_NAME, assetsNames[0]); // RuAdList vs reject-list.txt from XRay
+    removeDuplicateLines(ruadlistExtractedFile->path, downloadsXray[0]); // RuAdList vs reject-list.txt from XRay
 
     config.ruadlistTime = *lastReleaseTime;
-    downloadedFiles.emplace_back(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), kCurrentDir / RUADLIST_EXTRACTED_FILE_NAME);
+    downloadedFiles.emplace_back(Source(Source::Type::DOMAIN, RUADLIST_SECTION_NAME), ruadlistExtractedFile->path);
 
     LOG_INFO("RuAdList rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download newest ANTIFILTER rules
     try {
-        NetUtils::tryDownloadFile(ANTIFILTER_AYN_IPS_URL, ANTIFILTER_FILE_NAME);
+        NetUtils::tryDownloadFile(ANTIFILTER_AYN_IPS_URL, refilterFile->path);
 
-        dupeCnt = removeDuplicateLines(REFILTER_IP_ASSET_FILE_NAME, ANTIFILTER_FILE_NAME);
+        dupeCnt = removeDuplicateLines(downloadsRefilter[1], refilterFile->path);
 
         if (dupeCnt) {
             LOG_INFO("Count of duplicates found between REFILTER and ANTIFILTER: " + std::to_string(dupeCnt));
@@ -138,56 +148,56 @@ bool downloadNewestSources(RgcConfig& config, bool useExtraSources, bool useFilt
             LOG_INFO("No duplicates were found between REFILTER AND ANTIFILTER");
         }
 
-        downloadedFiles.emplace_back(Source(Source::Type::IP, ANTIFILTER_SECTION_NAME), kCurrentDir / ANTIFILTER_FILE_NAME);
+        downloadedFiles.emplace_back(Source(Source::Type::IP, ANTIFILTER_SECTION_NAME), refilterFile->path);
     }  catch (std::exception& e) {
         LOG_ERROR(e.what());
-        LOG_WARNING("Failed add Antifilter rules to Geolists");
+        LOG_WARNING("Failed add ANTIFILTER rules to Geolists");
     }
 
     LOG_INFO("AntiFilter rules were downloaded successfully");
     // !SECTION
 
     // SECTION - Download extra sources
-    std::string fileName;
+    if (useExtraSources) {
+        for (const auto& source : config.extraSources) {
+            auto tempFile = tempFileReg.createTempFileDetached("txt");
 
-    for (const auto& source : config.extraSources) {
-        fileName = genSourceFileName(source);
+            // ======== If path in system specified, no need to download
+            if (!isUrl(source.url)) {
+                try {
+                    status = fs::exists(source.url);
 
-        // ======== If path in system specified, no need to download
-        if (!isUrl(source.url)) {
-            try {
-                status = fs::exists(source.url);
-
-                if (status) {
-                    fs::copy(source.url, kCurrentDir / fileName);
+                    if (status) {
+                        fs::copy(source.url, tempFile->path);
+                    }
+                } catch (const fs::filesystem_error& e) {
+                    LOG_ERROR("Filesystem error: " + std::string(e.what()));
+                    status = false;
                 }
-            } catch (const fs::filesystem_error& e) {
-                LOG_ERROR("Filesystem error: " + std::string(e.what()));
-                status = false;
+
+                if (!status) {
+                    LOG_WARNING("Failed to locate local extra source (ignored): " + source.url);
+                    continue;
+                }
+
+                downloadedFiles.emplace_back(Source(source.type, source.section), tempFile->path);
+                LOG_INFO("Local extra source was added successfully: " + source.url);
+                continue;
             }
+            // ========
+
+            // ======== Downloading extra source via URL
+            status = NetUtils::tryDownloadFile(source.url, tempFile->path);
 
             if (!status) {
-                LOG_WARNING("Failed to locate local extra source (ignored): " + source.url);
+                LOG_WARNING("Failed to downloaded extra source (ignored): " + source.url);
                 continue;
             }
 
-            downloadedFiles.emplace_back(Source(source.type, source.section), kCurrentDir / fileName);
-            LOG_INFO("Local extra source was added successfully: " + source.url);
-            continue;
+            downloadedFiles.emplace_back(Source(source.type, source.section), tempFile->path);
+            LOG_INFO("Remote extra source was downloaded successfully: " + source.url);
+            // ========
         }
-        // ========
-
-        // ======== Downloading extra source via URL
-        status = NetUtils::tryDownloadFile(source.url, fileName);
-
-        if (!status) {
-            LOG_WARNING("Failed to downloaded extra source (ignored): " + source.url);
-            continue;
-        }
-
-        downloadedFiles.emplace_back(Source(source.type, source.section), kCurrentDir / fileName);
-        LOG_INFO("Remote extra source was downloaded successfully: " + source.url);
-        // ========
     }
     // !SECTION
 

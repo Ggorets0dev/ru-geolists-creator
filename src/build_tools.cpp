@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 
 static void saveToText(const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources, const fs::path& path) {
     std::ofstream releaseNotes(path);

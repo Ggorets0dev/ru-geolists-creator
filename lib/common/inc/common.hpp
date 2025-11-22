@@ -4,6 +4,7 @@
 #include <forward_list>
 #include <unordered_set>
 #include <cstdint>
+#include <string>
 
 template <typename T>
 void removeListDuplicates(std::forward_list<T>& list) {
@@ -46,5 +47,7 @@ void removeListItemsForInxs(std::forward_list<T>& lst, const std::forward_list<u
         ++i;
     }
 }
+
+std::string genRandomDigits(size_t N);
 
 #endif // COMMON_HPP

@@ -3,8 +3,7 @@
 #define MAX_DOMAIN_SIZE         56
 #define DOMAIN_REGEX            R"((?:[a-zA-Z0-9-]+\.)+(?:by|ru|ua|info|sex|su|life|com|ml|best|net|site|biz|xyz))"
 
-bool
-extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath) {
+bool extractDomainsFromFile(const std::string& inputFilePath, const std::string& outputFilePath) {
     std::ifstream inputFile(inputFilePath);
 
     if (!inputFile.is_open()) {
@@ -53,8 +52,7 @@ extractDomainsFromFile(const std::string& inputFilePath, const std::string& outp
     return true;
 }
 
-bool
-parseRuadlistUpdateDatetime(const Json::Value &value, std::time_t& dtOut) {
+bool parseRuadlistUpdateDatetime(const Json::Value &value, std::time_t& dtOut) {
     std::tm tm = {};
     auto dateObj = value["commit"]["commit"]["committer"]["date"];
 

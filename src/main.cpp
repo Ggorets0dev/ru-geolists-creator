@@ -1,45 +1,17 @@
 #include "handlers.hpp"
 #include "config.hpp"
-#include "temp.hpp"
 #include "main_sources.hpp"
 #include "cli_args.hpp"
 #include "log.hpp"
 #include "dlc_toolchain.hpp"
 #include "v2ip_toolchain.hpp"
 #include "build_tools.hpp"
-#include "ipc_chain.hpp"
 #include "geo_manager.hpp"
 #include "net_types_base.hpp"
 #include "libnetwork_settings.hpp"
 
 #include <unistd.h>
 #include <csignal>
-
-#define EXIT_WITH_CLEANUP(code) \
-    performCleanup();           \
-    return code;
-
-static void performCleanup() {
-    bool status;
-
-    if (fs::exists(TEMP_DIR_NAME) && fs::is_directory(TEMP_DIR_NAME)) {
-        std::error_code ec;
-
-        fs::remove_all(TEMP_DIR_NAME, ec);
-
-        if (ec) {
-            LOG_ERROR("Failed to delete TEMP dir before exiting: " + ec.message());
-        }
-    }
-
-    if (fs::exists(RGC_RELEASE_NOTES_FIFO_PATH)) {
-        status = fs::remove(RGC_RELEASE_NOTES_FIFO_PATH);
-
-        if (!status) {
-            LOG_ERROR("Failed to delete FIFO for IPC before exiting");
-        }
-    }
-}
 
 int main(int argc, char** argv) {
     CLI::App app;
@@ -88,7 +60,7 @@ int main(int argc, char** argv) {
 
         initSoftware(); // Download all toolchains and create config
 
-        EXIT_WITH_CLEANUP(0);
+        return 0;
     }
 
     // Print software information
@@ -145,17 +117,13 @@ int main(int argc, char** argv) {
 
     if (!status) {
         LOG_ERROR(READ_CFG_FAIL_MSG);
-        EXIT_WITH_CLEANUP(1);
+        return 1;
     }
 
     // ======== Init network lib settings
     gLibNetworkSettings.isSearchSubnetByBGP = true; // FIXME: Add ability to choose for user
     gLibNetworkSettings.bgpDumpPath = config.bgpDumpPath;
     // ========
-
-    CREATE_TEMP_DIR();
-    ENTER_TEMP_DIR();
-    CLEAR_TEMP_DIR();
 
     if (!gCmdArgs.isForceCreation) {
         LOG_INFO("Updates will be searched for, and built if available");
@@ -165,7 +133,6 @@ int main(int argc, char** argv) {
         if (!checkStatus) {
             // An additional log can be posted here
 
-            performCleanup();
             return 1; // Failed to check updates. Exit
         } else if (!isUpdateFound) {
             LOG_INFO("No need to update sources, stopping program...");
@@ -175,7 +142,7 @@ int main(int argc, char** argv) {
                 kill(getppid(), SIGUSR2);
             }
 
-            EXIT_WITH_CLEANUP(0);
+            return 0;
         }
     } else {
         LOG_INFO("No check for updates required, forced download and build");
@@ -183,11 +150,13 @@ int main(int argc, char** argv) {
 
     // SECTION - Download latest available sources
     LOG_INFO("Process of downloading the latest versions of the sources begins...");
+
+    // TODO: Get extra sources flag from user-config
     status = downloadNewestSources(config, true, !gCmdArgs.isNoWhitelist, downloadedSources);
 
     if (!status) {
         LOG_ERROR("Failed to download newest sources to build lists");
-        EXIT_WITH_CLEANUP(1);
+        return 1;
     }
     // !SECTION
 
@@ -215,8 +184,7 @@ int main(int argc, char** argv) {
 
     if (!status) {
         LOG_ERROR("Failed to correctly place sources in toolchains");
-
-        EXIT_WITH_CLEANUP(1);
+        return 1;
     }
 
     LOG_INFO("Successfully deployed source files to toolchain environments");
@@ -231,8 +199,7 @@ int main(int argc, char** argv) {
 
     if (!outGeositePath || !outGeoipPath) {
         LOG_ERROR("Building one or more lists failed due to errors within the toolchains");
-
-        EXIT_WITH_CLEANUP(1);
+        return 1;
     }
     // !SECTION
 
@@ -280,8 +247,7 @@ int main(int argc, char** argv) {
         releases.releaseNotes = fs::path(gCmdArgs.outDirPath) / RELEASE_NOTES_FILENAME;
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR("Filesystem error:" + std::string(e.what()));
-
-        EXIT_WITH_CLEANUP(1);
+        return 1;
     }
 
     try {
@@ -295,14 +261,12 @@ int main(int argc, char** argv) {
     LOG_INFO("IP address list(s) successfully created");
     // !SECTION
 
-    performCleanup();
-
     status = writeConfig(config);
 
     if (!status) {
         LOG_ERROR(WRITE_CFG_FAIL_MSG);
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }

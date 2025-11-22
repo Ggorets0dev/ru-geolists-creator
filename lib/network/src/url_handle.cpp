@@ -138,9 +138,9 @@ bool NetUtils::tryDownloadFromGithub(const std::string& url, const std::string& 
 
     if (!apiToken.empty()) {
         return tryDownloadFile(url, filePath, tokenHeader.c_str());
-    } else {
-        return tryDownloadFile(url, filePath);
     }
+
+    return tryDownloadFile(url, filePath);
 }
 
 bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
@@ -162,8 +162,10 @@ bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePa
     return false;
 }
 
-bool NetUtils::downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames) {
+std::vector<std::string> NetUtils::downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames, const fs::path& dirPath) {
     bool status;
+    std::vector<std::string> downloads;
+    downloads.reserve(fileNames.size());
 
     if (value.isMember("assets") && value["assets"].isArray()) {
         const Json::Value& assets = value["assets"];
@@ -172,15 +174,17 @@ bool NetUtils::downloadGithubReleaseAssets(const Json::Value& value, const std::
                 continue;
             }
 
-            status = tryDownloadFile(asset["browser_download_url"].asString(), asset["name"].asString());
+            status = tryDownloadFile(asset["browser_download_url"].asString(), dirPath / asset["name"].asString());
 
             if (!status) {
-                return status;
+                return downloads;
             }
+
+            downloads.push_back(dirPath / asset["name"].asString());
         }
     }
 
-    return true;
+    return downloads;
 }
 
 NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {

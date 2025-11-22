@@ -1,20 +1,20 @@
 #include "geo_manager.hpp"
-
 #include "url_handle.hpp"
 #include "log.hpp"
+#include "fs_utils_temp.hpp"
 
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #define GEO_MGR_LAST_RELEASE_URL        "https://api.github.com/repos/MetaCubeX/geo/releases/latest"
-#define GEO_MGR_RELEASE_REQ_FILE_NAME   "geo_mgr_req.json"
 
 const fs::path gkGeoManagerDir = fs::path(std::getenv("HOME")) / ".local" / "lib";
 
 std::optional<std::string> setupGeoManagerBinary() {
     bool status;
     std::string geoMgrBinary;
+    std::vector<std::string> downloads;
 
 #if defined(__x86_64__) || defined(_M_AMD64)
     geoMgrBinary = "geo-linux-amd64";
@@ -24,26 +24,29 @@ std::optional<std::string> setupGeoManagerBinary() {
 
     std::string geoMgrTargetPath = gkGeoManagerDir / geoMgrBinary;
 
+    // ========= Temp files control
+    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+    auto geoMgrReqFile = tempFileReg.createTempFile("json");
+    // =========
+
     LOG_INFO("Starting to setup Geo manager binary...");
 
-    if (!NetUtils::tryDownloadFile(GEO_MGR_LAST_RELEASE_URL, GEO_MGR_RELEASE_REQ_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(GEO_MGR_LAST_RELEASE_URL, geoMgrReqFile.lock()->path)) {
         LOG_ERROR("Failed to perform API request for V2IP repository");
         return std::nullopt;
     }
 
     Json::Value request;
-    status = readJsonFromFile(GEO_MGR_RELEASE_REQ_FILE_NAME, request);
+    status = readJsonFromFile(geoMgrReqFile.lock()->path, request);
 
     if (!status) {
         LOG_ERROR("Failed to read JSON from API request (Geo manager)");
         return std::nullopt;
     }
 
-    fs::remove(GEO_MGR_RELEASE_REQ_FILE_NAME);
+    downloads = NetUtils::downloadGithubReleaseAssets(request, { geoMgrBinary }, tempFileReg.getTempDir());
 
-    status = NetUtils::downloadGithubReleaseAssets(request, { geoMgrBinary });
-
-    if (!status) {
+    if (downloads.empty()) {
         LOG_ERROR("Failed to download Geo manager release assets");
         return std::nullopt;
     }
@@ -59,7 +62,7 @@ std::optional<std::string> setupGeoManagerBinary() {
     return geoMgrTargetPath;
 }
 
-bool convertGeolist(const std::string& binPath, Source::Type type,
+bool convertGeolist(const std::string& binPath, const Source::Type type,
                     const std::string& inFormat, const std::string& outFormat,
                     const std::string& inPath, const std::string& outPath) {
 
@@ -80,7 +83,9 @@ bool convertGeolist(const std::string& binPath, Source::Type type,
 
         LOG_ERROR("Failed to run Geo manager for converting list");
         exit(1);
-    } else if (pid > 0) {
+    }
+
+    if (pid > 0) {
         // Waiting for Geo manager to convert list
         waitpid(pid, &status, 0);
 
@@ -90,8 +95,8 @@ bool convertGeolist(const std::string& binPath, Source::Type type,
         }
 
         return true;
-    } else {
-        LOG_ERROR("Incorrect PID returned from OS");
-        return false;
     }
+
+    LOG_ERROR("Incorrect PID returned from OS");
+    return false;
 }

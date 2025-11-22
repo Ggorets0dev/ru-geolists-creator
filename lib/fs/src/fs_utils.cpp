@@ -1,10 +1,12 @@
-#include "fs_utils.hpp"
-#include "log.hpp"
-
+#include <forward_list>
 #include <fstream>
 #include <unordered_set>
 
-#define TEMP_FILE_NAME "filter_temp.txt"
+#include "fs_utils_temp.hpp"
+#include "log.hpp"
+#include "fs_utils.hpp"
+
+using namespace FS::Utils::Temp;
 
 void removePath(const std::string& path) {
     if (!path.empty() && fs::exists(path))
@@ -36,6 +38,9 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
     const std::string* fileForReplace;
     const std::string* fileForSearch;
     size_t lineCntA, lineCntB, dupeCnt;
+    SessionTempFileRegistry tfr(getSessionTempDir());
+
+    const auto tempFile = tfr.createTempFile("txt");
 
     // Ищем файл с меньшим количеством строк, его выгружаем в ОЗУ для поиска
 
@@ -66,14 +71,10 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + *fileForReplace);
     }
 
-    std::ofstream tempFileReplace(TEMP_FILE_NAME);
+    std::ofstream tempFileReplace(tempFile.lock()->path);
     if (!tempFileReplace.is_open()) {
-        std::string logMsg = FILE_OPEN_ERROR_MSG;
-        logMsg += TEMP_FILE_NAME;
-
-        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + std::string(TEMP_FILE_NAME));
+        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + std::string(tempFile.lock()->path));
     }
-
 
     dupeCnt = 0;
 
@@ -89,7 +90,7 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
     fileReplace.close();
 
     fs::remove(fileAPath);
-    fs::rename(TEMP_FILE_NAME, fileAPath);
+    fs::rename(tempFile.lock()->path, fileAPath);
 
     return dupeCnt;
 }
@@ -118,8 +119,18 @@ void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath) {
     fileB.close();
 }
 
-fs::path addPathPostfix(const fs::path path, const std::string& postfix) {
-    return path.parent_path() /
-                (path.stem().string() + "_" + postfix +
-                 path.extension().string());
+fs::path addPathPostfix(const fs::path& p, const std::string& postfix) {
+    const auto filenameWithExt = p.filename().string();
+    const auto pos = filenameWithExt.find('.');
+
+    if (pos == std::string::npos) {
+        return p;
+    }
+
+    const std::string filename = filenameWithExt.substr(0, pos);
+    const std::string extension = filenameWithExt.substr(pos + 1);
+
+    fs::path result = p.parent_path().string() + "/" + filename + "_" + postfix + "." + extension;
+
+    return result;
 }

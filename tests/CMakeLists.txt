@@ -14,6 +14,7 @@ add_executable(test_runner
 target_link_libraries(test_runner
         PRIVATE
         Catch2::Catch2WithMain
+        RGLC::fs
         RGLC::common
         RGLC::network
         RGLC::json_io

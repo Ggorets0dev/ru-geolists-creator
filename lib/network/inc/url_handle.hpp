@@ -5,11 +5,12 @@
 #include <json_io.hpp>
 
 #include "net_types_base.hpp"
+#include "fs_utils.hpp"
 
 namespace NetUtils {
     NetTypes::AddressType getAddressType(const std::string& input);
 
-    bool downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames);
+    std::vector<std::string> downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames, const fs::path& dirPath);
 
     bool tryAccessUrl(const std::string& url, const char* httpHeader = nullptr);
 
