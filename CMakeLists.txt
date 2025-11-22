@@ -30,10 +30,10 @@ pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 
 # Set Release options
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-	message(STATUS "[CMAKE] [!] Using Release build...") 
-
-	set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-	set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+	message(STATUS "[CMAKE] [!] Using Release build...")
+    message(STATUS "[CMAKE] [!] Compiler CXX flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+    message(STATUS "[CMAKE] [!] Compiler C: ${CMAKE_C_COMPILER}")
+    message(STATUS "[CMAKE] [!] Compiler CXX: ${CMAKE_CXX_COMPILER}")
 
     set(HOME_DIR $ENV{HOME})
     set(CMAKE_INSTALL_PREFIX "${HOME_DIR}/.local")

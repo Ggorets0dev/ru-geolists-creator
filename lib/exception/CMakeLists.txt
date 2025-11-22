@@ -6,6 +6,10 @@ target_include_directories(exception_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
+target_link_libraries(exception_lib PUBLIC
+        RGLC::network
+)
+
 target_compile_features(exception_lib PUBLIC cxx_std_17)
 
 add_library(RGLC::exception ALIAS exception_lib)

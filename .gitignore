@@ -2,8 +2,11 @@
 **/.idea
 **/build-arm64
 **/build-amd64
+**/build-arm
 **/build-debug
+**/build-release
 **.deb
+**/sysroot
 CMakeLists.txt.user
 *.pb.cc
 *.pb.h

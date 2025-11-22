@@ -5,11 +5,12 @@
 #include <string>
 #include <curl/curl.h>
 
-class CurlError : public std::runtime_error {
+class CurlError final : public std::runtime_error {
 public:
-    CurlError(const std::string& msg, CURLcode code)
+    CurlError(const std::string& msg, const CURLcode code)
         : std::runtime_error(msg + ": " + curl_easy_strerror(code)), errorCode(code) {}
 
+    [[nodiscard]]
     CURLcode getErrorCode() const { return errorCode; }
 
 private:

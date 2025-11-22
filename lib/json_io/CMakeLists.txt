@@ -1,5 +1,5 @@
 # Try to find jsoncpp in system
-pkg_check_modules(JSONCPP REQUIRED jsoncpp)
+find_package(jsoncpp REQUIRED)
 
 add_library(json_io_lib STATIC
     src/json_io.cpp
@@ -10,8 +10,8 @@ target_include_directories(json_io_lib PUBLIC
 )
 
 target_link_libraries(json_io_lib PUBLIC
-    ${JSONCPP_LIBRARIES}
     RGLC::log
+    JsonCpp::JsonCpp
 )
 
 target_compile_features(json_io_lib PUBLIC cxx_std_17)

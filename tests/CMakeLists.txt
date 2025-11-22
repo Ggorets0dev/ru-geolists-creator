@@ -5,8 +5,6 @@ find_package(Catch2 3 REQUIRED)
 
 file(GLOB SRC_FILES "*.cpp" "*.cc")
 
-message("HELLO ${SRC_FILES}")
-
 add_executable(test_runner
     ${SRC_FILES}
 )
