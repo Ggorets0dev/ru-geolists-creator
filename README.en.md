@@ -76,6 +76,7 @@ Options:
   --show                      Display all extra sources from configuration files
   -a,--add                    Add extra source to download list
   --no-whitelist              Disable whitelist filtering for current session
+  --no-extra                  Disable adding extra sources to lists for current session
   -f,--format TEXT ...        Formats of geolists to generate
   -r,--remove UINT            Remove extra source from download list
   -o,--out TEXT               Path to out DIR with all lists to create

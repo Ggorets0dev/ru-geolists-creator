@@ -26,6 +26,7 @@ struct CmdArgs {
     bool isShowExtras;
     bool isAddExtra;
     bool isNoWhitelist;
+    bool isNoExtra;
 };
 
 extern CmdArgs gCmdArgs;

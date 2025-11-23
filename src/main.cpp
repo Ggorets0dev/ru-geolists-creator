@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
     LOG_INFO("Process of downloading the latest versions of the sources begins...");
 
     // TODO: Get extra sources flag from user-config
-    status = downloadNewestSources(config, true, !gCmdArgs.isNoWhitelist, downloadedSources);
+    status = downloadNewestSources(config, !gCmdArgs.isNoExtra, !gCmdArgs.isNoWhitelist, downloadedSources);
 
     if (!status) {
         LOG_ERROR("Failed to download newest sources to build lists");

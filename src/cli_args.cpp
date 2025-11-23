@@ -14,6 +14,7 @@
 #define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
 #define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate"
 #define NO_WHITELIST_OPTION_DESCRIPTION         "Disable whitelist filtering for current session"
+#define NO_EXTRA_OPTION_DESCRIPTION             "Disable adding extra sources to lists for current session"
 
 #define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
@@ -46,6 +47,7 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
 
     app.add_flag("--no-whitelist", gCmdArgs.isNoWhitelist, NO_WHITELIST_OPTION_DESCRIPTION);
+    app.add_flag("--no-extra", gCmdArgs.isNoExtra, NO_EXTRA_OPTION_DESCRIPTION);
 
     app.add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
         ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
