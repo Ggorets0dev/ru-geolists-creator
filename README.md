@@ -105,16 +105,8 @@ Available formats of geolists: v2ray, sing
 
 ## Зависимости
 
-В проекте используются следующие зависимости:
+Основные зависимости перечислены в файле [Conan](conanfile.txt).
 
-* [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
-
-* [libcurl](https://curl.se/libcurl/)
-
-* [libarchive](https://libarchive.org/)
-
-* [CLI11](https://github.com/CLIUtils/CLI11)
+Зависимости, которые должны быть установлены в систему без участия conan:
 
 * [libbgpdump](https://github.com/RIPE-NCC/bgpdump)
-
-* [c-ares](https://github.com/c-ares/c-ares)

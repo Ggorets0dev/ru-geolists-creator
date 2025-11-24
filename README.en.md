@@ -88,16 +88,8 @@ Available formats of geolists: v2ray, sing
 
 ## Dependencies
 
-Project uses the following dependencies:
+Main dependencies are listed in the [Conan](conanfile.txt) file.
 
-* [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
-
-* [libcurl](https://curl.se/libcurl/)
-
-* [libarchive](https://libarchive.org/)
-
-* [CLI11](https://github.com/CLIUtils/CLI11)
+Dependencies that must be installed on the system without using Conan:
 
 * [libbgpdump](https://github.com/RIPE-NCC/bgpdump)
-
-* [c-ares](https://github.com/c-ares/c-ares)
