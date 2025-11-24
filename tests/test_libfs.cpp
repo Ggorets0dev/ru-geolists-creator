@@ -65,7 +65,7 @@ TEST_CASE("removeDuplicateLines", "[fs]")
 
         size_t removed = removeDuplicateLines(fileA.string(), fileB.string());
 
-        REQUIRE(removed == 2);
+        REQUIRE(removed == 3);
 
         std::ifstream f(fileA);
         std::string content((std::istreambuf_iterator<char>(f)), {});
@@ -81,11 +81,11 @@ TEST_CASE("removeDuplicateLines", "[fs]")
 
         size_t removed = removeDuplicateLines(fileA.string(), fileB.string());
 
-        REQUIRE(removed == 1);
+        REQUIRE(removed == 2);
 
-        std::ifstream f(fileA);
+        std::ifstream f(fileB);
         std::string content((std::istreambuf_iterator<char>(f)), {});
-        REQUIRE(content == "unique\n");
+        REQUIRE(content == "other\n");
     }
 
     SECTION("no duplicates")
@@ -104,7 +104,7 @@ TEST_CASE("joinTwoFiles", "[fs]")
     TempFiles cleanup;
 
     auto fileA = createTempFile("target.txt", {"first part"});
-    auto fileB = createTempFile("source.txt", {"second part", "third line"});
+    auto fileB = createTempFile("source.txt", {"second part", "third part"});
     cleanup.add(fileA);
     cleanup.add(fileB);
 
@@ -114,7 +114,7 @@ TEST_CASE("joinTwoFiles", "[fs]")
     std::string content((std::istreambuf_iterator<char>(f)), {});
 
     // Note: stream copy via rdbuf() does NOT add extra newline between files
-    REQUIRE(content == "first partsecond part\nthird line\n");
+    REQUIRE(content == "first part\nsecond part\nthird part\n");
 }
 
 TEST_CASE("addPathPostfix", "[fs]")

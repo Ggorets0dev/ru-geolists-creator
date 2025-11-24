@@ -89,8 +89,8 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
     tempFileReplace.close();
     fileReplace.close();
 
-    fs::remove(fileAPath);
-    fs::rename(tempFile.lock()->path, fileAPath);
+    fs::remove(*fileForReplace);
+    fs::rename(tempFile.lock()->path, *fileForReplace);
 
     return dupeCnt;
 }
@@ -107,11 +107,6 @@ void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath) {
     if (!fileA.is_open()) {
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + fileAPath);
     }
-
-//    fileA.seekp(0, std::ios::end);
-//    if (fileA.tellp() != 0) {
-//        fileA << '\n';
-//    }
 
     fileA << fileB.rdbuf();
 
