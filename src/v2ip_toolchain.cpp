@@ -2,6 +2,7 @@
 #include "build_tools.hpp"
 #include "log.hpp"
 #include "url_handle.hpp"
+#include "fs_utils_temp.hpp"
 
 #include <unistd.h>
 
@@ -52,31 +53,33 @@ static void addPrivateSource(Json::Value& inputArray, std::vector<std::string>& 
 std::optional<std::string> downloadV2ipSourceCode() {
     bool status;
 
+    // ========= Temp files control
+    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+    const auto v2ipReqFile = tempFileReg.createTempFile("json");
+    const auto v2ipSourceFile = tempFileReg.createTempFileDetached("tar.gz");
+    // =========
+
     LOG_INFO("Starting to download V2IP source code...");
 
-    if (!NetUtils::tryDownloadFile(V2IP_API_LAST_RELEASE_URL, V2IP_RELEASE_REQ_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(V2IP_API_LAST_RELEASE_URL, v2ipReqFile.lock()->path)) {
         LOG_ERROR("Failed to perform API request for V2IP repository");
         return std::nullopt;
     }
 
     Json::Value request;
-    status = readJsonFromFile(V2IP_RELEASE_REQ_FILE_NAME, request);
+    status = readJsonFromFile(v2ipReqFile.lock()->path, request);
 
     if (!status) {
         LOG_ERROR("Failed to read JSON from API request (V2IP)");
         return std::nullopt;
     }
 
-    fs::remove(V2IP_RELEASE_REQ_FILE_NAME);
-
-    std::string lastReleaseUrl = request["tarball_url"].asString();
-
-    if (!NetUtils::tryDownloadFile(lastReleaseUrl, V2IP_SRC_FILE_NAME)) {
+    if (const std::string lastReleaseUrl = request["tarball_url"].asString(); !NetUtils::tryDownloadFile(lastReleaseUrl, v2ipSourceFile->path)) {
         LOG_ERROR("V2IP source code could not be downloaded after several attempts");
         return std::nullopt;
     }
 
-    return V2IP_SRC_FILE_NAME;
+    return v2ipSourceFile->path;
 }
 
 std::optional<fs::path> runV2ipToolchain(const std::string& rootPath) {

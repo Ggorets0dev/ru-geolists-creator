@@ -50,7 +50,7 @@ namespace NetUtils {
 
         void cleanup();
 
-        void runEventLoop(std::vector<std::future<std::forward_list<std::string>>>& futures);
+        void runEventLoop(std::vector<std::future<std::forward_list<std::string>>>& futures) const;
     };
 }
 

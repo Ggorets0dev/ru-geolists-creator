@@ -66,10 +66,10 @@ bool convertGeolist(const std::string& binPath, const Source::Type type,
                     const std::string& inFormat, const std::string& outFormat,
                     const std::string& inPath, const std::string& outPath) {
 
-    pid_t pid = fork();
+    const pid_t pid = fork();
     int status;
 
-    std::string sourceType = (type == Source::Type::DOMAIN) ? "site" : "ip";
+    const std::string sourceType = (type == Source::Type::DOMAIN) ? "site" : "ip";
 
     if (pid == 0) {
         // Child process, running Geo manager...

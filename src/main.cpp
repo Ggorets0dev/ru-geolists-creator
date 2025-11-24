@@ -25,7 +25,9 @@ int main(int argc, char** argv) {
     GeoReleases releases;
 
     // Init RAND
-    std::srand(std::time(nullptr));
+    auto now = std::chrono::high_resolution_clock::now();
+    auto nanos = now.time_since_epoch().count();
+    std::srand(static_cast<unsigned int>(nanos ^ (nanos >> 32)));
 
     // Init logging
     initLogging();
@@ -211,8 +213,7 @@ int main(int argc, char** argv) {
 
         if (IS_FORMAT_REQUESTED(GEO_FORMAT_V2RAY_CAPTION)) {
             // Deploying V2Ray rules in .dat extension
-            releases.packs.push_back(
-                GeoReleasePack(fs::path(gCmdArgs.outDirPath) / GEOSITE_FILENAME_DAT, fs::path(gCmdArgs.outDirPath) / GEOIP_FILENAME_DAT)
+            releases.packs.emplace_back(fs::path(gCmdArgs.outDirPath) / GEOSITE_FILENAME_DAT, fs::path(gCmdArgs.outDirPath) / GEOIP_FILENAME_DAT
             );
 
             fs::copy(*outGeositePath, releases.packs[0].listDomain, fs::copy_options::overwrite_existing);
@@ -239,8 +240,7 @@ int main(int argc, char** argv) {
                 LOG_WARNING(log);
             }
 
-            releases.packs.push_back(
-                GeoReleasePack(singGeositePath, singGeoipPath)
+            releases.packs.emplace_back(singGeositePath, singGeoipPath
             );
         }
 
@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
         createReleaseNotes(releases, config, downloadedSources);
     } catch (const std::runtime_error& e) {
         LOG_ERROR(e.what());
-        LOG_ERROR("Failed to create release notes for parent proccess");
+        LOG_ERROR("Failed to create release notes for parent process");
     }
 
     LOG_INFO("Domain address list(s) successfully created");

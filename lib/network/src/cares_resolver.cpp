@@ -10,7 +10,7 @@ void NetUtils::CAresResolver::resolveCallback(void *arg, int status, int, struct
     NetTypes::ListAddress ips;
     if (status == ARES_SUCCESS) {
         char ipstr[INET6_ADDRSTRLEN];
-        for (auto *node = res->nodes; node; node = node->ai_next) {
+        for (const auto *node = res->nodes; node; node = node->ai_next) {
             void *addr = (node->ai_family == AF_INET)
             ? (void*)&((struct sockaddr_in*)node->ai_addr)->sin_addr
             : (void*)&((struct sockaddr_in6*)node->ai_addr)->sin6_addr;
@@ -25,7 +25,7 @@ void NetUtils::CAresResolver::resolveCallback(void *arg, int status, int, struct
 
 bool NetUtils::CAresResolver::resolveDomains(const NetTypes::ListAddress& hosts, NetTypes::ListAddress& uniqueIPs) {
     if (!m_initialized) {
-        LOG_ERROR("Tried to call not initialized CAres domain reslover");
+        LOG_ERROR("Tried to call not initialized CAres domain resolver");
         return false;
     }
 
@@ -84,7 +84,7 @@ bool NetUtils::CAresResolver::init() {
     return true;
 }
 
-void NetUtils::CAresResolver::runEventLoop(std::vector<std::future<std::forward_list<std::string>>>& futures) {
+void NetUtils::CAresResolver::runEventLoop(std::vector<std::future<std::forward_list<std::string>>>& futures) const {
     bool done = false;
     while (!done) {
         fd_set rfds, wfds;

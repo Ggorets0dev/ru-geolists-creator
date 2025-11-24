@@ -1,6 +1,8 @@
 #ifndef BUILD_TOOLS_HPP
 #define BUILD_TOOLS_HPP
 
+#include <utility>
+
 #include "config.hpp"
 
 #define GEOSITE_FILENAME_DAT        "geosite.dat"
@@ -12,8 +14,8 @@
 #define RELEASE_NOTES_FILENAME      "release_notes.txt"
 
 struct GeoReleasePack {
-    GeoReleasePack(const fs::path& listDomain, const fs::path& listIP) :
-        listDomain(listDomain), listIP(listIP) {}
+    GeoReleasePack(fs::path  listDomain, fs::path  listIP) :
+        listDomain(std::move(listDomain)), listIP(std::move(listIP)) {}
 
     fs::path listDomain;
     fs::path listIP;

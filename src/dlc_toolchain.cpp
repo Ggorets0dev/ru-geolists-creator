@@ -2,6 +2,7 @@
 #include "log.hpp"
 #include "json_io.hpp"
 #include "url_handle.hpp"
+#include "fs_utils_temp.hpp"
 
 #define DLC_API_LAST_RELEASE_URL    "https://api.github.com/repos/v2fly/domain-list-community/releases/latest"
 
@@ -10,33 +11,37 @@ const fs::path gkDlcToolchainDir = fs::path(std::getenv("HOME")) / ".local" / "l
 std::optional<std::string> downloadDlcSourceCode() {
     bool status;
 
+    // ========= Temp files control
+    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+    const auto dlcReqFile = tempFileReg.createTempFile("json");
+    const auto dlcSourceFile = tempFileReg.createTempFileDetached("tar.gz");
+    // =========
+
     LOG_INFO("Starting to download DLC source code...");
 
-    if (!NetUtils::tryDownloadFile(DLC_API_LAST_RELEASE_URL, DLC_RELEASE_REQ_FILE_NAME)) {
+    if (!NetUtils::tryDownloadFile(DLC_API_LAST_RELEASE_URL, dlcReqFile.lock()->path)) {
         LOG_ERROR("Failed to perform API request for DLC repository");
         return std::nullopt;
     }
 
     Json::Value request;
-    status = readJsonFromFile(DLC_RELEASE_REQ_FILE_NAME, request);
+    status = readJsonFromFile(dlcReqFile.lock()->path, request);
 
     if (!status) {
         LOG_ERROR("Failed to read JSON from API request (DLC)");
         return std::nullopt;
     }
 
-    fs::remove(DLC_RELEASE_REQ_FILE_NAME);
-
     std::string lastReleaseUrl = request["tarball_url"].asString();
 
-    if (NetUtils::tryDownloadFile(lastReleaseUrl, DLC_SRC_FILE_NAME)) {
+    if (NetUtils::tryDownloadFile(lastReleaseUrl, dlcSourceFile->path)) {
         LOG_INFO("DLC source code was successfully downloaded");
     } else {
         LOG_ERROR("DLC source code could not be downloaded after several attempts");
         return std::nullopt;
     }
 
-    return DLC_SRC_FILE_NAME;
+    return dlcSourceFile->path;
 }
 
 bool clearDlcDataSection(std::string dlcRootPath) {
