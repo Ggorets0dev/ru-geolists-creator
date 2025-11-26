@@ -5,8 +5,10 @@
 **/build-arm
 **/build-debug
 **/build-release
+**/rglc.AppDir
 **.deb
 **/sysroot
+**.AppImage
 CMakeLists.txt.user
 *.pb.cc
 *.pb.h
