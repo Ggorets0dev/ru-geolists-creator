@@ -2,7 +2,7 @@
 find_package(CURL REQUIRED)
 
 # Try to find c-ares in system
-pkg_check_modules(CARES REQUIRED libcares)
+find_package(c-ares REQUIRED)
 
 # Ищем заголовки bgpdump.h
 find_path(BGPDUMP_INCLUDE_DIR bgpdump.h
@@ -31,7 +31,7 @@ target_include_directories(network_lib PUBLIC
 
 target_link_libraries(network_lib PUBLIC
     CURL::libcurl
-    ${CARES_LIBRARIES}
+    c-ares::cares
     ${BGPDUMP_LIBRARY}
     RGLC::json_io
     RGLC::exception

@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -e
 
+# ==============================
+# CHANGING PWD
+# ==============================
+
+# Absolute path to directory with script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+CURRENT_DIR="$(pwd)"
+
+if [ "$CURRENT_DIR" = "$SCRIPT_DIR" ]; then
+  # Entering project's root
+  cd ..
+fi
+# ==============================
+
 APPNAME="$1"
 BINARY_PATH="$2"
 APPDIR="${APPNAME}.AppDir"

@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(RuGeolistsCreator LANGUAGES CXX)
+project(rglc LANGUAGES CXX)
 
-cmake_policy(SET CMP0135 NEW)
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,11 +23,7 @@ message(STATUS "[CMAKE] [!] Project version: ${PROJECT_VERSION}")
 # ==============================
 # FINDING DEPENDENCIES
 # ==============================
-
-# Try to find libarchive in system
-find_package(PkgConfig REQUIRED)
-
-pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
+find_package(LibArchive REQUIRED)
 # ==============================
 
 # Set Release options
@@ -40,7 +38,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 # Path of binary for parent project (need for IPC)
-set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/RuGeolistsCreator")
+set(RGC_BIN_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/bin/rglc")
 
 # ==============================
 # CONFIGURING HEADER FILES
@@ -93,29 +91,29 @@ file(GLOB_RECURSE INC_FILES "inc/*.h" "inc/*.hpp")
 file(GLOB TC_SRC_FILES "third-party/*.c" "third-party/*.cpp" "third-party/*.cc")
 file(GLOB TC_INC_FILES "third-party/*.h" "third-party/*.hpp")
 
-add_executable(RuGeolistsCreator ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
+add_executable(rglc ${SRC_FILES} ${INC_FILES} ${TC_INC_FILES} ${TC_SRC_FILES} ${PROTO_GEN_SRC_FILES} ${PROTO_GEN_INC_FILES})
 
 # Set dependency for force build
-add_dependencies(RuGeolistsCreator test_runner)
+add_dependencies(rglc test_runner)
 
-target_link_libraries(RuGeolistsCreator PRIVATE
-        ${LIBARCHIVE_LIBRARIES}
+target_link_libraries(rglc PRIVATE
+        LibArchive::LibArchive
         pthread
         RGLC::network
         RGLC::json_io
         RGLC::log
         RGLC::proto)
 
-target_include_directories(RuGeolistsCreator PRIVATE
+target_include_directories(rglc PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
     ${PROTO_GEN_INCLUDE_DIR}
 )
 
-target_include_directories(RuGeolistsCreator PUBLIC ${protobuf_INCLUDE_DIR})
+target_include_directories(rglc PUBLIC ${protobuf_INCLUDE_DIR})
 
 # Install software into ~/.local/bin
-install(TARGETS RuGeolistsCreator DESTINATION bin)
+install(TARGETS rglc DESTINATION bin)
 
 # ==============================
 # IPC SETTINGS
