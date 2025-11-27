@@ -70,6 +70,10 @@ extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
 
     archive_read_free(a);  // Освобождаем ресурсы
 
+    if (rootDirPath[rootDirPath.size() - 1] == '/') {
+        rootDirPath.pop_back();
+    }
+
     LOG_INFO("Successfully extracted the archive to the path: " + rootDirPath);
 
     return rootDirPath;

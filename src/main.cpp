@@ -48,9 +48,7 @@ int main(int argc, char** argv) {
     // Show about and close software
     if (gCmdArgs.isInit) {
         if (fs::exists(gkConfigPath)) {
-            bool isInitAgain = askYesNo("Initialization is already performed, delete config and run it again?", false);
-
-            if (isInitAgain) {
+            if (bool isInitAgain = askYesNo("Initialization is already performed, delete config and run it again?", false)) {
                 deinitSoftware();
             } else {
                 LOG_INFO("Re-initialization canceled");

@@ -3,7 +3,7 @@
 #include "log.hpp"
 #include "fs_utils_temp.hpp"
 
-#include <signal.h>
+#include <csignal>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -51,7 +51,7 @@ std::optional<std::string> setupGeoManagerBinary() {
         return std::nullopt;
     }
 
-    fs::copy_file(geoMgrBinary, geoMgrTargetPath, fs::copy_options::overwrite_existing);
+    fs::copy_file(downloads[0], geoMgrTargetPath, fs::copy_options::overwrite_existing);
 
     fs::permissions(geoMgrTargetPath,
                     fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec,

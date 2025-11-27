@@ -6,6 +6,8 @@
 #include "json_io.hpp"
 #include "main_sources.hpp"
 
+#define V2IP_TOOLCHAIN_DIRNAME   "v2fly-v2ip-toolchain"
+
 extern const fs::path gkV2ipToolchainDir;
 
 std::optional<std::string> downloadV2ipSourceCode();

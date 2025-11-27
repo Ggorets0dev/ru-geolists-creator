@@ -88,13 +88,7 @@ std::optional<fs::path> runV2ipToolchain(const std::string& rootPath) {
 
     fs::current_path(rootPath.c_str());
 
-    // suppressConsoleOutput();
-
-    int result = std::system("go run ./");
-
-    // restoreConsoleOutput();
-
-    if (result == 0) {
+    if (const int result = std::system("go run ./"); result == 0) {
         outFilePath = fs::current_path() / "output" / GEOIP_FILENAME_DAT;
         LOG_INFO("IP address list building with XRay tools has been successfully completed");
     } else {

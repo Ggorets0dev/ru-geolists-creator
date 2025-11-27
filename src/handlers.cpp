@@ -11,7 +11,7 @@
 
 #include <string>
 
-#define PRINT_DELIMETER "============================"
+#define PRINT_DELIMETER         "============================"
 
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
@@ -230,13 +230,14 @@ void deinitSoftware() {
         exit(1);
     }
 
-    LOG_INFO("Deinitalization successfully completed, all components deleted");
+    LOG_INFO("Deinitialization successfully completed, all components deleted");
 }
 
 void initSoftware() {
     bool status;
     std::string apiToken;
     RgcConfig config;
+    fs::path bufferPath;
 
     // Create dirs for DLC toolchain deploy
     try {
@@ -272,10 +273,13 @@ void initSoftware() {
     auto dlcRootPath = extractTarGz(*dlcArchivePath, gkDlcToolchainDir);
     VALIDATE_INIT_PART_RESULT(dlcRootPath);
 
+    bufferPath = *dlcRootPath;
+    bufferPath = bufferPath.parent_path() / DLC_TOOLCHAIN_DIRNAME;
+    fs::rename(*dlcRootPath, bufferPath);
+    dlcRootPath = bufferPath.string();
+
     status = clearDlcDataSection(*dlcRootPath);
     VALIDATE_INIT_PART_RESULT(status);
-
-    fs::remove(*dlcArchivePath);
     // !SECTION
 
     // SECTION - Download V2IP
@@ -285,7 +289,10 @@ void initSoftware() {
     auto v2ipRootPath = extractTarGz(*v2ipArchivePath, gkV2ipToolchainDir);
     VALIDATE_INIT_PART_RESULT(v2ipRootPath);
 
-    fs::remove(*v2ipArchivePath);
+    bufferPath = *v2ipRootPath;
+    bufferPath = bufferPath.parent_path() / V2IP_TOOLCHAIN_DIRNAME;
+    fs::rename(*v2ipRootPath, bufferPath);
+    v2ipRootPath = bufferPath.string();
     // !SECTION
 
     // SECTION - Download GeoManager
@@ -311,12 +318,7 @@ void initSoftware() {
     VALIDATE_INIT_PART_RESULT(status);
     // !SECTION
 
-    if (status) {
-        LOG_INFO("Initalization successfully completed, all components installed");
-    } else {
-        LOG_ERROR(SOFTWARE_INIT_FAIL_MSG);
-        exit(1);
-    }
+    LOG_INFO("Initialization successfully completed, all components installed");
 }
 
 std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {

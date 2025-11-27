@@ -5,6 +5,8 @@
 
 #include "fs_utils.hpp"
 
+#define DLC_TOOLCHAIN_DIRNAME   "v2fly-dlc-toolchain"
+
 extern const fs::path gkDlcToolchainDir;
 
 std::optional<std::string> downloadDlcSourceCode();
