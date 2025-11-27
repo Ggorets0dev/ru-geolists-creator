@@ -29,9 +29,9 @@ find_package(LibArchive REQUIRED)
 # Set Release options
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
 	message(STATUS "[CMAKE] [!] Using Release build...")
+    message(STATUS "[CMAKE] [!] Compiler CXX: ${CMAKE_CXX_COMPILER}")
     message(STATUS "[CMAKE] [!] Compiler CXX flags: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "[CMAKE] [!] Compiler C: ${CMAKE_C_COMPILER}")
-    message(STATUS "[CMAKE] [!] Compiler CXX: ${CMAKE_CXX_COMPILER}")
 
     set(HOME_DIR $ENV{HOME})
     set(CMAKE_INSTALL_PREFIX "${HOME_DIR}/.local")
@@ -48,6 +48,8 @@ execute_process(
     OUTPUT_VARIABLE RGC_GIT_COMMIT_SHA
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
+message(STATUS "[CMAKE] [!] Current git commit SHA: ${RGC_GIT_COMMIT_SHA}")
 
 # Genereate software_info.hpp with correct version
 configure_file(

@@ -60,7 +60,7 @@ for arg in "$@"; do
   esac
 done
 
-# Check if ARCH was provided
+# Check if BUILD_TYPE was provided
 if [ -z "BUILD_TYPE" ]; then
   echo "[-] Error: --type is required"
   echo "[?] Usage: $0 --type=<value>"
@@ -93,7 +93,7 @@ if [[ "$INSTALL_DEPS" == "1" ]]; then
   conan install . -of $BUILD_FOLDER_NAME -s build_type=$BUILD_TYPE_TITLE -b missing
 fi
 
-cmake -S . -B $BUILD_FOLDER_NAME -DCMAKE_TOOLCHAIN_FILE="{$BUILD_FOLDER_NAME}/build/${BUILD_TYPE_TITLE}/generators/conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=${BUILD_TYPE_TITLE}
+cmake -S . -B $BUILD_FOLDER_NAME -DCMAKE_TOOLCHAIN_FILE="{$BUILD_FOLDER_NAME}/build/${BUILD_TYPE_TITLE}/generators/conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=${BUILD_TYPE_TITLE} ${CMAKE_BUILD_FLAGS}
 cmake --build $BUILD_FOLDER_NAME -j$(nproc)
 
 mv "${BUILD_FOLDER_NAME}/rglc" $TARGET_BINARY_PATH
