@@ -59,7 +59,7 @@ void initLogging() {
         spdlog::set_default_logger(logger);
 
         // Формат сообщений
-        spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+        spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%^%l%$] %v");
 
         // Уровень по умолчанию
         spdlog::set_level(spdlog::level::info);

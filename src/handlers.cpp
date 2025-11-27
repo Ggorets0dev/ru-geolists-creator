@@ -235,7 +235,6 @@ void deinitSoftware() {
 
 void initSoftware() {
     bool status;
-    std::string apiToken;
     RgcConfig config;
     fs::path bufferPath;
 
@@ -278,6 +277,8 @@ void initSoftware() {
     fs::rename(*dlcRootPath, bufferPath);
     dlcRootPath = bufferPath.string();
 
+    LOG_INFO("DLC toolchain renaming has been completed for improved universality: {}", bufferPath.string());
+
     status = clearDlcDataSection(*dlcRootPath);
     VALIDATE_INIT_PART_RESULT(status);
     // !SECTION
@@ -293,6 +294,8 @@ void initSoftware() {
     bufferPath = bufferPath.parent_path() / V2IP_TOOLCHAIN_DIRNAME;
     fs::rename(*v2ipRootPath, bufferPath);
     v2ipRootPath = bufferPath.string();
+
+    LOG_INFO("V2IP toolchain renaming has been completed for improved universality: {}", bufferPath.string());
     // !SECTION
 
     // SECTION - Download GeoManager
@@ -312,7 +315,6 @@ void initSoftware() {
     config.refilterTime = CFG_DEFAULT_NUM_VALUE;
     config.v2rayTime = CFG_DEFAULT_NUM_VALUE;
     config.ruadlistTime = CFG_DEFAULT_NUM_VALUE;
-    config.apiToken = apiToken;
 
     status = writeConfig(config);
     VALIDATE_INIT_PART_RESULT(status);
