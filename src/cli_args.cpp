@@ -98,7 +98,7 @@ bool askYesNo(const std::string& question, bool isYesDefault) {
         std::cout << ASK_MARK << " " << question << " (" << yesChar << "/" << noChar << "): ";
         std::getline(std::cin, userChoice);
 
-        if (userChoice.length() == 0) {
+        if (userChoice.empty()) {
             return isYesDefault;
         } else if (userChoice.length() == 1 && std::tolower(userChoice[0]) == 'y' ||
                    std::tolower(userChoice[0]) == 'n') {

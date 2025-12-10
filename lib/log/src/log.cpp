@@ -153,3 +153,7 @@ void restoreConsoleOutput() {
 
     gMsgTarget.isSupressed = false;
 }
+
+void loggerFlush() {
+    spdlog::default_logger()->flush();
+}

@@ -77,7 +77,7 @@ void addExtraSource() {
         exit(1);
     }
 
-    LOG_INFO("Information about new source is required");
+    std::cout << "Information about new source is required" << std::endl;
 
     getStringInput("Type (ip/domain)", buffer, false);
     source.type = sourceStringToType(buffer);

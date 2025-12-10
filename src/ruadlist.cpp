@@ -67,5 +67,7 @@ bool parseRuadlistUpdateDatetime(const Json::Value &value, std::time_t& dtOut) {
     }
 
     // Convert to time_t (UNIX-time)
-    return std::mktime(&tm);
+    dtOut = std::mktime(&tm);
+
+    return true;
 }

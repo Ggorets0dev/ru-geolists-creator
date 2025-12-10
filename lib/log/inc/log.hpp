@@ -21,17 +21,17 @@
 #define GEO_FORMAT_CONVERT_FAIL_MSG "Since the list could not be converted, the requested format was ignored: "
 
 template<typename... Args>
-inline void LOG_ERROR(const std::string& fmt, Args&&... args) {
+void LOG_ERROR(const std::string& fmt, Args&&... args) {
     spdlog::error(fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-inline void LOG_WARNING(const std::string& fmt, Args&&... args) {
+void LOG_WARNING(const std::string& fmt, Args&&... args) {
     spdlog::warn(fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-inline void LOG_INFO(const std::string& fmt, Args&&... args) {
+void LOG_INFO(const std::string& fmt, Args&&... args) {
     spdlog::info(fmt, std::forward<Args>(args)...);
 }
 
@@ -40,6 +40,8 @@ inline void LOG_INFO(const std::string& fmt, Args&&... args) {
 // =========================
 
 void initLogging();
+
+void loggerFlush();
 
 void logUrlAccess(const std::string& url, bool status);
 
