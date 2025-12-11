@@ -15,6 +15,8 @@
 #define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate"
 #define NO_WHITELIST_OPTION_DESCRIPTION         "Disable whitelist filtering for current session"
 #define NO_EXTRA_OPTION_DESCRIPTION             "Disable adding extra sources to lists for current session"
+#define SORT_EXTRAS_BY_SECTION_DESCRIPTION      "Sort extra sources by section name"
+#define SORT_EXTRAS_BY_TYPE_DESCRIPTION         "Sort extra sources by type"
 
 #define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
@@ -43,7 +45,7 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
     app.add_flag("--child", gCmdArgs.isChild, CHILD_OPTION_DESCRIPTION);
     app.add_flag("--init", gCmdArgs.isInit, INIT_OPTION_DESCRIPTION);
 
-    app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
+    const auto showExtrasOption = app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
     app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
 
     app.add_flag("--no-whitelist", gCmdArgs.isNoWhitelist, NO_WHITELIST_OPTION_DESCRIPTION);
@@ -54,12 +56,21 @@ void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
 
     gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION_DESCRIPTION);
     gOutPathOption = app.add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION);
+
+    const auto sortExtrasByType = app.add_flag("--sort-type", gCmdArgs.isSortExtrasByTypes,
+        SORT_EXTRAS_BY_TYPE_DESCRIPTION)->needs(showExtrasOption);
+
+    const auto sortExtrasBySection = app.add_flag("--sort-sec", gCmdArgs.isSortExtrasBySections,
+        SORT_EXTRAS_BY_SECTION_DESCRIPTION)->needs(showExtrasOption);
+
+    // Only one type of extra's sort can be selected
+    sortExtrasByType->excludes(sortExtrasBySection);
 }
 
 void printAvailableFormats() {
     std::cout << "Available formats of geolists: ";
 
-    for (uint8_t i(0); i < gkAvailableGeoFormats.size(); ++i) {
+    for (size_t i(0); i < gkAvailableGeoFormats.size(); ++i) {
         std::cout << gkAvailableGeoFormats[i];
 
         if (i + 1 < gkAvailableGeoFormats.size()) {
@@ -91,8 +102,8 @@ bool askYesNo(const std::string& question, bool isYesDefault) {
     std::string userChoice;
     userChoice.reserve(1);
 
-    char yesChar = isYesDefault ? 'Y' : 'y';
-    char noChar = isYesDefault ? 'n' : 'N';
+    const char yesChar = isYesDefault ? 'Y' : 'y';
+    const char noChar = isYesDefault ? 'n' : 'N';
 
     while (true) {
         std::cout << ASK_MARK << " " << question << " (" << yesChar << "/" << noChar << "): ";
@@ -113,7 +124,7 @@ void getStringInput(const std::string& question, std::string& out, bool isEmptyA
         std::cout << ASK_MARK << " " << question << ": ";
         std::getline(std::cin, out);
 
-        if (isEmptyAllowed || out.length() > 0) {
+        if (isEmptyAllowed || !out.empty()) {
             break;
         }
     }

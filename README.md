@@ -97,6 +97,10 @@ Options:
   -f,--format TEXT ...        Formats of geolists to generate
   -r,--remove UINT            Remove extra source from download list
   -o,--out TEXT               Path to out DIR with all lists to create
+  --sort-type Needs: --show Excludes: --sort-sec
+                              Sort extra sources by type
+  --sort-sec Needs: --show Excludes: --sort-type
+                              Sort extra sources by section name
 
 Notice: When running without arguments, the update-checked mode is used
 

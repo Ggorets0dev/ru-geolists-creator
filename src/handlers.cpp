@@ -34,7 +34,7 @@ void printHelp(const CLI::App& app) {
 void showExtraSources() {
     RgcConfig config;
     bool status;
-    uint16_t recordId(1);
+    size_t extrasCount(0);
 
     status = readConfig(config);
 
@@ -43,22 +43,44 @@ void showExtraSources() {
         exit(1);
     }
 
-    if (std::distance(config.extraSources.begin(), config.extraSources.end()) == 0) {
+    extrasCount = std::distance(config.extraSources.begin(), config.extraSources.end());
+
+    if (!extrasCount) {
         LOG_INFO("No extra sources were found in config file");
         return;
     }
+
+    std::vector<int> idx(extrasCount);
+    std::iota(idx.begin(), idx.end(), 0);
+
+    std::vector<ExtraSource> sources;
+    sources.reserve(extrasCount);
+
+    std::copy(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(sources));
+
+    // ======== Sort elements if requested by CLI args
+    if (gCmdArgs.isSortExtrasByTypes) {
+        std::sort(idx.begin(), idx.end(),
+                  [&](const int a, const int b) {
+                      return sources[a].type < sources[b].type;
+                  });
+    } else if (gCmdArgs.isSortExtrasBySections) {
+        std::sort(idx.begin(), idx.end(),
+                  [&](const int a, const int b) {
+                      return sources[a].section < sources[b].section;
+                  });
+    }
+    // ========
 
     std::cout << "\nExtra sources specified in config: \n\n";
 
     std::cout << PRINT_DELIMETER << std::endl;
 
-    for (const auto& source : config.extraSources) {
-        std::cout << "[ID = " << recordId << "]\n\n";
+    for (size_t i(0); i < sources.size(); ++i) {
+        std::cout << "[ID = " << idx[i] + 1 << "]\n\n";
 
-        source.print(std::cout);
+        sources[idx[i]].print(std::cout);
         std::cout << PRINT_DELIMETER << std::endl;
-
-        ++recordId;
     }
 }
 

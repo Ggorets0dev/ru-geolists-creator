@@ -23,10 +23,15 @@ struct CmdArgs {
     bool isCheckUrls;
     bool isChild;
     bool isInit;
-    bool isShowExtras;
     bool isAddExtra;
     bool isNoWhitelist;
     bool isNoExtra;
+
+    // ====== Extra sources show options
+    bool isShowExtras;
+    bool isSortExtrasBySections;
+    bool isSortExtrasByTypes;
+    // ======
 };
 
 extern CmdArgs gCmdArgs;

@@ -2,7 +2,6 @@
 #define CONFIG_HPP
 
 #include <string>
-#include <ctime>
 #include <forward_list>
 
 #include "extra_sources.hpp"
