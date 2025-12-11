@@ -32,7 +32,8 @@ public:
 
     enum Type {
         DOMAIN,
-        IP
+        IP,
+        UNKNOWN
     };
 
     std::string section;

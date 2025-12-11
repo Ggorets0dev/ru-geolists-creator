@@ -101,8 +101,10 @@ void addExtraSource() {
 
     std::cout << "Information about new source is required" << std::endl;
 
-    getStringInput("Type (ip/domain)", buffer, false);
-    source.type = sourceStringToType(buffer);
+    do {
+        getStringInput("Type (ip/domain)", buffer, false);
+        source.type = sourceStringToType(buffer);
+    } while (source.type == Source::UNKNOWN);
 
     getStringInput("Section", source.section, false);
     getStringInput("URL", source.url, false);
@@ -110,7 +112,7 @@ void addExtraSource() {
     if (!isUrl(source.url)) {
         // ===== Local source
         try {
-            status = fs::exists(source.url);
+            status = fs::is_regular_file(source.url);
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR("Filesystem error: " + std::string(e.what()));
             status = false;

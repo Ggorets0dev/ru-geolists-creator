@@ -27,12 +27,16 @@ std::string sourceTypeToString(Source::Type type) {
     }
 }
 
-Source::Type sourceStringToType(std::string_view str) {
+Source::Type sourceStringToType(const std::string_view str) {
     if (str == "ip") {
         return Source::Type::IP;
-    } else { //  domain
+    }
+
+    if (str == "domain") { //  domain
         return Source::Type::DOMAIN;
     }
+
+    return Source::Type::UNKNOWN;
 }
 
 void  printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources) {
