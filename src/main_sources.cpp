@@ -6,7 +6,7 @@
 
 #define SOURCE_FILENAME_SALT_SIZE       6
 
-Source::Source(Source::Type type, const std::string& section) {
+Source::Source(const Type type, const std::string& section) {
     this->type = type;
     this->section = section;
 }
@@ -16,7 +16,7 @@ void Source::print(std::ostream& stream) const {
     stream << "Section: " << this->section << std::endl;
 }
 
-std::string sourceTypeToString(Source::Type type) {
+std::string sourceTypeToString(const Source::Type type) {
     switch(type) {
     case Source::Type::IP:
         return "ip";
@@ -39,14 +39,18 @@ Source::Type sourceStringToType(const std::string_view str) {
     return Source::Type::UNKNOWN;
 }
 
-void  printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources) {
-    const char delimeter[] = DOWNLOADED_SOURCES_DELIMETER;
+void  printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources, const bool printPath) {
+    constexpr char delimeter[] = DOWNLOADED_SOURCES_DELIMETER;
 
     stream << delimeter << std::endl;
 
-    for (const auto& source : downloadedSources) {
-        source.first.print(stream);
-        stream << "Path: " << source.second << std::endl;
+    for (const auto&[fst, snd] : downloadedSources) {
+        fst.print(stream);
+
+        if (printPath) {
+            stream << "Path: " << snd << std::endl;
+        }
+
         stream << delimeter << std::endl;
     }
 }

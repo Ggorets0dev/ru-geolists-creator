@@ -17,7 +17,7 @@ static void saveToText(const RgcConfig& config, const std::vector<DownloadedSour
     std::ofstream releaseNotes(path);
 
     releaseNotes << "Added IP/Domain sources:" << std::endl;
-    printDownloadedSources(releaseNotes, downloadedSources);
+    printDownloadedSources(releaseNotes, downloadedSources, false);
 
     releaseNotes << "\n\n";
 
@@ -40,17 +40,17 @@ static void saveToFIFO(const GeoReleases& releases, const std::vector<Downloaded
     releaseNotes.set_time(parseUnixTime(std::time(nullptr)));
 
     for (const auto& pack : releases.packs) {
-        auto pbPack = releaseNotes.add_files_paths();
+        const auto pbPack = releaseNotes.add_files_paths();
 
         pbPack->set_domain_list(pack.listDomain);
         pbPack->set_domain_list(pack.listIP);
     }
 
-    for (const auto& source : downloadedSources) {
-        auto pbSource = releaseNotes.add_sources();
+    for (const auto&[fst, snd] : downloadedSources) {
+        const auto pbSource = releaseNotes.add_sources();
 
-        pbSource->set_section(source.first.section);
-        pbSource->set_type((geo_release::ReleaseNotes::SourceType)source.first.type);
+        pbSource->set_section(fst.section);
+        pbSource->set_type(static_cast<geo_release::ReleaseNotes::SourceType>(fst.type));
     }
 
     // Create all DIRs needed for FIFO

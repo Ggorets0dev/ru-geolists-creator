@@ -51,7 +51,7 @@ std::string sourceTypeToString(Source::Type type);
 
 Source::Type sourceStringToType(std::string_view str);
 
-void printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources);
+void printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources, bool printPath=true);
 
 void joinSimilarSources(std::vector<DownloadedSourcePair>& downloadedSources);
 
