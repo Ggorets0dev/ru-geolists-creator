@@ -1,4 +1,5 @@
 #include "main_sources.hpp"
+#include "cli_draw.hpp"
 
 #include <algorithm>
 
@@ -39,20 +40,35 @@ Source::Type sourceStringToType(const std::string_view str) {
     return Source::Type::UNKNOWN;
 }
 
-void  printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources, const bool printPath) {
-    constexpr char delimeter[] = DOWNLOADED_SOURCES_DELIMETER;
+void printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources, const bool printPath) {
+    constexpr int colType = 10;
+    constexpr int colSection = 20;
+    constexpr int colPath = 50;
 
-    stream << delimeter << std::endl;
+    std::vector<int> widths = {colType, colSection};
+    if (printPath) {
+        widths.push_back(colPath);
+    }
 
-    for (const auto&[fst, snd] : downloadedSources) {
-        fst.print(stream);
+    printTableLine(stream, widths);
+    stream << "| " << std::left << std::setw(colType) << "Type"
+           << " | " << std::left << std::setw(colSection) << "Section";
+    if (printPath) {
+        stream << " | " << std::left << std::setw(colPath) << "System Path";
+    }
+    stream << " |\n";
+    printTableLine(stream, widths);
+
+    for (const auto& [source, path] : downloadedSources) {
+        stream << "| " << std::left << std::setw(colType) << sourceTypeToString(source.type)
+               << " | " << std::left << std::setw(colSection) << source.section;
 
         if (printPath) {
-            stream << "Path: " << snd << std::endl;
+            stream << " | " << std::left << std::setw(colPath) << path.string();
         }
-
-        stream << delimeter << std::endl;
+        stream << " |\n";
     }
+    printTableLine(stream, widths);
 }
 
 void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {

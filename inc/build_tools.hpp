@@ -24,6 +24,7 @@ struct GeoReleasePack {
 struct GeoReleases {
     std::vector<GeoReleasePack> packs;
     fs::path releaseNotes;
+    bool isEmpty;
 };
 
 void createReleaseNotes(const GeoReleases& paths, const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources);

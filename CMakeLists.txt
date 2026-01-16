@@ -109,10 +109,7 @@ target_link_libraries(rglc PRIVATE
 target_include_directories(rglc PRIVATE
     ${LIBARCHIVE_INCLUDE_DIRS}
     ${PROJECT_INCLUDE_DIRS}
-    ${PROTO_GEN_INCLUDE_DIR}
 )
-
-target_include_directories(rglc PUBLIC ${protobuf_INCLUDE_DIR})
 
 # Install software into ~/.local/bin
 install(TARGETS rglc DESTINATION bin)

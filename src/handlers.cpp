@@ -27,8 +27,7 @@
 
 void printHelp(const CLI::App& app) {
     std::cout << app.help() << std::endl; // Standard help
-    std::cout << "Notice: When running without arguments, the update-checked mode is used\n\n";
-    printAvailableFormats();
+    // TODO: Add some other info for usage
 }
 
 void showExtraSources() {

@@ -16,7 +16,7 @@
 // ====================
 // Settings for custom behavior
 // ====================
-#define RESOLVE_PROGRESS_STEP 10.0f
+#define RESOLVE_PROGRESS_STEP           10.0f
 constexpr float gkResolveProgressStep = RESOLVE_PROGRESS_STEP / 100.0f;
 // ====================
 
@@ -100,25 +100,6 @@ void logFilterCheckProgress(float progress) {
     }
 }
 
-void logWithMark(const std::string& msg, const std::string& mark, uint32_t level) {
-    std::string m = mark + "  " + msg;
-
-    switch (level) {
-    case 0: // custom error
-        spdlog::error(m);
-        break;
-    case 1: // warn
-        spdlog::warn(m);
-        break;
-    case 2: // info
-        spdlog::info(m);
-        break;
-    default:
-        spdlog::info(m);
-        break;
-    }
-}
-
 // ====================
 // Console suppression
 // ====================
@@ -156,4 +137,13 @@ void restoreConsoleOutput() {
 
 void loggerFlush() {
     spdlog::default_logger()->flush();
+}
+
+std::string getLogModuleName(const LogModule module) {
+    switch (module) {
+        case LOG_MODULE_SERVICE:
+            return "[SERVICE]";
+        default:
+            return "[UNKNOWN_MODULE]";
+    }
 }

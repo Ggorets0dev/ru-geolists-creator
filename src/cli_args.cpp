@@ -1,93 +1,112 @@
 #include "cli_args.hpp" 
 
+#include "time_tools.hpp"
 #include "software_info.hpp"
 #include "log.hpp"
 
 #define FORCE_OPTION_DESCRIPTION                "Starts source download and build even if no updates are detected"
 #define ABOUT_OPTION_DESCRIPTION                "Display software information"
 #define CHECK_OPTION_DESCRIPTION                "Check access of all source's URLs from config"
-#define CHILD_OPTION_DESCRIPTION                "Send release notes to parent proccess (for work in chain)"
 #define INIT_OPTION_DESCRIPTION                 "Initialize software by creating config and downloading all dependencies"
-#define SHOW_OPTION_DESCRIPTION                 "Display all extra sources from configuration files"
 #define ADD_EXTRA_OPTION_DESCRIPTION            "Add extra source to download list"
 #define REMOVE_EXTRA_OPTION_DESCRIPTION         "Remove extra source from download list"
 #define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
-#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate"
-#define NO_WHITELIST_OPTION_DESCRIPTION         "Disable whitelist filtering for current session"
+#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing)"
+#define WHITELIST_OPTION_DESCRIPTION            "Enable whitelist filtering for current session"
 #define NO_EXTRA_OPTION_DESCRIPTION             "Disable adding extra sources to lists for current session"
-#define SORT_EXTRAS_BY_SECTION_DESCRIPTION      "Sort extra sources by section name"
-#define SORT_EXTRAS_BY_TYPE_DESCRIPTION         "Sort extra sources by type"
-
 #define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
 #define ASK_MARK                                "❔"
 
-CmdArgs gCmdArgs = { 0 };
+#define SHOW_SUBCMD_DESC                        "Display all extra sources from config files"
+#define SORT_EXTRAS_BY_SECTION_DESCRIPTION      "Sort extra sources by section name"
+#define SORT_EXTRAS_BY_TYPE_DESCRIPTION         "Sort extra sources by type"
 
+#define SERVICE_SUBCMD_DESC                     "Settings for service mode"
+#define SERVICE_ADDR_OPT_DESC                   "IP address for service"
+#define SERVICE_PORT_OPT_DESC                   "System port for service"
+#define SERVICE_TIMEOUT_OPT_DESC                "Timeout (sec) for service watchdog (leads to shutdown, 0 is infinite work)"
+
+CmdArgs gCmdArgs = {};
+ServiceSettings gServiceSettings = {};
+
+CLI::App* gServiceSubCmd;
+CLI::App* gShowSubCmd;
 CLI::Option* gRemoveExtraOption;
 CLI::Option* gOutPathOption;
+
+static const CLI::Range gkServicePortRange = { 49152, 65535 };
+static const CLI::Range gkServiceTimeoutRange = { 0, HOURS_TO_SEC(1) };
 
 static const std::vector<std::string> gkAvailableGeoFormats = {
     GEO_FORMAT_V2RAY_CAPTION,
     GEO_FORMAT_SING_CAPTION
 };
 
-void prepareCmdArgs(CLI::App& app, int argc, char** argv) {
+static void setupServiceSubcommand(CLI::App& app) {
+    gServiceSubCmd = app.add_subcommand("service", SERVICE_SUBCMD_DESC);
+
+    gServiceSubCmd->add_option("-a,--addr", gServiceSettings.addr, SERVICE_ADDR_OPT_DESC)
+               ->capture_default_str();
+
+    gServiceSubCmd->add_option("-p,--port", gServiceSettings.port, SERVICE_PORT_OPT_DESC)
+               ->check(gkServicePortRange) // Extra port validation
+               ->capture_default_str();
+
+    gServiceSubCmd->add_option("-t,--timeout", gServiceSettings.timeout_sec, SERVICE_TIMEOUT_OPT_DESC)
+                   ->check(gkServiceTimeoutRange) // Extra timeout validation
+                   ->capture_default_str();
+}
+
+static void setupShowSubcommand(CLI::App& app) {
+    gShowSubCmd = app.add_subcommand("show", SHOW_SUBCMD_DESC);
+
+    const auto sortExtrasByType = gShowSubCmd->add_flag(
+        "--sort-type",
+        gCmdArgs.isSortExtrasByTypes,
+        SORT_EXTRAS_BY_TYPE_DESCRIPTION);
+
+    const auto sortExtrasBySection = gShowSubCmd->add_flag(
+        "--sort-sec",
+        gCmdArgs.isSortExtrasBySections,
+        SORT_EXTRAS_BY_SECTION_DESCRIPTION);
+
+    // Only one type of extra's sort can be selected
+    sortExtrasByType->excludes(sortExtrasBySection);
+}
+
+void prepareCmdArgs(CLI::App& app) {
     app.description(RGC_DESCRIPTION);
 
-    argv = app.ensure_utf8(argv);
-
-    (void)argv;
+    setupServiceSubcommand(app);
+    setupShowSubcommand(app);
 
     app.add_flag("--force", gCmdArgs.isForceCreation, FORCE_OPTION_DESCRIPTION);
     app.add_flag("--about", gCmdArgs.isShowAbout, ABOUT_OPTION_DESCRIPTION);
     app.add_flag("--check", gCmdArgs.isCheckUrls, CHECK_OPTION_DESCRIPTION);
-    app.add_flag("--child", gCmdArgs.isChild, CHILD_OPTION_DESCRIPTION);
     app.add_flag("--init", gCmdArgs.isInit, INIT_OPTION_DESCRIPTION);
 
-    const auto showExtrasOption = app.add_flag("--show", gCmdArgs.isShowExtras, SHOW_OPTION_DESCRIPTION);
     app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
 
-    app.add_flag("--no-whitelist", gCmdArgs.isNoWhitelist, NO_WHITELIST_OPTION_DESCRIPTION);
+    app.add_flag("--whitelist", gCmdArgs.isUseWhitelist, WHITELIST_OPTION_DESCRIPTION);
     app.add_flag("--no-extra", gCmdArgs.isNoExtra, NO_EXTRA_OPTION_DESCRIPTION);
 
     app.add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
         ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
 
     gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION_DESCRIPTION);
-    gOutPathOption = app.add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION);
 
-    const auto sortExtrasByType = app.add_flag("--sort-type", gCmdArgs.isSortExtrasByTypes,
-        SORT_EXTRAS_BY_TYPE_DESCRIPTION)->needs(showExtrasOption);
-
-    const auto sortExtrasBySection = app.add_flag("--sort-sec", gCmdArgs.isSortExtrasBySections,
-        SORT_EXTRAS_BY_SECTION_DESCRIPTION)->needs(showExtrasOption);
-
-    // Only one type of extra's sort can be selected
-    sortExtrasByType->excludes(sortExtrasBySection);
+    gOutPathOption = app.add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION)
+        ->capture_default_str();
 }
 
-void printAvailableFormats() {
-    std::cout << "Available formats of geolists: ";
-
-    for (size_t i(0); i < gkAvailableGeoFormats.size(); ++i) {
-        std::cout << gkAvailableGeoFormats[i];
-
-        if (i + 1 < gkAvailableGeoFormats.size()) {
-            std::cout << ", ";
-        }
-    }
-
-    std::cout << std::endl;
-}
-
-bool validateParsedFormats() {
-    if (gCmdArgs.formats.empty()) {
+bool validateParsedFormats(const CmdArgs& args) {
+    if (args.formats.empty()) {
         LOG_ERROR("No format specified for geolists");
         return false;
     }
 
-    for (const auto& format : gCmdArgs.formats) {
+    for (const auto& format : args.formats) {
         if (std::find(gkAvailableGeoFormats.begin(), gkAvailableGeoFormats.end(), format) == gkAvailableGeoFormats.end()) {
             // Unsopported format for geolists
             LOG_ERROR("Unsupported format specified: " + format);

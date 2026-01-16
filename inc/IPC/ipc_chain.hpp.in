@@ -5,8 +5,4 @@
 
 #define RGC_INSTALL_PATH                "@RGC_BIN_INSTALL_PATH@"
 
-#define RGC_RELEASE_NOTES_FIFO_PATH     "/tmp/ru-geolists-creator/rgc.fifo"
-
-#define RGC_RELEASE_NOTES_FIFO_PERMS    0666
-
 #endif // IPC_CHAIN_H

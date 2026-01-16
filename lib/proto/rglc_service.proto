@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package rglc;
+
+message KeepAliveRequest {}
+message KeepAliveResponse {}
+
+message BuildGeoListsRequest {
+    bool is_force = 1;
+    bool is_use_whitelist = 2;
+    bool is_use_extra = 3;
+    repeated string formats = 4;
+    string out_dir = 5;
+}
+
+message BuildGeoListsResponse {
+    repeated string geoip_paths = 1;
+    repeated string geosite_paths = 2;
+    string release_notes_path = 3;
+    bool is_empty = 4;
+}
+
+service RGLC_Service {
+  rpc SendKeepAlive(KeepAliveRequest) returns (KeepAliveResponse);
+  rpc BuildGeoLists(BuildGeoListsRequest) returns (BuildGeoListsResponse);
+}

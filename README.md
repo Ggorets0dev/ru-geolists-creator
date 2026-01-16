@@ -36,11 +36,11 @@
 
 Для автоматизации сборки проекта под различные архитектуры могут быть использованы следующие скрипты:
 
-| Скрипт                 | Назначение                                                   |
-|:---------------------- | ------------------------------------------------------------ |
-| build.sh               | Сборка проекта под различные архитектуры                     |
-| build_deb.sh           | Сборка установочного пакета Debian                           |
-| setup_arm64_sysroot.sh | Подготовка sysroot для корректной кросс-компиляции под arm64 |
+| Скрипт                                              | Назначение                                                 |
+|:----------------------------------------------------|------------------------------------------------------------|
+| build.sh [--deps] [--appimg ][--type=Debug/Release] | Сборка проекта с управлением зависимостями                 |
+| prepare_appimage.sh [exec] [dir]                    | Сборка пакета AppImage (отдельно)                          |
+| build_by_docker.sh                                  | Сборка программы и пакета AppImage с помощью docker образа |
 
 ## Файл конфигурации
 
@@ -80,31 +80,27 @@
 ## Справка ПО (```--help```)
 
 ```
-RuGeolistsCreator - Software for automatic assembly of geoip.dat and geosite.dat files for VPN server XRay. Software is focused on blocking in the Russian Federation
-Usage: rglc [OPTIONS]
+ @ggorets0  ./rglc-x86_64.AppImage --help
+RuGeolistsCreator - Software (service) in C++ for automatic assembly of geoip and geosite files for VPN server XRay / SingBox
+Usage: rglc [OPTIONS] [SUBCOMMAND]
 
 Options:
   -h,--help                   Print this help message and exit
   --force                     Starts source download and build even if no updates are detected
   --about                     Display software information
   --check                     Check access of all source's URLs from config
-  --child                     Send release notes to parent proccess (for work in chain)
   --init                      Initialize software by creating config and downloading all dependencies
-  --show                      Display all extra sources from configuration files
   -a,--add                    Add extra source to download list
-  --no-whitelist              Disable whitelist filtering for current session
+  --whitelist                 Enable whitelist filtering for current session
   --no-extra                  Disable adding extra sources to lists for current session
-  -f,--format TEXT ...        Formats of geolists to generate
+  -f,--format TEXT ...        Formats of geolists to generate (v2ray, sing)
   -r,--remove UINT            Remove extra source from download list
-  -o,--out TEXT               Path to out DIR with all lists to create
-  --sort-type Needs: --show Excludes: --sort-sec
-                              Sort extra sources by type
-  --sort-sec Needs: --show Excludes: --sort-type
-                              Sort extra sources by section name
+  -o,--out TEXT [/home/ggorets0/Projects/C++/ru-geolists-creator/rglc_geofiles] 
+                              Path to out DIR with all lists to create
 
-Notice: When running without arguments, the update-checked mode is used
-
-Available formats of geolists: v2ray, sing
+Subcommands:
+  service                     Settings for service mode
+  show                        Display all extra sources from config files
 ```
 
 ## Зависимости

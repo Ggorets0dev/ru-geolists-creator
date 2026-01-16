@@ -6,5 +6,5 @@ set -e
 # ===============
 # GLOBAL PROJECT VARIABLES (SETTINGS)
 
-SI_PROJECT_VERSION="0.20.6"
+SI_PROJECT_VERSION="0.21.0"
 # ==============
