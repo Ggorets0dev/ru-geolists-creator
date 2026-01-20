@@ -11,8 +11,6 @@
 
 #include <string>
 
-#define PRINT_DELIMETER         "============================"
-
 #define VALIDATE_INIT_PART_RESULT(condition) \
     if (!condition) { \
         LOG_ERROR(SOFTWARE_INIT_FAIL_MSG); \
@@ -30,203 +28,81 @@ void printHelp(const CLI::App& app) {
     // TODO: Add some other info for usage
 }
 
-void showExtraSources() {
-    RgcConfig config;
-    bool status;
-    size_t extrasCount(0);
+void showPresets(const CmdArgs& args) {
+    size_t shownPresetsCount = 0;
+    const auto config = getCachedConfig();
 
-    status = readConfig(config);
+    std::cout << "Available presets from configuration: \n" << std::endl;
 
-    if (!status) {
-        LOG_ERROR("Failed to show all extra sources");
-        exit(1);
-    }
-
-    extrasCount = std::distance(config.extraSources.begin(), config.extraSources.end());
-
-    if (!extrasCount) {
-        LOG_INFO("No extra sources were found in config file");
-        return;
-    }
-
-    std::vector<int> idx(extrasCount);
-    std::iota(idx.begin(), idx.end(), 0);
-
-    std::vector<ExtraSource> sources;
-    sources.reserve(extrasCount);
-
-    std::copy(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(sources));
-
-    // ======== Sort elements if requested by CLI args
-    if (gCmdArgs.isSortExtrasByTypes) {
-        std::sort(idx.begin(), idx.end(),
-                  [&](const int a, const int b) {
-                      return sources[a].type < sources[b].type;
-                  });
-    } else if (gCmdArgs.isSortExtrasBySections) {
-        std::sort(idx.begin(), idx.end(),
-                  [&](const int a, const int b) {
-                      return sources[a].section < sources[b].section;
-                  });
-    }
-    // ========
-
-    std::cout << "\nExtra sources specified in config: \n\n";
-
-    std::cout << PRINT_DELIMETER << std::endl;
-
-    for (size_t i(0); i < sources.size(); ++i) {
-        std::cout << "[ID = " << idx[i] + 1 << "]\n\n";
-
-        sources[idx[i]].print(std::cout);
-        std::cout << PRINT_DELIMETER << std::endl;
-    }
-}
-
-void addExtraSource() {
-    RgcConfig config;
-    ExtraSource source;
-    bool status;
-
-    std::string buffer;
-    buffer.reserve(10);
-
-    status = readConfig(config);
-
-    if (!status) {
-        LOG_ERROR(ADD_EXTRA_FAIL_MSG);
-        exit(1);
-    }
-
-    std::cout << "Information about new source is required" << std::endl;
-
-    do {
-        getStringInput("Type (ip/domain)", buffer, false);
-        source.type = sourceStringToType(buffer);
-    } while (source.type == Source::UNKNOWN);
-
-    getStringInput("Section", source.section, false);
-    getStringInput("URL", source.url, false);
-
-    if (!isUrl(source.url)) {
-        // ===== Local source
-        try {
-            status = fs::is_regular_file(source.url);
-        } catch (const fs::filesystem_error& e) {
-            LOG_ERROR("Filesystem error: " + std::string(e.what()));
-            status = false;
+    for (const auto&[fst, snd] : config->presets) {
+        if (!args.presets.empty() && std::find(args.presets.begin(), args.presets.end(), snd.label) == args.presets.end()) {
+            // Preset is not requested for check
+            continue;
         }
-        // =====
-    } else {
-        // ===== Remote source
-        status = NetUtils::tryAccessUrl(source.url);
-        // =====
+
+        SourcePreset::SortType type = SourcePreset::SORT_BY_ID;
+
+        if (args.isSortBySections) {
+            type = SourcePreset::SORT_BY_SECTION;
+        } else if (args.isSortByeInetTypes) {
+            type = SourcePreset::SORT_BY_INET_TYPE;
+        } else if (args.isSortByStorageTypes) {
+            type = SourcePreset::SORT_BY_STORAGE_TYPE;
+        }
+
+        snd.print(std::cout, type);
+        ++shownPresetsCount;
     }
 
-    if (!status) {
-        LOG_WARNING("Unable to access the list at the specified URL, resource was not added");
-        return;
+    if (!shownPresetsCount) {
+        LOG_INFO("No presets detected in config, nothing to show");
     }
-
-    config.extraSources.push_front(source);
-
-    status = writeConfig(config);
-
-    if (!status) {
-        LOG_ERROR(ADD_EXTRA_FAIL_MSG);
-        exit(1);
-    }
-
-    LOG_INFO("Successfully added source to config file");
 }
 
-void removeExtraSource(SourceId id) {
-    RgcConfig config;
-    bool status;
-
-    SourceId currId(0);
-
-    SourceId beforeSize(0);
-    SourceId afterSize(0);
-
-    status = readConfig(config);
-
-    if (!status) {
-        LOG_ERROR(REMOVE_EXTRA_FAIL_MSG);
-        exit(1);
-    }
-
-    // Get size before deleting
-    for (const auto& source : config.extraSources) {
-        ++beforeSize;
-    }
-
-    config.extraSources.remove_if([&currId, &id](const auto& source) {
-        ++currId;
-        return currId == id;
-    });
-
-    // Get size after deleting
-    for (const auto& source : config.extraSources) {
-        ++afterSize;
-    }
-
-    if (beforeSize == afterSize) {
-        LOG_WARNING("Failed to find source with specified ID for removing");
-        return;
-    }
-
-    status = writeConfig(config);
-
-    if (!status) {
-        LOG_ERROR(REMOVE_EXTRA_FAIL_MSG);
-        exit(1);
-    }
-
-    LOG_INFO("Successfully removed source from config file");
-}
-
-void checkUrlsAccess() {
-    RgcConfig config;
-    bool isAccessed;
-
-    // Adding all main sources
-    std::vector<std::string> urls = {
-        REFILTER_API_LAST_RELEASE_URL,
-        XRAY_RULES_API_LAST_RELEASE_URL,
-        RUADLIST_API_MASTER_URL,
-        RUADLIST_ADSERVERS_URL,
-        ANTIFILTER_AYN_IPS_URL
-    };
-
+void checkUrlsAccess(const CmdArgs& args) {
     LOG_INFO("Check for all sources's URLs is requested");
 
-    isAccessed = readConfig(config);
+    const auto config = getCachedConfig();
 
-    if (isAccessed) {
-        std::transform(config.extraSources.begin(), config.extraSources.end(), std::back_inserter(urls),
-                       [](const ExtraSource& source) { return source.url; });
-    } else {
-        LOG_WARNING("Configuration file could not be read, extra sources wont be checked");
-    }
-
-    for (const std::string& url : urls) {
-        if (!isUrl(url)) {
-            // ===== Local source
-            try {
-                isAccessed = fs::exists(url);
-            } catch (const fs::filesystem_error& e) {
-                LOG_ERROR("Filesystem error: " + std::string(e.what()));
-                isAccessed = false;
-            }
-            // =====
-        } else {
-            // ===== Remote source
-            isAccessed = NetUtils::tryAccessUrl(url);
-            // =====
+    for (const auto& pair : config->presets) {
+        if (!args.presets.empty() && std::find(args.presets.begin(), args.presets.end(), pair.second.label) == args.presets.end()) {
+            // Preset is not requested for check
+            continue;
         }
 
-        logUrlAccess(url, isAccessed);
+        for (const auto& sourceId : pair.second.sourceIds) {
+            bool isAccessed = false;
+            auto sourceObj = config->sources.find(sourceId);
+
+            if (sourceObj == config->sources.end()) {
+                continue;
+            }
+
+            auto source = sourceObj->second;
+
+            if (source.storageType == Source::GITHUB_RELEASE) {
+                if (!source.assets || source.assets->empty()) {
+                    isAccessed = false;
+                } else {
+                    try {
+                        isAccessed = NetUtils::tryAccessGithubReleaseAssets(source.url, *source.assets, config->apiToken);
+                    } catch (...) {
+                        isAccessed = false;
+                    }
+                }
+            } else if (source.storageType == Source::REGULAR_FILE_LOCAL) {
+                try {
+                    isAccessed = fs::exists(source.url);
+                } catch (const fs::filesystem_error& e) {
+                    LOG_ERROR("Filesystem error: " + std::string(e.what()));
+                    isAccessed = false;
+                }
+            } else if (source.storageType == Source::REGULAR_FILE_REMOTE) {
+                isAccessed = NetUtils::tryAccessUrl(source.url);
+            }
+
+            logUrlAccess(source.url, isAccessed);
+        }
     }
 }
 
@@ -259,7 +135,6 @@ void deinitSoftware() {
 void initSoftware() {
     bool status;
     RgcConfig config;
-    fs::path bufferPath;
 
     // Create dirs for DLC toolchain deploy
     try {
@@ -295,8 +170,14 @@ void initSoftware() {
     auto dlcRootPath = extractTarGz(*dlcArchivePath, gkDlcToolchainDir);
     VALIDATE_INIT_PART_RESULT(dlcRootPath);
 
-    bufferPath = *dlcRootPath;
+    fs::path bufferPath = *dlcRootPath;
     bufferPath = bufferPath.parent_path() / DLC_TOOLCHAIN_DIRNAME;
+
+    if (fs::exists(bufferPath)) {
+        // If toolchain exists, delete it
+        fs::remove_all(bufferPath);
+    }
+
     fs::rename(*dlcRootPath, bufferPath);
     dlcRootPath = bufferPath.string();
 
@@ -315,6 +196,12 @@ void initSoftware() {
 
     bufferPath = *v2ipRootPath;
     bufferPath = bufferPath.parent_path() / V2IP_TOOLCHAIN_DIRNAME;
+
+    if (fs::exists(bufferPath)) {
+        // If toolchain exists, delete it
+        fs::remove_all(bufferPath);
+    }
+
     fs::rename(*v2ipRootPath, bufferPath);
     v2ipRootPath = bufferPath.string();
 
@@ -335,115 +222,10 @@ void initSoftware() {
     config.v2ipRootPath = std::move(*v2ipRootPath);
     config.geoMgrBinaryPath = std::move(*geoManagerPath);
 
-    config.refilterTime = CFG_DEFAULT_NUM_VALUE;
-    config.v2rayTime = CFG_DEFAULT_NUM_VALUE;
-    config.ruadlistTime = CFG_DEFAULT_NUM_VALUE;
-
     status = writeConfig(config);
     VALIDATE_INIT_PART_RESULT(status);
     // !SECTION
 
     LOG_INFO("Initialization successfully completed, all components installed");
-}
-
-std::tuple<bool, bool> checkForUpdates(const RgcConfig& config) {
-    bool status;
-    bool isUpdateFound;
-    Json::Value value;
-    std::string ruadlistVersion;
-    std::string logMsg;
-    std::optional<std::time_t> lastReleaseTime;
-
-    // ========= Temp files control
-    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
-    auto refilterReqFile = tempFileReg.createTempFile("json");
-    auto xrayReqFile = tempFileReg.createTempFile("json");
-    auto ruadlistReqFile = tempFileReg.createTempFile("json");
-    // =========
-
-    // SECTION - Check ReFilter for updates
-    status = NetUtils::tryDownloadFromGithub(REFILTER_API_LAST_RELEASE_URL, refilterReqFile.lock()->path, config.apiToken);
-
-    if (!status) {
-        LOG_ERROR("Failed to fetch updates for ReFilter lists");
-        return std::make_tuple(false, false);
-    }
-
-    status = readJsonFromFile(refilterReqFile.lock()->path, value);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    lastReleaseTime = parsePublishTime(value);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(lastReleaseTime);
-
-    isUpdateFound = config.refilterTime < *lastReleaseTime;
-
-    if (isUpdateFound) {
-        logMsg = "An update to the ReFilter lists has been detected: ";
-        logMsg += parseUnixTime(*lastReleaseTime);
-        logMsg += " vs ";
-        logMsg += parseUnixTime(config.refilterTime);
-
-        LOG_WARNING(logMsg);
-
-        return std::make_tuple(status, isUpdateFound);
-    }
-    // !SECTION
-
-    // SECTION - Check XRAY rules for updates
-    status = NetUtils::tryDownloadFromGithub(XRAY_RULES_API_LAST_RELEASE_URL, xrayReqFile.lock()->path, config.apiToken);
-
-    if (!status) {
-        LOG_ERROR("Failed to fetch updates for XRay lists");
-        return std::make_tuple(false, false);
-    }
-
-    status = readJsonFromFile(xrayReqFile.lock()->path, value);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    lastReleaseTime = parsePublishTime(value);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(lastReleaseTime);
-
-    isUpdateFound = config.v2rayTime < *lastReleaseTime;
-
-    if (isUpdateFound) {
-        logMsg = "An update to the XRay lists has been detected: ";
-        logMsg += parseUnixTime(*lastReleaseTime);
-        logMsg += " vs ";
-        logMsg += parseUnixTime(config.refilterTime);
-
-        LOG_WARNING(logMsg);
-        return std::make_tuple(status, isUpdateFound);
-    }
-    // !SECTION
-
-    // SECTION - Check RUADLIST for updates
-    status = NetUtils::tryDownloadFile(RUADLIST_API_MASTER_URL, ruadlistReqFile.lock()->path);
-
-    if (!status) {
-        LOG_ERROR("Failed to fetch updates for RuAdList");
-        return std::make_tuple(false, false);
-    }
-
-    status = readJsonFromFile(ruadlistReqFile.lock()->path, value);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    status = parseRuadlistUpdateDatetime(value, *lastReleaseTime);
-    VALIDATE_CHECK_UPDATES_PART_RESULT(status);
-
-    isUpdateFound = config.ruadlistTime < lastReleaseTime;
-
-    if (isUpdateFound) {
-        logMsg = "An update to the RUADLIST has been detected: ";
-        logMsg += parseUnixTime(*lastReleaseTime);
-        logMsg += " vs ";
-        logMsg += parseUnixTime(config.ruadlistTime);
-
-        LOG_WARNING(logMsg);
-
-        return std::make_tuple(status, isUpdateFound);
-    }
-    // !SECTION
-
-    return std::make_tuple(status, isUpdateFound);
 }
 

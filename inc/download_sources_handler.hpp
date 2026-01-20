@@ -3,6 +3,6 @@
 
 #include "config.hpp"
 
-bool downloadNewestSources(RgcConfig& config, bool useExtraSources, bool useFilter, std::vector<DownloadedSourcePair>& downloadedFiles);
+bool downloadNewestSources(std::vector<DownloadedSourcePair>& downloadedFiles, bool useFilter);
 
 #endif // DOWNLOAD_SOURCES_HANDLER_HPP

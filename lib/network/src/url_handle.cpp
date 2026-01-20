@@ -9,6 +9,8 @@
 #include <thread>
 #include <regex>
 
+#include "fs_utils_temp.hpp"
+
 #define GITHUB_TOKEN_HEADER             "Authorization: Bearer "
 
 #define USER_AGENT                      "RGLC"
@@ -26,7 +28,6 @@ static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, voi
 
 static bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr) {
 	CURL *curl = curl_easy_init();
-    CURLcode res;
     volatile uint32_t responseCode(0);
 
     if (!curl) {
@@ -43,12 +44,12 @@ static bool isUrlAccessible(const std::string& url, const char* httpHeader = nul
     curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
 
     if (httpHeader != nullptr && strlen(httpHeader) > 0) {
-        struct curl_slist *header = nullptr;
+        curl_slist *header = nullptr;
         header = curl_slist_append(header, httpHeader);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
     }
 
-    res = curl_easy_perform(curl);
+    const CURLcode res = curl_easy_perform(curl);
 
     if (res == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
@@ -60,13 +61,7 @@ static bool isUrlAccessible(const std::string& url, const char* httpHeader = nul
 }
 
 static void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr) {
-    CURL* curl;
-    CURLcode res;
-    bool isAccessed;
-
-    isAccessed = NetUtils::tryAccessUrl(url, httpHeader);
-
-    if (!isAccessed) {
+    if (const bool isAccessed = NetUtils::tryAccessUrl(url, httpHeader); !isAccessed) {
         throw CurlError("Failed to access URL in download handler", CURLE_COULDNT_CONNECT);
     }
 
@@ -76,8 +71,7 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
         throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + filePath);
     }
 
-    curl = curl_easy_init();
-    if (curl) {
+    if (CURL *curl = curl_easy_init()) {
         // Set url settings
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
@@ -93,13 +87,13 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
 
         if (httpHeader != nullptr && strlen(httpHeader) > 0) {
-            struct curl_slist *header = nullptr;
+            curl_slist *header = nullptr;
             header = curl_slist_append(header, httpHeader);
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
         }
 
         // Perform query
-        res = curl_easy_perform(curl);
+        const CURLcode res = curl_easy_perform(curl);
 
         curl_easy_cleanup(curl);
         outFile.close();
@@ -114,6 +108,47 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
 
         throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
+}
+
+static std::vector<std::string> downloadGhAssetsReq(const Json::Value& value, const std::vector<std::string>& fileNames, const fs::path& dirPath) {
+    std::vector<std::string> downloads;
+    downloads.reserve(fileNames.size());
+
+    if (value.isMember("assets") && value["assets"].isArray()) {
+        const Json::Value& assets = value["assets"];
+        for (const auto& asset : assets) {
+            if (std::find(fileNames.begin(), fileNames.end(), asset["name"].asString()) == fileNames.end()) {
+                continue;
+            }
+
+            if (const bool status = NetUtils::tryDownloadFile(asset["browser_download_url"].asString(), dirPath / asset["name"].asString()); !status) {
+                return downloads;
+            }
+
+            downloads.push_back(dirPath / asset["name"].asString());
+        }
+    }
+
+    return downloads;
+}
+
+static bool tryAccessGhAssetsReq(const Json::Value& value, const std::vector<std::string>& fileNames) {
+    bool isAccessed = true;
+    size_t checksCount = 0;
+
+    if (value.isMember("assets") && value["assets"].isArray()) {
+        const Json::Value& assets = value["assets"];
+        for (const auto& asset : assets) {
+            if (std::find(fileNames.begin(), fileNames.end(), asset["name"].asString()) == fileNames.end()) {
+                continue;
+            }
+
+            isAccessed &= isUrlAccessible(asset["browser_download_url"].asString());
+            ++checksCount;
+        }
+    }
+
+    return isAccessed && checksCount > 0;
 }
 
 static std::string genGithubTokenHeader(const std::string& token) {
@@ -134,13 +169,92 @@ bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader) {
 }
 
 bool NetUtils::tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken) {
-    std::string tokenHeader = genGithubTokenHeader(apiToken);
+    const std::string tokenHeader = genGithubTokenHeader(apiToken);
 
     if (!apiToken.empty()) {
         return tryDownloadFile(url, filePath, tokenHeader.c_str());
     }
 
     return tryDownloadFile(url, filePath);
+}
+
+std::vector<std::string> NetUtils::downloadGithubReleaseAssets(const std::string& url,
+    const std::vector<std::string>& fileNames,
+    const fs::path& dirPath,
+    const std::string& apiToken) {
+
+    bool status;
+    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+
+    try {
+        auto urlApi = convertToGithubApi(url);
+        Json::Value value;
+        auto reqFile = tempFileReg.createTempFile("json");
+
+        status = tryDownloadFromGithub(urlApi, reqFile.lock()->path, apiToken);
+
+        if (!status) {
+            LOG_WARNING("Failed perform Github API request: {}", urlApi);
+            return {};
+        }
+
+        status = readJsonFromFile(reqFile.lock()->path, value);
+
+        if (!status) {
+            LOG_WARNING("Failed read Github API request: {}", urlApi);
+            return {};
+        }
+
+        return downloadGhAssetsReq(value, fileNames, dirPath);
+    } catch (...) {
+        return {};
+    }
+}
+
+bool NetUtils::tryAccessGithubReleaseAssets(const std::string& url, const std::vector<std::string>& assets, const std::string& apiToken) {
+    bool status;
+    FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
+
+    try {
+        auto urlApi = convertToGithubApi(url);
+        Json::Value value;
+        auto reqFile = tempFileReg.createTempFile("json");
+
+        status = tryDownloadFromGithub(urlApi, reqFile.lock()->path, apiToken);
+
+        if (!status) {
+            LOG_WARNING("Failed perform Github API request: {}", urlApi);
+            return false;
+        }
+
+        status = readJsonFromFile(reqFile.lock()->path, value);
+
+        if (!status) {
+            LOG_WARNING("Failed read Github API request: {}", urlApi);
+            return false;
+        }
+
+        return tryAccessGhAssetsReq(value, assets);
+    } catch (...) {
+        return false;
+    }
+}
+
+std::string NetUtils::convertToGithubApi(const std::string& repoUrl) {
+    const std::regex re(R"(github\.com/([^/]+)/([^/]+))");
+
+    if (std::smatch match; std::regex_search(repoUrl, match, re)) {
+        const std::string owner = match[1];
+        std::string repo = match[2];
+
+        if (repo.size() > 4 && repo.substr(repo.size() - 4) == ".git") {
+            repo.erase(repo.size() - 4);
+        }
+
+        return "https://api.github.com/repos/" + owner + "/" + repo + "/releases/latest";
+    }
+
+    throw std::invalid_argument("Invalid GitHub URL");
 }
 
 bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
@@ -160,31 +274,6 @@ bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePa
     }
 
     return false;
-}
-
-std::vector<std::string> NetUtils::downloadGithubReleaseAssets(const Json::Value& value, const std::vector<std::string>& fileNames, const fs::path& dirPath) {
-    bool status;
-    std::vector<std::string> downloads;
-    downloads.reserve(fileNames.size());
-
-    if (value.isMember("assets") && value["assets"].isArray()) {
-        const Json::Value& assets = value["assets"];
-        for (const auto& asset : assets) {
-            if (std::find(fileNames.begin(), fileNames.end(), asset["name"].asString()) == fileNames.end()) {
-                continue;
-            }
-
-            status = tryDownloadFile(asset["browser_download_url"].asString(), dirPath / asset["name"].asString());
-
-            if (!status) {
-                return downloads;
-            }
-
-            downloads.push_back(dirPath / asset["name"].asString());
-        }
-    }
-
-    return downloads;
 }
 
 NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {

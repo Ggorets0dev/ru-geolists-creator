@@ -16,31 +16,31 @@
     (std::find(args.formats.begin(), args.formats.end(), format) != args.formats.end())
 
 struct CmdArgs {
-    SourceId extraSourceId;
+    SourceObjectId extraSourceId;
     std::string outDirPath = DEFAULT_GEOLISTS_OUT_PATH;
     std::vector<std::string> formats;
+    std::vector<std::string> presets;
 
-    bool isForceCreation;
     bool isUpdateCreation;
     bool isShowAbout;
-    bool isCheckUrls;
     bool isInit;
     bool isAddExtra;
     bool isUseWhitelist;
-    bool isNoExtra;
 
     // ====== Extra sources show options
-    bool isSortExtrasBySections;
-    bool isSortExtrasByTypes;
+    bool isSortBySections;
+    bool isSortByStorageTypes;
+    bool isSortByeInetTypes;
     // ======
 };
 
 extern CmdArgs gCmdArgs;
 extern ServiceSettings gServiceSettings;
 
+extern CLI::App* gBuildSubCmd;
+extern CLI::App* gCheckSubCmd;
 extern CLI::App* gServiceSubCmd;
 extern CLI::App* gShowSubCmd;
-extern CLI::Option* gRemoveExtraOption;
 extern CLI::Option* gOutPathOption;
 
 bool validateParsedFormats(const CmdArgs& args);

@@ -7,7 +7,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define GEO_MGR_LAST_RELEASE_URL        "https://api.github.com/repos/MetaCubeX/geo/releases/latest"
+#include "config.hpp"
+
+#define GEO_MANAGER_GITHUB_URL        "https://github.com/MetaCubeX/geo"
 
 const fs::path gkGeoManagerDir = fs::path(std::getenv("HOME")) / ".local" / "lib";
 
@@ -26,25 +28,15 @@ std::optional<std::string> setupGeoManagerBinary() {
 
     // ========= Temp files control
     FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
-    auto geoMgrReqFile = tempFileReg.createTempFile("json");
+    const auto geoMgrReqFile = tempFileReg.createTempFile("json");
     // =========
 
     LOG_INFO("Starting to setup Geo manager binary...");
 
-    if (!NetUtils::tryDownloadFile(GEO_MGR_LAST_RELEASE_URL, geoMgrReqFile.lock()->path)) {
-        LOG_ERROR("Failed to perform API request for V2IP repository");
-        return std::nullopt;
-    }
-
-    Json::Value request;
-    status = readJsonFromFile(geoMgrReqFile.lock()->path, request);
-
-    if (!status) {
-        LOG_ERROR("Failed to read JSON from API request (Geo manager)");
-        return std::nullopt;
-    }
-
-    downloads = NetUtils::downloadGithubReleaseAssets(request, { geoMgrBinary }, tempFileReg.getTempDir());
+    downloads = NetUtils::downloadGithubReleaseAssets(GEO_MANAGER_GITHUB_URL,
+        { geoMgrBinary },
+        tempFileReg.getTempDir(),
+        "");
 
     if (downloads.empty()) {
         LOG_ERROR("Failed to download Geo manager release assets");
@@ -62,14 +54,14 @@ std::optional<std::string> setupGeoManagerBinary() {
     return geoMgrTargetPath;
 }
 
-bool convertGeolist(const std::string& binPath, const Source::Type type,
+bool convertGeolist(const std::string& binPath, const Source::InetType type,
                     const std::string& inFormat, const std::string& outFormat,
                     const std::string& inPath, const std::string& outPath) {
 
     const pid_t pid = fork();
     int status;
 
-    const std::string sourceType = (type == Source::Type::DOMAIN) ? "site" : "ip";
+    const std::string sourceType = (type == Source::InetType::DOMAIN) ? "site" : "ip";
 
     if (pid == 0) {
         // Child process, running Geo manager...

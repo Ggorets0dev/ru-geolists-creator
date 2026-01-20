@@ -6,11 +6,10 @@ message KeepAliveRequest {}
 message KeepAliveResponse {}
 
 message BuildGeoListsRequest {
-    bool is_force = 1;
-    bool is_use_whitelist = 2;
-    bool is_use_extra = 3;
-    repeated string formats = 4;
-    string out_dir = 5;
+    bool is_use_whitelist = 1;
+    repeated string formats = 2;
+    repeated string presets = 3;
+    string out_dir = 4;
 }
 
 message BuildGeoListsResponse {

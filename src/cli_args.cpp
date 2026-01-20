@@ -4,23 +4,23 @@
 #include "software_info.hpp"
 #include "log.hpp"
 
-#define FORCE_OPTION_DESCRIPTION                "Starts source download and build even if no updates are detected"
 #define ABOUT_OPTION_DESCRIPTION                "Display software information"
-#define CHECK_OPTION_DESCRIPTION                "Check access of all source's URLs from config"
 #define INIT_OPTION_DESCRIPTION                 "Initialize software by creating config and downloading all dependencies"
-#define ADD_EXTRA_OPTION_DESCRIPTION            "Add extra source to download list"
-#define REMOVE_EXTRA_OPTION_DESCRIPTION         "Remove extra source from download list"
-#define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
-#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing)"
-#define WHITELIST_OPTION_DESCRIPTION            "Enable whitelist filtering for current session"
-#define NO_EXTRA_OPTION_DESCRIPTION             "Disable adding extra sources to lists for current session"
-#define OUT_PATH_OPT_GRP_DESCRIPTION            "Set path for build results"
 
 #define ASK_MARK                                "❔"
 
+#define BUILD_SUBCMD_DESC                       "Build geofiles with selected presets"
+#define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
+#define PRESET_OPTION_DESCRIPTION               "Presets from config for check/build"
+#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing)"
+#define WHITELIST_OPTION_DESCRIPTION            "Enable whitelist filtering for current session"
+
+#define CHECK_SUBCMD_DESC                       "Check access of all source's URLs from config"
+
 #define SHOW_SUBCMD_DESC                        "Display all extra sources from config files"
-#define SORT_EXTRAS_BY_SECTION_DESCRIPTION      "Sort extra sources by section name"
-#define SORT_EXTRAS_BY_TYPE_DESCRIPTION         "Sort extra sources by type"
+#define SORT_SOURCES_BY_SECTION_DESCRIPTION         "Sort sources by section name"
+#define SORT_SOURCES_BY_STORAGE_TYPE_DESCRIPTION    "Sort sources by storage type"
+#define SORT_SOURCES_BY_INET_TYPE_DESCRIPTION       "Sort sources by inet type"
 
 #define SERVICE_SUBCMD_DESC                     "Settings for service mode"
 #define SERVICE_ADDR_OPT_DESC                   "IP address for service"
@@ -31,8 +31,9 @@ CmdArgs gCmdArgs = {};
 ServiceSettings gServiceSettings = {};
 
 CLI::App* gServiceSubCmd;
+CLI::App* gBuildSubCmd;
+CLI::App* gCheckSubCmd;
 CLI::App* gShowSubCmd;
-CLI::Option* gRemoveExtraOption;
 CLI::Option* gOutPathOption;
 
 static const CLI::Range gkServicePortRange = { 49152, 65535 };
@@ -42,6 +43,28 @@ static const std::vector<std::string> gkAvailableGeoFormats = {
     GEO_FORMAT_V2RAY_CAPTION,
     GEO_FORMAT_SING_CAPTION
 };
+
+static void setupCheckSubcommand(CLI::App& app) {
+    gCheckSubCmd = app.add_subcommand("check", CHECK_SUBCMD_DESC);
+
+    gCheckSubCmd->add_option("-p, --preset", gCmdArgs.presets, PRESET_OPTION_DESCRIPTION)
+        ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
+}
+
+static void setupBuildSubcommand(CLI::App& app) {
+    gBuildSubCmd = app.add_subcommand("build", BUILD_SUBCMD_DESC);
+
+    gBuildSubCmd->add_flag("--whitelist", gCmdArgs.isUseWhitelist, WHITELIST_OPTION_DESCRIPTION);
+
+    gBuildSubCmd->add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
+        ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
+
+    gBuildSubCmd->add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION)
+        ->capture_default_str();
+
+    gBuildSubCmd->add_option("-p, --preset", gCmdArgs.presets, PRESET_OPTION_DESCRIPTION)
+        ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
+}
 
 static void setupServiceSubcommand(CLI::App& app) {
     gServiceSubCmd = app.add_subcommand("service", SERVICE_SUBCMD_DESC);
@@ -61,18 +84,28 @@ static void setupServiceSubcommand(CLI::App& app) {
 static void setupShowSubcommand(CLI::App& app) {
     gShowSubCmd = app.add_subcommand("show", SHOW_SUBCMD_DESC);
 
-    const auto sortExtrasByType = gShowSubCmd->add_flag(
-        "--sort-type",
-        gCmdArgs.isSortExtrasByTypes,
-        SORT_EXTRAS_BY_TYPE_DESCRIPTION);
+    const auto sortByInetTypeFlag = gShowSubCmd->add_flag(
+        "--sort-inet",
+        gCmdArgs.isSortByeInetTypes,
+        SORT_SOURCES_BY_INET_TYPE_DESCRIPTION);
 
-    const auto sortExtrasBySection = gShowSubCmd->add_flag(
-        "--sort-sec",
-        gCmdArgs.isSortExtrasBySections,
-        SORT_EXTRAS_BY_SECTION_DESCRIPTION);
+    const auto sortByStorageType = gShowSubCmd->add_flag(
+        "--sort-storage",
+        gCmdArgs.isSortByStorageTypes,
+        SORT_SOURCES_BY_STORAGE_TYPE_DESCRIPTION);
+
+    const auto sortBySecFlag = gShowSubCmd->add_flag(
+        "--sort-section",
+        gCmdArgs.isSortBySections,
+        SORT_SOURCES_BY_SECTION_DESCRIPTION);
 
     // Only one type of extra's sort can be selected
-    sortExtrasByType->excludes(sortExtrasBySection);
+    sortByInetTypeFlag->excludes(sortByStorageType);
+    sortByInetTypeFlag->excludes(sortBySecFlag);
+    sortBySecFlag->excludes(sortByStorageType);
+
+    gShowSubCmd->add_option("-p, --preset", gCmdArgs.presets, PRESET_OPTION_DESCRIPTION)
+        ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
 }
 
 void prepareCmdArgs(CLI::App& app) {
@@ -80,24 +113,11 @@ void prepareCmdArgs(CLI::App& app) {
 
     setupServiceSubcommand(app);
     setupShowSubcommand(app);
+    setupBuildSubcommand(app);
+    setupCheckSubcommand(app);
 
-    app.add_flag("--force", gCmdArgs.isForceCreation, FORCE_OPTION_DESCRIPTION);
     app.add_flag("--about", gCmdArgs.isShowAbout, ABOUT_OPTION_DESCRIPTION);
-    app.add_flag("--check", gCmdArgs.isCheckUrls, CHECK_OPTION_DESCRIPTION);
     app.add_flag("--init", gCmdArgs.isInit, INIT_OPTION_DESCRIPTION);
-
-    app.add_flag("-a, --add", gCmdArgs.isAddExtra, ADD_EXTRA_OPTION_DESCRIPTION);
-
-    app.add_flag("--whitelist", gCmdArgs.isUseWhitelist, WHITELIST_OPTION_DESCRIPTION);
-    app.add_flag("--no-extra", gCmdArgs.isNoExtra, NO_EXTRA_OPTION_DESCRIPTION);
-
-    app.add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
-        ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
-
-    gRemoveExtraOption = app.add_option("-r, --remove", gCmdArgs.extraSourceId, REMOVE_EXTRA_OPTION_DESCRIPTION);
-
-    gOutPathOption = app.add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION)
-        ->capture_default_str();
 }
 
 bool validateParsedFormats(const CmdArgs& args) {
@@ -117,7 +137,7 @@ bool validateParsedFormats(const CmdArgs& args) {
     return true;
 }
 
-bool askYesNo(const std::string& question, bool isYesDefault) {
+bool askYesNo(const std::string& question, const bool isYesDefault) {
     std::string userChoice;
     userChoice.reserve(1);
 
@@ -130,15 +150,15 @@ bool askYesNo(const std::string& question, bool isYesDefault) {
 
         if (userChoice.empty()) {
             return isYesDefault;
-        } else if (userChoice.length() == 1 && std::tolower(userChoice[0]) == 'y' ||
-                   std::tolower(userChoice[0]) == 'n') {
+        }
 
+        if (userChoice.length() == 1 && std::tolower(userChoice[0]) == 'y' || std::tolower(userChoice[0]) == 'n') {
             return std::tolower(userChoice[0]) == 'y';
         }
     }
 }
 
-void getStringInput(const std::string& question, std::string& out, bool isEmptyAllowed) {
+void getStringInput(const std::string& question, std::string& out, const bool isEmptyAllowed) {
     while (true) {
         std::cout << ASK_MARK << " " << question << ": ";
         std::getline(std::cin, out);

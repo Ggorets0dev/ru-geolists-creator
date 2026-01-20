@@ -10,7 +10,7 @@ extern const fs::path gkGeoManagerDir;
 
 std::optional<std::string> setupGeoManagerBinary();
 
-bool convertGeolist(const std::string& binPath, Source::Type type,
+bool convertGeolist(const std::string& binPath, Source::InetType type,
                     const std::string& inFormat, const std::string& outFormat,
                     const std::string& inPath, const std::string& outPath);
 

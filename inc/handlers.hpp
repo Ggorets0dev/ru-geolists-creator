@@ -8,20 +8,14 @@
 #include "download_sources_handler.hpp"
 #include "build_lists_handler.hpp"
 
-void showExtraSources();
+void showPresets(const CmdArgs& args);
 
 void initSoftware();
 
 void deinitSoftware();
 
-void addExtraSource();
-
-void removeExtraSource(SourceId id);
-
-std::tuple<bool, bool> checkForUpdates(const RgcConfig& config);
-
 void printHelp(const CLI::App& app);
 
-void checkUrlsAccess();
+void checkUrlsAccess(const CmdArgs& args);
 
 #endif // HANDLERS_HPP

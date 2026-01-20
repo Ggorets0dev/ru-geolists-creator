@@ -5,11 +5,11 @@
 
 #include "config.hpp"
 
-#define GEOSITE_FILENAME_DAT        "geosite.dat"
-#define GEOIP_FILENAME_DAT          "geoip.dat"
+#define GEOSITE_BASE_FILENAME        "geosite"
+#define GEOIP_BASE_FILENAME          "geoip"
 
-#define GEOSITE_FILENAME_DB         "geosite.db"
-#define GEOIP_FILENAME_DB           "geoip.db"
+#define V2RAY_FILES_EXT              ".dat"
+#define SING_FILES_EXT               ".db"
 
 #define RELEASE_NOTES_FILENAME      "release_notes.txt"
 
@@ -27,6 +27,6 @@ struct GeoReleases {
     bool isEmpty;
 };
 
-void createReleaseNotes(const GeoReleases& paths, const RgcConfig& config, const std::vector<DownloadedSourcePair>& downloadedSources);
+void createReleaseNotes(const GeoReleases& paths, const std::vector<DownloadedSourcePair>& downloadedSources);
 
 #endif // BUILD_TOOLS_HPP

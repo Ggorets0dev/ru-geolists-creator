@@ -2,10 +2,11 @@
 #define MAIN_SOURCES_HPP
 
 #include <string>
-#include <iostream>
+#include <forward_list>
 #include <vector>
 
 #include "fs_utils.hpp"
+#include "json_io.hpp"
 
 #define REFILTER_SECTION_NAME               "refilter"
 #define REFILTER_DOMAIN_ASSET_FILE_NAME     "domains_all.lst"
@@ -22,36 +23,87 @@
 #define ANTIFILTER_SECTION_NAME             "antifilter"
 #define ANTIFILTER_AYN_IPS_URL              "https://antifilter.download/list/allyouneed.lst"
 
+class Source;
+
 // ID of source saved in configuration file
-using SourceId = uint16_t;
+using SourceObjectId = uint16_t;
+using DownloadedSourcePair = std::pair<SourceObjectId, fs::path>;
 
-class Source {
-
+class Source final {
 public:
-    virtual ~Source() = default;
+    // EXAMPLE:
+    // {
+    //     "id": 1,
+    //     "storage_type": "file_loc",
+    //     "inet_type": "domain",
+    //     "url": "/tmp/file.txt",
+    //     "section": "ru-whitelist"
+    // }
 
-    enum Type {
-        DOMAIN,
-        IP,
-        UNKNOWN
+    ~Source() = default;
+    Source(const Source& other) = default;
+    explicit Source(const Json::Value& value);
+    bool getData(std::vector<DownloadedSourcePair>& downloads) const;
+
+    enum StorageType {
+        REGULAR_FILE_LOCAL,
+        REGULAR_FILE_REMOTE,
+        GITHUB_RELEASE,
+        STORAGE_TYPE_UNKNOWN
     };
 
+    enum InetType {
+        DOMAIN,
+        IP,
+        INET_TYPE_UNKNOWN
+    };
+
+    SourceObjectId id;
     std::string section;
-    Type type;
+    std::string url;
 
-    Source() = default;
-    Source(Type type, const std::string& section);
+    StorageType storageType;
+    InetType inetType;
 
-    virtual void print(std::ostream& stream) const;
+    std::optional<std::vector<std::string>> assets; // For GitHub release
 };
 
-using DownloadedSourcePair = std::pair<Source, fs::path>;
+class SourcePreset final {
+public:
+    // EXAMPLE:
+    // {
+    //     "id": 1,
+    //     "label": "base"
+    //     "source_ids": [1]
+    // }
 
-std::string sourceTypeToString(Source::Type type);
+    enum SortType {
+        SORT_BY_ID,
+        SORT_BY_SECTION,
+        SORT_BY_INET_TYPE,
+        SORT_BY_STORAGE_TYPE
+    };
 
-Source::Type sourceStringToType(std::string_view str);
+    ~SourcePreset() = default;
 
-void printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources, bool printPath=true);
+    std::string label;
+    std::forward_list<SourceObjectId> sourceIds;
+
+    void print(std::ostream& stream, SortType sortType) const;
+    [[nodiscard]] std::optional<std::vector<DownloadedSourcePair>> downloadSources() const;
+};
+
+// ===============
+// TYPE CONVERTERS
+// ===============
+std::string sourceInetTypeToString(Source::InetType type);
+
+Source::InetType sourceStringToInetType(std::string_view str);
+
+std::string sourceStorageTypeToString(Source::StorageType type);
+
+Source::StorageType sourceStringToStorageType(std::string_view str);
+// ===============
 
 void joinSimilarSources(std::vector<DownloadedSourcePair>& downloadedSources);
 

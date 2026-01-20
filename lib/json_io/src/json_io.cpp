@@ -3,16 +3,15 @@
 
 #include <iomanip>
 #include <fstream>
+#include <utility>
 
 bool readJsonFromFile(const std::string& filePath, Json::Value& outValue) {
-    // Открываем файл для чтения
     std::ifstream file(filePath, std::ifstream::binary);
     if (!file.is_open()) {
         LOG_ERROR(FILE_OPEN_ERROR_MSG + filePath);
         return false;
     }
 
-    // Парсим JSON из файла
     Json::Value root;
     Json::CharReaderBuilder readerBuilder;
     std::string errs;
@@ -46,7 +45,7 @@ bool writeJsonToFile(const std::string& filePath, const Json::Value& value) {
 }
 
 template<typename Type>
-bool updateJsonValue(const std::string& filePath, const std::string& key, Type value) {
+bool updateJsonValue(const std::string& filePath, const std::string& key, const Type& value) {
     bool status;
     Json::Value outValue;
 
@@ -56,7 +55,7 @@ bool updateJsonValue(const std::string& filePath, const std::string& key, Type v
         return false;
     }
 
-    outValue[key] = value;
+    outValue[key] = std::move(value);
 
     std::ofstream fileOut(filePath, std::ofstream::binary);
     if (!fileOut.is_open()) {
@@ -90,8 +89,8 @@ parsePublishTime(const Json::Value& value) {
     return std::mktime(&tm);
 }
 
-template bool updateJsonValue<int>        (const std::string&, const std::string&, int);
-template bool updateJsonValue<double>     (const std::string&, const std::string&, double);
-template bool updateJsonValue<bool>       (const std::string&, const std::string&, bool);
-template bool updateJsonValue<std::string>(const std::string&, const std::string&, std::string);
-template bool updateJsonValue<Json::Value>(const std::string&, const std::string&, Json::Value);
+template bool updateJsonValue<int>        (const std::string&, const std::string&, const int&);
+template bool updateJsonValue<double>     (const std::string&, const std::string&, const double&);
+template bool updateJsonValue<bool>       (const std::string&, const std::string&, const bool&);
+template bool updateJsonValue<std::string>(const std::string&, const std::string&, const  std::string&);
+template bool updateJsonValue<Json::Value>(const std::string&, const std::string&, const Json::Value&);

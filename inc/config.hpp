@@ -2,9 +2,9 @@
 #define CONFIG_HPP
 
 #include <string>
-#include <forward_list>
+#include <unordered_map>
 
-#include "extra_sources.hpp"
+#include "main_sources.hpp"
 
 #define CFG_DEFAULT_NUM_VALUE   0u
 #define CFG_DEFAULT_STR_VALUE   ""
@@ -16,13 +16,10 @@ struct RgcConfig {
     std::string v2ipRootPath;
     std::string geoMgrBinaryPath;
 
-    std::time_t refilterTime;
-    std::time_t v2rayTime;
-    std::time_t ruadlistTime;
-
     std::string apiToken;
 
-    std::forward_list<ExtraSource> extraSources;
+    std::unordered_map<std::string, SourcePreset> presets;
+    std::unordered_map<SourceObjectId, Source> sources;
 
     std::string whitelistPath;
     std::string bgpDumpPath;
@@ -31,5 +28,9 @@ struct RgcConfig {
 bool writeConfig(const RgcConfig& config);
 
 bool readConfig(RgcConfig& config);
+
+const RgcConfig* getCachedConfig();
+
+void setCachedConfig(const RgcConfig& config);
 
 #endif // CONFIG_HPP

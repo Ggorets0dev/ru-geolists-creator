@@ -7,11 +7,10 @@ ServiceCallbacks gServiceCallbacks;
 static CmdArgs parseCmdArgs(const rglc::BuildGeoListsRequest& request) {
     CmdArgs args = {};
 
-    args.isForceCreation = request.is_force();
-    args.isNoExtra = !request.is_use_extra();
     args.outDirPath = request.out_dir();
     args.isUseWhitelist = request.is_use_whitelist();
     std::copy(request.formats().begin(), request.formats().end(), std::back_inserter(args.formats));
+    std::copy(request.presets().begin(), request.presets().end(), std::back_inserter(args.presets));
 
     return args;
 }

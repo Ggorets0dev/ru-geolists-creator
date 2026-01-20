@@ -3,79 +3,85 @@
 
 #include <algorithm>
 
-#define DOWNLOADED_SOURCES_DELIMETER    "------------------------------------"
+#include "config.hpp"
+#include "fs_utils_temp.hpp"
+#include "log.hpp"
+#include "url_handle.hpp"
 
-#define SOURCE_FILENAME_SALT_SIZE       6
+Source::Source(const Json::Value& value) {
+    this->id = JsonValidator::getRequired<int>(value, "id");
+    this->section = JsonValidator::getRequired<std::string>(value, "section");
+    this->url = JsonValidator::getRequired<std::string>(value, "url");
+    this->storageType = sourceStringToStorageType(JsonValidator::getRequired<std::string>(value, "storage_type"));
+    this->inetType = sourceStringToInetType(JsonValidator::getRequired<std::string>(value, "inet_type"));
 
-Source::Source(const Type type, const std::string& section) {
-    this->type = type;
-    this->section = section;
+    // GITHUB release requires extra fields
+    if (this->storageType != GITHUB_RELEASE) {
+        this->assets = std::nullopt;
+        return;
+    }
+
+    this->assets = JsonValidator::getRequiredArray<std::string>(value, "assets");
 }
 
-void Source::print(std::ostream& stream) const {
-    stream << "Type: " << sourceTypeToString(this->type) << std::endl;
-    stream << "Section: " << this->section << std::endl;
-}
-
-std::string sourceTypeToString(const Source::Type type) {
+std::string sourceInetTypeToString(const Source::InetType type) {
     switch(type) {
-    case Source::Type::IP:
+    case Source::InetType::IP:
         return "ip";
-    case Source::Type::DOMAIN:
+    case Source::InetType::DOMAIN:
         return "domain";
     default:
         return "NONE";
     }
 }
 
-Source::Type sourceStringToType(const std::string_view str) {
+Source::InetType sourceStringToInetType(const std::string_view str) {
     if (str == "ip") {
-        return Source::Type::IP;
+        return Source::InetType::IP;
     }
 
     if (str == "domain") { //  domain
-        return Source::Type::DOMAIN;
+        return Source::InetType::DOMAIN;
     }
 
-    return Source::Type::UNKNOWN;
+    return Source::InetType::INET_TYPE_UNKNOWN;
 }
 
-void printDownloadedSources(std::ostream& stream, const std::vector<DownloadedSourcePair>& downloadedSources, const bool printPath) {
-    constexpr int colType = 10;
-    constexpr int colSection = 20;
-    constexpr int colPath = 50;
+std::string sourceStorageTypeToString(const Source::StorageType type) {
+    switch(type) {
+        case Source::StorageType::REGULAR_FILE_LOCAL:
+            return "file_loc";
+        case Source::StorageType::REGULAR_FILE_REMOTE:
+            return "file_remote";
+        case Source::StorageType::GITHUB_RELEASE:
+            return "github_release";
+        default:
+            return "NONE";
+    }
+}
 
-    std::vector<int> widths = {colType, colSection};
-    if (printPath) {
-        widths.push_back(colPath);
+Source::StorageType sourceStringToStorageType(const std::string_view str) {
+    if (str == "file_loc") {
+        return Source::StorageType::REGULAR_FILE_LOCAL;
     }
 
-    printTableLine(stream, widths);
-    stream << "| " << std::left << std::setw(colType) << "Type"
-           << " | " << std::left << std::setw(colSection) << "Section";
-    if (printPath) {
-        stream << " | " << std::left << std::setw(colPath) << "System Path";
+    if (str == "file_remote") {
+        return Source::StorageType::REGULAR_FILE_REMOTE;
     }
-    stream << " |\n";
-    printTableLine(stream, widths);
 
-    for (const auto& [source, path] : downloadedSources) {
-        stream << "| " << std::left << std::setw(colType) << sourceTypeToString(source.type)
-               << " | " << std::left << std::setw(colSection) << source.section;
-
-        if (printPath) {
-            stream << " | " << std::left << std::setw(colPath) << path.string();
-        }
-        stream << " |\n";
+    if (str == "github_release") {
+        return Source::StorageType::GITHUB_RELEASE;
     }
-    printTableLine(stream, widths);
+
+    return Source::StorageType::STORAGE_TYPE_UNKNOWN;
 }
 
 void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {
     std::vector<bool> removeMarkers(sources.size());
+    const auto config = getCachedConfig();
 
     for (size_t i(0); i < sources.size(); ++i) {
-        DownloadedSourcePair& parentSource = sources[i];
+        const auto& parentSource = config->sources.at(sources[i].first);
 
         if (removeMarkers[i]) {
             // Source is already joined
@@ -83,14 +89,15 @@ void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {
         }
 
         for (size_t j(i + 1); j < sources.size(); ++j) {
-            DownloadedSourcePair& childSource = sources[j];
+            const auto& childSource = config->sources.at(sources[j].first);
 
-            if (parentSource.first.section != childSource.first.section || parentSource.first.type != childSource.first.type || removeMarkers[j]) {
+
+            if (parentSource.section != childSource.section || parentSource.inetType != childSource.inetType || removeMarkers[j]) {
                 // Sources cant be joined
                 continue;
             }
 
-            joinTwoFiles(parentSource.second, childSource.second);
+            joinTwoFiles(sources[i].second, sources[j].second);
             removeMarkers[j] = true;
         }
     }
@@ -102,4 +109,124 @@ void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {
     });
 
     sources.erase(removeIter, sources.end());
+}
+
+std::optional<std::vector<DownloadedSourcePair>> SourcePreset::downloadSources() const {
+    std::vector<DownloadedSourcePair> downloads;
+    const auto config = getCachedConfig();
+
+    for (const auto& id : sourceIds) {
+        const auto source = config->sources.at(id);
+
+        if (const bool status = source.getData(downloads); !status) {
+            LOG_WARNING("Failed to fully load the preset with label \"{}\"", this->label);
+            return std::nullopt;
+        }
+    }
+
+    return downloads;
+}
+
+bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
+    if (this->storageType == REGULAR_FILE_LOCAL) {
+        if (!fs::exists(this->url)) {
+            LOG_WARNING("Failed to get data from local source ID {}", this->id);
+            return false;
+        }
+
+        downloads.emplace_back(this->id, this->url);
+    } else if (this->storageType == REGULAR_FILE_REMOTE) {
+        const FS::Utils::Temp::SessionTempFileRegistry registry;
+        const auto file = registry.createTempFileDetached("lst");
+
+        if (const bool status = NetUtils::tryDownloadFile(this->url, file->path, nullptr); !status) {
+            LOG_WARNING("Failed to get data from remote source ID {}", this->id);
+            return false;
+        }
+
+        downloads.emplace_back(this->id, file->path);
+    } else if (this->storageType == GITHUB_RELEASE) {
+        if (!this->assets.has_value()) {
+            LOG_WARNING("Failed to get data from remote GitHub source ID {}", this->id);
+            return false;
+        }
+
+        const auto downloadsGithub = NetUtils::downloadGithubReleaseAssets(this->url, *this->assets, FS::Utils::Temp::getSessionTempDir(), getCachedConfig()->apiToken);
+
+        if (downloadsGithub.size() != this->assets->size()) {
+            LOG_WARNING("Failed to get data from remote GitHub source ID {}", this->id);
+            return false;
+        }
+
+        std::for_each(downloadsGithub.begin(), downloadsGithub.end(), [&](const auto& path) {
+            downloads.emplace_back(this->id, path);
+        });
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+void SourcePreset::print(std::ostream& stream, SortType sortType) const {
+    const auto config = getCachedConfig();
+
+    // Ширины колонок: ID, Section, Storage, Inet, URL (увеличено до 45)
+    const std::vector<int> widths = {8, 13, 18, 8, 45};
+
+    std::stringstream ssDivider;
+    ssDivider << "+";
+    for (const int w : widths) {
+        ssDivider << std::string(w + 2, '-') << "+";
+    }
+    std::string divider = ssDivider.str();
+
+    size_t tableInnerWidth = divider.length() - 2;
+
+    stream << "." << std::string(tableInnerWidth, '-') << "." << std::endl;
+    stream << "| PRESET: " << std::left << std::setw(tableInnerWidth - 10) << this->label << " |" << std::endl;
+
+    stream << divider << std::endl;
+    stream << "| " << std::left << std::setw(widths[0]) << "ID" << " "
+           << "| " << std::setw(widths[1]) << "Section" << " "
+           << "| " << std::setw(widths[2]) << "Storage" << " "
+           << "| " << std::setw(widths[3]) << "Inet"    << " "
+           << "| " << std::setw(widths[4]) << "URL"     << " |" << std::endl;
+    stream << divider << std::endl;
+
+    std::vector<SourceObjectId> sourceIdsSorted(sourceIds.begin(), sourceIds.end());
+    std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), [&](const SourceObjectId& a, const SourceObjectId& b) {
+        const auto& sA = config->sources.at(a);
+        const auto& sB = config->sources.at(b);
+        switch (sortType) {
+            case SORT_BY_ID:           return sA.id < sB.id;
+            case SORT_BY_SECTION:      return sA.section < sB.section;
+            case SORT_BY_INET_TYPE:    return sA.inetType < sB.inetType;
+            case SORT_BY_STORAGE_TYPE: return sA.storageType < sB.storageType;
+            default:                   return false;
+        }
+    });
+
+    auto truncate = [](std::string s, size_t width) -> std::string {
+        if (s.length() > width) return s.substr(0, width - 3) + "...";
+        return s;
+    };
+
+    for (const auto& sid : sourceIdsSorted) {
+        const Source& src = config->sources.at(sid);
+
+        std::string s_id  = std::to_string(src.id);
+        std::string s_sec = truncate(src.section, widths[1]);
+        std::string s_sto = truncate(sourceStorageTypeToString(src.storageType), widths[2]);
+        std::string s_ine = truncate(sourceInetTypeToString(src.inetType), widths[3]);
+        std::string s_url = truncate(src.url, widths[4]);
+
+        stream << "| " << std::left << std::setw(widths[0]) << s_id  << " "
+               << "| " << std::setw(widths[1]) << s_sec << " "
+               << "| " << std::setw(widths[2]) << s_sto << " "
+               << "| " << std::setw(widths[3]) << s_ine << " "
+               << "| " << std::setw(widths[4]) << s_url << " |" << std::endl;
+    }
+    stream << divider << std::endl;
+    stream << '\n';
 }

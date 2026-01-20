@@ -8,6 +8,7 @@
 int main(const int argc, char** argv) {
     CLI::App app;
     RgcConfig config;
+    int exitCode = 0;
 
     // Init RAND
     const auto now = std::chrono::high_resolution_clock::now();
@@ -33,11 +34,11 @@ int main(const int argc, char** argv) {
     // Show about and close software
     if (gCmdArgs.isInit) {
         if (fs::exists(gkConfigPath)) {
-            if (bool isInitAgain = askYesNo("Initialization is already performed, delete config and run it again?", false)) {
+            if (askYesNo("Initialization is already performed, delete config and run it again?", false)) {
                 deinitSoftware();
             } else {
                 LOG_INFO("Re-initialization canceled");
-                return 0;
+                return exitCode;
             }
         }
 
@@ -45,52 +46,50 @@ int main(const int argc, char** argv) {
 
         initSoftware(); // Download all toolchains and create config
 
-        return 0;
+        return exitCode;
     }
 
     // Print software information
     if (gCmdArgs.isShowAbout) {
         printAbout();
-        return 0;
+        return exitCode;
     }
 
     if (!fs::exists(gkConfigPath)) {
         LOG_WARNING("Configuration file is not found, perform software initialization using --init");
-        return 0;
+        return 1;
     }
+
+    if (const bool status = readConfig(config); !status) {
+        LOG_ERROR(READ_CFG_FAIL_MSG);
+        return 1;
+    }
+
+    // Global cache, which will be used in functions
+    // TODO: Add config validation
+    setCachedConfig(config);
 
     if (app.got_subcommand(gServiceSubCmd)) {
         fillServiceCallbacks(gServiceCallbacks);
         runService(gServiceSettings, gServiceCallbacks);
-        return 0;
-    }
-
-    // Add extra source
-    if (gCmdArgs.isAddExtra) {
-        addExtraSource();
-        return 0;
-    }
-
-    // Remove extra source
-    if (gRemoveExtraOption->count() == 1) {
-        removeExtraSource(gCmdArgs.extraSourceId);
-        return 0;
     }
 
     // Show all extra sources
     if (app.got_subcommand(gShowSubCmd)) {
-        showExtraSources();
-        return 0;
+        showPresets(gCmdArgs);
+    }
+
+    // Build sources from presets
+    if (app.got_subcommand(gBuildSubCmd)) {
+        const auto releases = buildListsHandler(gCmdArgs);
+        const bool status = releases != std::nullopt;
+        exitCode = !status;
     }
 
     // Check access for URLs and close software
-    if (gCmdArgs.isCheckUrls) {
-        checkUrlsAccess();
-        return 0;
+    if (app.got_subcommand(gCheckSubCmd)) {
+        checkUrlsAccess(gCmdArgs);
     }
 
-    // NOTE: Main job
-    const auto releases = buildListsHandler(gCmdArgs);
-    const bool status = releases != std::nullopt;
-    return !status;
+    return exitCode;
 }
