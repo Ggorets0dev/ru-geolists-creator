@@ -124,6 +124,7 @@ std::optional<std::vector<DownloadedSourcePair>> SourcePreset::downloadSources()
         }
     }
 
+    LOG_INFO("Sources from preset \"{}\" are collected", this->label);
     return downloads;
 }
 
@@ -145,6 +146,7 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
         }
 
         downloads.emplace_back(this->id, file->path);
+        LOG_INFO("Source with ID {} and URL {} was downloaded as regular file", this->id, this->url);
     } else if (this->storageType == GITHUB_RELEASE) {
         if (!this->assets.has_value()) {
             LOG_WARNING("Failed to get data from remote GitHub source ID {}", this->id);
@@ -160,11 +162,13 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
 
         std::for_each(downloadsGithub.begin(), downloadsGithub.end(), [&](const auto& path) {
             downloads.emplace_back(this->id, path);
+            LOG_INFO("Asset {} of source with ID {} and URL {} was downloaded as regular file", path, this->id, this->url);
         });
     } else {
         return false;
     }
 
+    LOG_INFO("Source with ID {} is collected", this->id);
     return true;
 }
 

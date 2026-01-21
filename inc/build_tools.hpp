@@ -8,8 +8,8 @@
 #define GEOSITE_BASE_FILENAME        "geosite"
 #define GEOIP_BASE_FILENAME          "geoip"
 
-#define V2RAY_FILES_EXT              ".dat"
-#define SING_FILES_EXT               ".db"
+#define V2RAY_FILES_EXT              "dat"
+#define SING_FILES_EXT               "db"
 
 #define RELEASE_NOTES_FILENAME      "release_notes.txt"
 

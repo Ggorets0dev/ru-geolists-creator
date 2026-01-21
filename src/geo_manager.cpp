@@ -86,6 +86,7 @@ bool convertGeolist(const std::string& binPath, const Source::InetType type,
             return false;
         }
 
+        LOG_INFO("Geo manager successfully converted source and saved it: {}", outPath);
         return true;
     }
 

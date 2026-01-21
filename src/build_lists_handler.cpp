@@ -95,6 +95,9 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
             fs::create_directories(targetPath);
 
+            // ============
+            // Build releases
+            // ============
             if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_V2RAY_CAPTION)) {
                 // Deploying V2Ray rules in .dat extension
                 const std::string geoipFilename = fmt::format("{}-{}.{}",
@@ -108,8 +111,8 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                     V2RAY_FILES_EXT);
 
                 releases.packs.emplace_back(
-                    outDirPath / geoipFilename,
-                    outDirPath / geositeFilename
+                    targetPath / geoipFilename,
+                    targetPath / geositeFilename
                 );
 
                 fs::copy(*outGeositePath, releases.packs[0].listDomain, fs::copy_options::overwrite_existing);
@@ -121,15 +124,15 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 const std::string geoipFilename = fmt::format("{}-{}.{}",
                      GEOIP_BASE_FILENAME,
                      preset.label,
-                     V2RAY_FILES_EXT);
+                     SING_FILES_EXT);
 
                 const std::string geositeFilename = fmt::format("{}-{}.{}",
                     GEOSITE_BASE_FILENAME,
                     preset.label,
-                    V2RAY_FILES_EXT);
+                    SING_FILES_EXT);
 
-                const fs::path singGeositePath = outDirPath / geositeFilename;
-                const fs::path singGeoipPath = outDirPath / geositeFilename;
+                const fs::path singGeositePath = targetPath / geositeFilename;
+                const fs::path singGeoipPath = targetPath / geoipFilename;
 
                 status = convertGeolist(config->geoMgrBinaryPath, Source::InetType::DOMAIN, GEO_FORMAT_V2RAY_CAPTION, GEO_FORMAT_SING_CAPTION, *outGeositePath, singGeositePath);
 
@@ -147,11 +150,26 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                     continue;
                 }
 
-                releases.packs.emplace_back(singGeositePath, singGeoipPath
-                );
+                releases.packs.emplace_back(singGeositePath, singGeoipPath);
             }
+            // ============
 
-            releases.releaseNotes = fs::path(args.outDirPath) / RELEASE_NOTES_FILENAME;
+
+            // ============
+            // Save files if release folder
+            // ============
+            if (!releases.packs.empty()) {
+                const fs::path componentsDirPath = targetPath / "components";
+                fs::create_directories(componentsDirPath);
+
+                for (const auto&[id, path] : *downloads) {
+                    fs::copy(path, componentsDirPath / path.filename(), fs::copy_options::overwrite_existing); // TODO: Rename file with section
+                    LOG_INFO("Source with ID {} and filename {} copied to components in release folder", id, path.filename().string());
+                }
+            }
+            // ============
+
+            releases.releaseNotes = outDirPath / RELEASE_NOTES_FILENAME;
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR("Filesystem error:" + std::string(e.what()));
             return std::nullopt;
@@ -164,8 +182,8 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             LOG_ERROR("Failed to create release notes for parent process");
         }
 
-        LOG_INFO("Domain address list(s) successfully created");
-        LOG_INFO("IP address list(s) successfully created");
+        LOG_INFO("Domain address list(s) successfully created for preset \"{}\"", preset.label);
+        LOG_INFO("IP address list(s) successfully created for preset \"{}\"", preset.label);
         // !SECTION
     }
 
