@@ -78,11 +78,11 @@ void initLogging() {
 // Your old wrappers
 // ====================
 
-void logUrlAccess(const std::string& url, bool status) {
+void logUrlAccess(const std::string& url, const bool status) {
     if (status)
-        LOG_INFO("Successfully accessed resource: " + url);
+        LOG_INFO("Successfully accessed resource: {}", url);
     else
-        LOG_ERROR("Failed to access resource: " + url);
+        LOG_WARNING("Failed to access resource: {}", url);
 }
 
 void logFilterCheckProgress(float progress) {

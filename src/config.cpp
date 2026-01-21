@@ -134,6 +134,20 @@ bool readConfig(RgcConfig& config) {
     return true;
 }
 
+bool validateConfig(const RgcConfig& config) {
+    for (const auto&[fst, snd] : config.presets) {
+        for (const auto& sourceId : snd.sourceIds) {
+            auto sourceIter = config.sources.find(sourceId);
+
+            if (sourceIter == config.sources.end()) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 const RgcConfig* getCachedConfig() {
     if (!gIsConfigSet) {
         throw std::logic_error("getCachedConfig() called when config is not set");

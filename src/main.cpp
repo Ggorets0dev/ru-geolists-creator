@@ -60,7 +60,7 @@ int main(const int argc, char** argv) {
         return 1;
     }
 
-    if (const bool status = readConfig(config); !status) {
+    if (!readConfig(config) || !validateConfig(config)) {
         LOG_ERROR(READ_CFG_FAIL_MSG);
         return 1;
     }

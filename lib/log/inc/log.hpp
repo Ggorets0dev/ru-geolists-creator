@@ -16,7 +16,7 @@
 #define DOWNLOAD_UPDATES_FAIL_MSG   "Failed to download latest releases of main sources"
 #define REMOVE_EXTRA_FAIL_MSG       "Failed to remove extra source from configuration file"
 #define ADD_EXTRA_FAIL_MSG          "Failed to add extra source to configuration file"
-#define READ_CFG_FAIL_MSG           "Failed to read config file"
+#define READ_CFG_FAIL_MSG           "Failed to read or validate config file"
 #define WRITE_CFG_FAIL_MSG          "Failed to write config file"
 #define GEO_FORMAT_CONVERT_FAIL_MSG "Since the list could not be converted, the requested format was ignored: "
 

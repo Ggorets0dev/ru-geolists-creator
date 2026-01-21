@@ -17,12 +17,6 @@
         exit(1); \
     }
 
-#define VALIDATE_CHECK_UPDATES_PART_RESULT(condition) \
-    if (!condition) { \
-        LOG_ERROR(CHECK_UPDATES_FAIL_MSG); \
-        return std::make_tuple(false, false); \
-    }
-
 void printHelp(const CLI::App& app) {
     std::cout << app.help() << std::endl; // Standard help
     // TODO: Add some other info for usage
@@ -63,15 +57,23 @@ void checkUrlsAccess(const CmdArgs& args) {
     LOG_INFO("Check for all sources's URLs is requested");
 
     const auto config = getCachedConfig();
+    std::vector<SourceObjectId> checkedSourcesIds;
+    checkedSourcesIds.reserve(config->sources.size());
 
-    for (const auto& pair : config->presets) {
-        if (!args.presets.empty() && std::find(args.presets.begin(), args.presets.end(), pair.second.label) == args.presets.end()) {
+    for (const auto&[fst, snd] : config->presets) {
+        if (!args.presets.empty() && std::find(args.presets.begin(), args.presets.end(), snd.label) == args.presets.end()) {
             // Preset is not requested for check
             continue;
         }
 
-        for (const auto& sourceId : pair.second.sourceIds) {
+        for (const auto& sourceId : snd.sourceIds) {
             bool isAccessed = false;
+
+            if (std::find(checkedSourcesIds.begin(), checkedSourcesIds.end(), sourceId) != checkedSourcesIds.end()) {
+                // Source was checked in past iterations, skipping
+                continue;
+            }
+
             auto sourceObj = config->sources.find(sourceId);
 
             if (sourceObj == config->sources.end()) {
@@ -102,6 +104,7 @@ void checkUrlsAccess(const CmdArgs& args) {
             }
 
             logUrlAccess(source.url, isAccessed);
+            checkedSourcesIds.push_back(source.id);
         }
     }
 }

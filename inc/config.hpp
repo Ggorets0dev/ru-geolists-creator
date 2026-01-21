@@ -27,6 +27,8 @@ struct RgcConfig {
 
 bool writeConfig(const RgcConfig& config);
 
+bool validateConfig(const RgcConfig& config);
+
 bool readConfig(RgcConfig& config);
 
 const RgcConfig* getCachedConfig();
