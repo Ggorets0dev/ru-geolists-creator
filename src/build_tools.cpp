@@ -9,40 +9,43 @@
 #include <csignal>
 
 #include <ctime>
-#include <iomanip>
 #include <vector>
 #include <fstream>
 
 bool setBuildInfoToRelNotes(std::ofstream& file) {
-    if (!file.is_open()) return false;
+    if (!file.is_open()) {
+        return false;
+    }
 
     const std::time_t now = std::time(nullptr);
-    const std::tm* utc_tm = std::gmtime(&now);
+    const std::tm* utcTime = std::gmtime(&now);
 
-    if (!utc_tm) return false;
+    if (!utcTime) {
+        return false;
+    }
 
     char timeBuffer[25];
-    std::strftime(timeBuffer, sizeof(timeBuffer), "%d.%m.%Y %H:%M:%S", utc_tm);
+    std::strftime(timeBuffer, sizeof(timeBuffer), "%d.%m.%Y %H:%M:%S", utcTime);
 
     const std::string softwareString = fmt::format("RGLC v{}", RGC_VERSION_STRING);
 
-    const std::vector widths = {20, 25};
-
     file << "Release Technical Information\n";
 
-    printTableLine(file, widths);
-    printDoubleRow(file, widths, "Parameter", "Value");
-    printTableLine(file, widths);
+    TablePrinter table({"Parameter", "Value"});
+    table.addRow({"Build DateTime (UTC)", timeBuffer});
+    table.addRow({"Software", softwareString});
 
-    printDoubleRow(file, widths, "Build DateTime (UTC)", timeBuffer);
-    printDoubleRow(file, widths, "Software", softwareString);
-
-    printTableLine(file, widths);
+    table.print(file);
 
     return true;
 }
 
 bool addPresetToRelNotes(std::ofstream& file, const SourcePreset& preset) {
+    if (!file.is_open()) {
+        return false;
+    }
+
     preset.print(file, SourcePreset::SORT_BY_ID);
+
     return true;
 }

@@ -172,31 +172,8 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
     return true;
 }
 
-void SourcePreset::print(std::ostream& stream, SortType sortType) const {
+void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     const auto config = getCachedConfig();
-
-    // Ширины колонок: ID, Section, Storage, Inet, URL (увеличено до 45)
-    const std::vector<int> widths = {8, 13, 18, 8, 45};
-
-    std::stringstream ssDivider;
-    ssDivider << "+";
-    for (const int w : widths) {
-        ssDivider << std::string(w + 2, '-') << "+";
-    }
-    std::string divider = ssDivider.str();
-
-    size_t tableInnerWidth = divider.length() - 2;
-
-    stream << "." << std::string(tableInnerWidth, '-') << "." << std::endl;
-    stream << "| PRESET: " << std::left << std::setw(tableInnerWidth - 10) << this->label << " |" << std::endl;
-
-    stream << divider << std::endl;
-    stream << "| " << std::left << std::setw(widths[0]) << "ID" << " "
-           << "| " << std::setw(widths[1]) << "Section" << " "
-           << "| " << std::setw(widths[2]) << "Storage" << " "
-           << "| " << std::setw(widths[3]) << "Inet"    << " "
-           << "| " << std::setw(widths[4]) << "URL"     << " |" << std::endl;
-    stream << divider << std::endl;
 
     std::vector<SourceObjectId> sourceIdsSorted(sourceIds.begin(), sourceIds.end());
     std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), [&](const SourceObjectId& a, const SourceObjectId& b) {
@@ -211,26 +188,28 @@ void SourcePreset::print(std::ostream& stream, SortType sortType) const {
         }
     });
 
+    TablePrinter table({"ID", "Section", "Storage", "Inet", "URL"});
+
     auto truncate = [](std::string s, size_t width) -> std::string {
         if (s.length() > width) return s.substr(0, width - 3) + "...";
         return s;
     };
 
+    const std::vector<size_t> widths = {8, 13, 18, 8, 45};
+
     for (const auto& sid : sourceIdsSorted) {
         const Source& src = config->sources.at(sid);
 
-        std::string s_id  = std::to_string(src.id);
-        std::string s_sec = truncate(src.section, widths[1]);
-        std::string s_sto = truncate(sourceStorageTypeToString(src.storageType), widths[2]);
-        std::string s_ine = truncate(sourceInetTypeToString(src.inetType), widths[3]);
-        std::string s_url = truncate(src.url, widths[4]);
-
-        stream << "| " << std::left << std::setw(widths[0]) << s_id  << " "
-               << "| " << std::setw(widths[1]) << s_sec << " "
-               << "| " << std::setw(widths[2]) << s_sto << " "
-               << "| " << std::setw(widths[3]) << s_ine << " "
-               << "| " << std::setw(widths[4]) << s_url << " |" << std::endl;
+        table.addRow({
+            std::to_string(src.id),
+            truncate(src.section, widths[1]),
+            truncate(sourceStorageTypeToString(src.storageType), widths[2]),
+            truncate(sourceInetTypeToString(src.inetType), widths[3]),
+            truncate(src.url, widths[4])
+        });
     }
-    stream << divider << std::endl;
-    stream << '\n';
+
+    stream << "PRESET: " << this->label << "\n";
+    table.print(stream);
+    stream << "\n";
 }
