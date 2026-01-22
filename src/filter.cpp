@@ -10,6 +10,7 @@
 #include "net_convert.hpp"
 #include "url_handle.hpp"
 #include "cares_resolver.hpp"
+#include "config.hpp"
 
 #define FILTER_FILENAME_POSTFIX     "temp_filter"
 
@@ -269,4 +270,28 @@ bool checkFileByIPvLists(const fs::path& path, const NetTypes::ListIPvxPair& lis
     }
 
     return isFoundAny;
+}
+
+void filterDownloadsByWhitelist(const std::vector<DownloadedSourcePair>& downloadedFiles) {
+    NetTypes::ListIPv4 ipv4;
+    NetTypes::ListIPv6 ipv6;
+
+    NetTypes::ListIPvxPair listsPair = {
+        ipv4,
+        ipv6
+    };
+
+    const auto config = getCachedConfig();
+
+    parseAddressFile(config->whitelistPath, listsPair);
+
+    for (const auto&[fst, snd] : downloadedFiles) {
+        LOG_INFO("Checking for whitelist entries: " + snd.string());
+
+        if (const bool status = checkFileByIPvLists(snd, listsPair, true); !status) {
+            LOG_INFO("File [" + snd.filename().string() + "] was checked successfully, no filter applied");
+        } else {
+            LOG_WARNING("File [" + snd.filename().string() + "] was checked successfully, whitelist filter was applied");
+        }
+    }
 }

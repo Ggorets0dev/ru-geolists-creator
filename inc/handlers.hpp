@@ -5,7 +5,6 @@
 #include "config.hpp"
 #include "main_sources.hpp"
 #include "print_about_handler.hpp"
-#include "download_sources_handler.hpp"
 #include "build_lists_handler.hpp"
 
 void showPresets(const CmdArgs& args);

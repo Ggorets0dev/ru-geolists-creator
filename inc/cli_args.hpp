@@ -31,7 +31,7 @@ struct CmdArgs {
     bool isSortBySections;
     bool isSortByStorageTypes;
     bool isSortByeInetTypes;
-    // ======
+    // ======s
 };
 
 extern CmdArgs gCmdArgs;

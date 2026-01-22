@@ -156,6 +156,18 @@ const RgcConfig* getCachedConfig() {
     return &gkConfig;
 }
 
+bool initSoftwareConfig() {
+    if (!readConfig(gkConfig) || !validateConfig(gkConfig)) {
+        LOG_ERROR(READ_CFG_FAIL_MSG);
+        return false;
+    }
+
+    // Global cache, which will be used in functions
+    setCachedConfig(gkConfig);
+
+    return true;
+}
+
 void setCachedConfig(const RgcConfig& config) {
     gIsConfigSet = true;
     gkConfig = config;

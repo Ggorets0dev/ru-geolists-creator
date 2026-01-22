@@ -89,10 +89,7 @@ void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {
         }
 
         for (size_t j(i + 1); j < sources.size(); ++j) {
-            const auto& childSource = config->sources.at(sources[j].first);
-
-
-            if (parentSource.section != childSource.section || parentSource.inetType != childSource.inetType || removeMarkers[j]) {
+            if (const auto& childSource = config->sources.at(sources[j].first); parentSource.section != childSource.section || parentSource.inetType != childSource.inetType || removeMarkers[j]) {
                 // Sources cant be joined
                 continue;
             }
@@ -195,7 +192,7 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
         return s;
     };
 
-    const std::vector<size_t> widths = {8, 13, 18, 8, 45};
+    const std::vector<size_t> widths = {8, 13, 18, 8, 70};
 
     for (const auto& sid : sourceIdsSorted) {
         const Source& src = config->sources.at(sid);

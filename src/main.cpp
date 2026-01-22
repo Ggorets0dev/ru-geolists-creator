@@ -7,7 +7,6 @@
 
 int main(const int argc, char** argv) {
     CLI::App app;
-    RgcConfig config;
     int exitCode = 0;
 
     // Init RAND
@@ -60,14 +59,10 @@ int main(const int argc, char** argv) {
         return 1;
     }
 
-    if (!readConfig(config) || !validateConfig(config)) {
-        LOG_ERROR(READ_CFG_FAIL_MSG);
+    if (!initSoftwareConfig()) {
+        LOG_ERROR("Failed to initialize software configuration");
         return 1;
     }
-
-    // Global cache, which will be used in functions
-    // TODO: Add config validation
-    setCachedConfig(config);
 
     if (app.got_subcommand(gServiceSubCmd)) {
         fillServiceCallbacks(gServiceCallbacks);
@@ -83,6 +78,20 @@ int main(const int argc, char** argv) {
     if (app.got_subcommand(gBuildSubCmd)) {
         const auto releases = buildListsHandler(gCmdArgs);
         const bool status = releases != std::nullopt;
+
+        // ==============
+        // Show build release notes
+        // ==============
+        if (status && fs::exists(releases->releaseNotes)) {
+            if (std::ifstream fileStream(releases->releaseNotes, std::ios::in | std::ios::binary); fileStream.is_open()) {
+                std::cout << "\n==== CONTENTS OF RELEASE NOTES ====\n" << std::endl;
+                std::cout << fileStream.rdbuf();
+                std::cout << std::endl;
+                fileStream.close();
+            }
+        }
+        // ==============
+
         exitCode = !status;
     }
 

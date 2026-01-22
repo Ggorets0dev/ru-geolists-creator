@@ -5,6 +5,7 @@
 #include "json_io.hpp"
 #include "config.hpp"
 #include "dlc_toolchain.hpp"
+#include "filter.hpp"
 #include "geo_manager.hpp"
 #include "handlers.hpp"
 #include "libnetwork_settings.hpp"
@@ -52,6 +53,9 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         // Join similar sources if they exist
         joinSimilarSources(*downloads);
+        if (args.isUseWhitelist) {
+            filterDownloadsByWhitelist(*downloads);
+        }
 
         // SECTION - Move sources to toolchains
         clearDlcDataSection(config->dlcRootPath);

@@ -31,6 +31,8 @@ bool validateConfig(const RgcConfig& config);
 
 bool readConfig(RgcConfig& config);
 
+bool initSoftwareConfig();
+
 const RgcConfig* getCachedConfig();
 
 void setCachedConfig(const RgcConfig& config);
