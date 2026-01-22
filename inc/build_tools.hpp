@@ -27,6 +27,8 @@ struct GeoReleases {
     bool isEmpty;
 };
 
-void createReleaseNotes(const GeoReleases& paths, const std::vector<DownloadedSourcePair>& downloadedSources);
+bool setBuildInfoToRelNotes(std::ofstream& file);
+
+bool addPresetToRelNotes(std::ofstream& file, const SourcePreset& preset);
 
 #endif // BUILD_TOOLS_HPP

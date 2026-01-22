@@ -32,6 +32,10 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     gLibNetworkSettings.bgpDumpPath = config->bgpDumpPath;
     // ========
 
+    const auto outDirPath = fs::path(args.outDirPath);
+    releases.releaseNotes = outDirPath / RELEASE_NOTES_FILENAME;
+    std::ofstream releaseNotesFile(releases.releaseNotes);
+
     for (const auto& pair : config->presets) {
         if (!args.presets.empty() && std::find(args.presets.begin(), args.presets.end(), pair.second.label) == args.presets.end()) {
             // Preset is not requested for check
@@ -90,7 +94,6 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         // Setting paths by default
         try {
-            const auto outDirPath = fs::path(args.outDirPath);
             const fs::path targetPath = outDirPath / fmt::format("preset-{}", preset.label);
 
             fs::create_directories(targetPath);
@@ -163,29 +166,31 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 fs::create_directories(componentsDirPath);
 
                 for (const auto&[id, path] : *downloads) {
-                    fs::copy(path, componentsDirPath / path.filename(), fs::copy_options::overwrite_existing); // TODO: Rename file with section
-                    LOG_INFO("Source with ID {} and filename {} copied to components in release folder", id, path.filename().string());
+                    const auto& source = config->sources.at(id);
+                    const std::string filename = source.section + path.extension().string();
+
+                    fs::copy(path, componentsDirPath / filename, fs::copy_options::overwrite_existing);
+                    LOG_INFO("Source with ID {} and filename {} copied to components in release folder", id, filename);
                 }
             }
             // ============
 
-            releases.releaseNotes = outDirPath / RELEASE_NOTES_FILENAME;
+            addPresetToRelNotes(releaseNotesFile, pair.second);
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR("Filesystem error:" + std::string(e.what()));
             return std::nullopt;
         }
 
-        try {
-            createReleaseNotes(releases, *downloads);
-        } catch (const std::runtime_error& e) {
-            LOG_ERROR(e.what());
-            LOG_ERROR("Failed to create release notes for parent process");
-        }
-
         LOG_INFO("Domain address list(s) successfully created for preset \"{}\"", preset.label);
         LOG_INFO("IP address list(s) successfully created for preset \"{}\"", preset.label);
         // !SECTION
+
+        // SECTION - Add records to release notes
+        setBuildInfoToRelNotes(releaseNotesFile);
+        // !SECTION
     }
+
+    releaseNotesFile.close();
 
     // Set special flag, mark that job done successfully
     releases.isEmpty = false;

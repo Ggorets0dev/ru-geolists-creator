@@ -3,44 +3,46 @@
 #include "cli_args.hpp"
 #include "cli_draw.hpp"
 #include "log.hpp"
+#include "software_info.hpp"
 
 #include <sys/stat.h>
 #include <csignal>
 
-static void saveToText(const std::vector<DownloadedSourcePair>& downloadedSources, const fs::path& path) {
-    std::ofstream releaseNotes(path);
+#include <ctime>
+#include <iomanip>
+#include <vector>
+#include <fstream>
 
-    // constexpr int labelCol = 25;
-    // constexpr int valueCol = 30;
-    // const std::vector<int> mainWidths = {labelCol, valueCol};
-    // const auto config = getCachedConfig();
-    //
-    // releaseNotes << "BUILD ENVIRONMENT & LISTS\n";
-    // printTableLine(releaseNotes, mainWidths);
-    //
-    // releaseNotes << "| " << std::left << std::setw(labelCol) << "Component"
-    //              << " | " << std::left << std::setw(valueCol) << "Version / Time" << " |\n";
-    // printTableLine(releaseNotes, mainWidths);
-    //
-    // auto addRow = [&](const std::string& label, const std::string& value) {
-    //     releaseNotes << "| " << std::left << std::setw(labelCol) << label
-    //                  << " | " << std::left << std::setw(valueCol) << value << " |\n";
-    // };
-    //
-    //
-    // printTableLine(releaseNotes, mainWidths);
-    // addRow("Build datetime", parseUnixTime(std::time(nullptr)));
-    // printTableLine(releaseNotes, mainWidths);
-    //
-    // releaseNotes << "\nDOWNLOADED RESOURCES\n";
-    // printDownloadedSources(releaseNotes, downloadedSources, false);
+bool setBuildInfoToRelNotes(std::ofstream& file) {
+    if (!file.is_open()) return false;
 
-    releaseNotes.close();
+    const std::time_t now = std::time(nullptr);
+    const std::tm* utc_tm = std::gmtime(&now);
+
+    if (!utc_tm) return false;
+
+    char timeBuffer[25];
+    std::strftime(timeBuffer, sizeof(timeBuffer), "%d.%m.%Y %H:%M:%S", utc_tm);
+
+    const std::string softwareString = fmt::format("RGLC v{}", RGC_VERSION_STRING);
+
+    const std::vector widths = {20, 25};
+
+    file << "Release Technical Information\n";
+
+    printTableLine(file, widths);
+    printDoubleRow(file, widths, "Parameter", "Value");
+    printTableLine(file, widths);
+
+    printDoubleRow(file, widths, "Build DateTime (UTC)", timeBuffer);
+    printDoubleRow(file, widths, "Software", softwareString);
+
+    printTableLine(file, widths);
+
+    return true;
 }
 
-void createReleaseNotes(const GeoReleases& paths,
-                        const std::vector<DownloadedSourcePair>& downloadedSources) {
-
-    // Form TXT release notes for user
-    saveToText(downloadedSources, paths.releaseNotes);
+bool addPresetToRelNotes(std::ofstream& file, const SourcePreset& preset) {
+    preset.print(file, SourcePreset::SORT_BY_ID);
+    return true;
 }
