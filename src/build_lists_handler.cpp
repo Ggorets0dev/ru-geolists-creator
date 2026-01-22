@@ -13,8 +13,6 @@
 
 std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     bool status = validateParsedFormats(args);
-    std::vector<std::string> v2ipSections;
-    Json::Value v2ipInputRules(Json::arrayValue);
     std::optional<fs::path> outGeoipPath, outGeositePath;
 
     GeoReleases releases = {
@@ -44,6 +42,11 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             // Preset is not requested for check
             continue;
         }
+
+        // ============ V2IP toolchain vars
+        std::vector<std::string> v2ipSections;
+        Json::Value v2ipInputRules(Json::arrayValue);
+        // ============
 
         const auto& preset = pair.second;
         auto downloads = preset.downloadSources();
@@ -78,7 +81,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             }
         }
 
-        if (!ipSrcAdded) {
+        if (ipSrcAdded) {
             // If any IP source added, prepare V2IP
             status &= saveIPSources(config->v2ipRootPath, v2ipInputRules, v2ipSections);
         }

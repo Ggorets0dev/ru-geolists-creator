@@ -172,7 +172,7 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
 void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     const auto config = getCachedConfig();
 
-    std::vector<SourceObjectId> sourceIdsSorted(sourceIds.begin(), sourceIds.end());
+    std::vector sourceIdsSorted(sourceIds.begin(), sourceIds.end());
     std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), [&](const SourceObjectId& a, const SourceObjectId& b) {
         const auto& sA = config->sources.at(a);
         const auto& sB = config->sources.at(b);
@@ -187,12 +187,18 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
 
     TablePrinter table({"ID", "Section", "Storage", "Inet", "URL"});
 
-    auto truncate = [](std::string s, size_t width) -> std::string {
+    auto truncate = [](std::string s, const size_t width) -> std::string {
         if (s.length() > width) return s.substr(0, width - 3) + "...";
         return s;
     };
 
-    const std::vector<size_t> widths = {8, 13, 18, 8, 70};
+    std::vector<size_t> widths = {8, 13, 18, 8, 70};
+
+    for (const auto& sid : sourceIdsSorted) {
+        // Find width, which will support every section
+        const Source& src = config->sources.at(sid);
+        widths[1] = std::max(widths[1], src.section.size());
+    }
 
     for (const auto& sid : sourceIdsSorted) {
         const Source& src = config->sources.at(sid);
