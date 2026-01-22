@@ -36,7 +36,7 @@ bool setBuildInfoToRelNotes(std::ofstream& file) {
     table.addRow({"Software", softwareString});
 
     table.print(file);
-    file << "\n\n";
+    file << "\n";
 
     return true;
 }

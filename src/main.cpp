@@ -77,13 +77,14 @@ int main(const int argc, char** argv) {
     // Build sources from presets
     if (app.got_subcommand(gBuildSubCmd)) {
         const auto releases = buildListsHandler(gCmdArgs);
-        const bool status = releases != std::nullopt;
+        const bool status = releases.has_value();
 
         // ==============
         // Show build release notes
         // ==============
         if (status && fs::exists(releases->releaseNotes)) {
             if (std::ifstream fileStream(releases->releaseNotes, std::ios::in | std::ios::binary); fileStream.is_open()) {
+                loggerFlush();
                 std::cout << "\n==== CONTENTS OF RELEASE NOTES ====\n" << std::endl;
                 std::cout << fileStream.rdbuf();
                 std::cout << std::endl;

@@ -34,6 +34,8 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     // ========
 
     const auto outDirPath = fs::path(args.outDirPath);
+    fs::create_directories(outDirPath);
+
     releases.releaseNotes = outDirPath / RELEASE_NOTES_FILENAME;
     std::ofstream releaseNotesFile(releases.releaseNotes);
 
@@ -46,9 +48,11 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
         const auto& preset = pair.second;
         auto downloads = preset.downloadSources();
 
+        LOG_INFO("Build of preset \"{}\" is requested and started", preset.label);
+
         if (!downloads.has_value()) {
-            LOG_WARNING("Failed to download all sources for preset with label {}, aborting build", preset.label);
-            return std::nullopt;
+            LOG_WARNING("Failed to download all sources for preset  \"{}\", aborting it's building", preset.label);
+            continue;
         }
 
         // Join similar sources if they exist
@@ -59,19 +63,25 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         // SECTION - Move sources to toolchains
         clearDlcDataSection(config->dlcRootPath);
-
         v2ipSections.reserve(downloads->size());
+        uint8_t ipSrcAdded = 0;
+        uint8_t domainSrcAdded = 0;
 
         for (const auto& sourcePair : *downloads) {
             if (const auto& source = config->sources.at(sourcePair.first); source.inetType == Source::InetType::DOMAIN) {
                 status &= addDomainSource(config->dlcRootPath, sourcePair.second, source.section);
+                ++domainSrcAdded;
             } else { // IP
                 addIPSource(sourcePair, v2ipInputRules);
                 v2ipSections.push_back(source.section);
+                ++ipSrcAdded;
             }
         }
 
-        status &= saveIPSources(config->v2ipRootPath, v2ipInputRules, v2ipSections);
+        if (!ipSrcAdded) {
+            // If any IP source added, prepare V2IP
+            status &= saveIPSources(config->v2ipRootPath, v2ipInputRules, v2ipSections);
+        }
 
         if (!status) {
             LOG_ERROR("Failed to correctly place sources in toolchains");
@@ -83,12 +93,12 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         // SECTION - Run toolchains to create lists
         LOG_INFO("Build process of Domain lists is started using DLC...");
-        outGeositePath = runDlcToolchain(config->dlcRootPath);
+        outGeositePath = domainSrcAdded ? runDlcToolchain(config->dlcRootPath) : std::nullopt;
 
         LOG_INFO("Build process of IP lists is started using V2IP...");
-        outGeoipPath = runV2ipToolchain(config->v2ipRootPath);
+        outGeoipPath = ipSrcAdded ? runV2ipToolchain(config->v2ipRootPath) : std::nullopt;
 
-        if (!outGeositePath || !outGeoipPath) {
+        if ((domainSrcAdded && !outGeositePath) || (ipSrcAdded && !outGeoipPath)) {
             LOG_ERROR("Building one or more lists failed due to errors within the toolchains");
             return std::nullopt;
         }
@@ -117,13 +127,20 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                     preset.label,
                     V2RAY_FILES_EXT);
 
-                releases.packs.emplace_back(
-                    targetPath / geoipFilename,
-                    targetPath / geositeFilename
-                );
+                GeoReleasePack pack;
 
-                fs::copy(*outGeositePath, releases.packs[0].listDomain, fs::copy_options::overwrite_existing);
-                fs::copy(*outGeoipPath, releases.packs[0].listIP, fs::copy_options::overwrite_existing);
+                pack.presetLabel = preset.label;
+
+                if (outGeositePath.has_value()) {
+                    pack.listDomain = targetPath / geositeFilename;
+                    fs::copy(*outGeositePath, *pack.listDomain, fs::copy_options::overwrite_existing);
+                }
+                if (outGeoipPath.has_value()) {
+                    pack.listIP = targetPath / geoipFilename;
+                    fs::copy(*outGeoipPath, *pack.listIP, fs::copy_options::overwrite_existing);
+                }
+
+                releases.packs.push_back(std::move(pack));
             }
 
             if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_SING_CAPTION)) {
@@ -138,26 +155,47 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                     preset.label,
                     SING_FILES_EXT);
 
+                GeoReleasePack pack;
                 const fs::path singGeositePath = targetPath / geositeFilename;
                 const fs::path singGeoipPath = targetPath / geoipFilename;
 
-                status = convertGeolist(config->geoMgrBinaryPath, Source::InetType::DOMAIN, GEO_FORMAT_V2RAY_CAPTION, GEO_FORMAT_SING_CAPTION, *outGeositePath, singGeositePath);
+                pack.presetLabel = preset.label;
 
-                if (!status) {
-                    auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
-                    LOG_WARNING(log);
-                    continue;
+                if (outGeositePath.has_value()) {
+                    status = convertGeolist(config->geoMgrBinaryPath,
+                        Source::InetType::DOMAIN,
+                        GEO_FORMAT_V2RAY_CAPTION,
+                        GEO_FORMAT_SING_CAPTION,
+                        *outGeositePath,
+                        singGeositePath);
+
+                    if (!status) {
+                        auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
+                        LOG_WARNING(log);
+                        continue;
+                    }
+
+                    pack.listDomain = singGeositePath;
                 }
 
-                status = convertGeolist(config->geoMgrBinaryPath, Source::InetType::IP, GEO_FORMAT_V2RAY_CAPTION, GEO_FORMAT_SING_CAPTION, *outGeoipPath, singGeoipPath);
+                if (outGeoipPath.has_value()) {
+                    status = convertGeolist(config->geoMgrBinaryPath,
+                        Source::InetType::IP,
+                        GEO_FORMAT_V2RAY_CAPTION,
+                        GEO_FORMAT_SING_CAPTION,
+                        *outGeoipPath,
+                        singGeoipPath);
 
-                if (!status) {
-                    auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
-                    LOG_WARNING(log);
-                    continue;
+                    if (!status) {
+                        auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
+                        LOG_WARNING(log);
+                        continue;
+                    }
+
+                    pack.listIP = singGeoipPath;
                 }
 
-                releases.packs.emplace_back(singGeositePath, singGeoipPath);
+                releases.packs.push_back(std::move(pack));
             }
             // ============
 
@@ -179,7 +217,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             }
             // ============
 
-            addPresetToRelNotes(releaseNotesFile, pair.second);
+            addPresetToRelNotes(releaseNotesFile, preset);
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR("Filesystem error:" + std::string(e.what()));
             return std::nullopt;
@@ -188,13 +226,14 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
         LOG_INFO("Domain address list(s) successfully created for preset \"{}\"", preset.label);
         LOG_INFO("IP address list(s) successfully created for preset \"{}\"", preset.label);
         // !SECTION
-
-        // SECTION - Add records to release notes
-        setBuildInfoToRelNotes(releaseNotesFile);
-        // !SECTION
     }
 
+    // SECTION - Add records to release notes
+    setBuildInfoToRelNotes(releaseNotesFile);
+    // !SECTION
+
     releaseNotesFile.close();
+    LOG_INFO("Release notes file is saved at path: {}", releases.releaseNotes.string());
 
     // Set special flag, mark that job done successfully
     releases.isEmpty = false;

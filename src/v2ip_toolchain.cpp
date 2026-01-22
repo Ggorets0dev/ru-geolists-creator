@@ -10,8 +10,7 @@
 
 const fs::path gkV2ipToolchainDir = fs::path(std::getenv("HOME")) / ".local" / "lib";
 
-static void
-createOutputArray(Json::Value& outputArray, const std::vector<std::string>& usedSections) {
+static void createOutputArray(Json::Value& outputArray, const std::vector<std::string>& usedSections) {
     // {
     //     "type": "v2rayGeoIPDat",
     //     "action": "output",
@@ -51,8 +50,6 @@ static void addPrivateSource(Json::Value& inputArray, std::vector<std::string>& 
 }
 
 std::optional<std::string> downloadV2ipSourceCode() {
-    bool status;
-
     // ========= Temp files control
     FS::Utils::Temp::SessionTempFileRegistry tempFileReg;
     const auto v2ipReqFile = tempFileReg.createTempFile("json");
@@ -67,9 +64,8 @@ std::optional<std::string> downloadV2ipSourceCode() {
     }
 
     Json::Value request;
-    status = readJsonFromFile(v2ipReqFile.lock()->path, request);
 
-    if (!status) {
+    if (const bool status = readJsonFromFile(v2ipReqFile.lock()->path, request); !status) {
         LOG_ERROR("Failed to read JSON from API request (V2IP)");
         return std::nullopt;
     }
@@ -119,11 +115,8 @@ void addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray
 bool saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray, std::vector<std::string>& usedSections) {
     Json::Value configObj;
     Json::Value outputArray(Json::arrayValue);
-    fs::path configPath;
-    bool status;
 
-    configPath = v2ipRootPath;
-    configPath /= "config.json";
+    const fs::path configPath = fs::path(v2ipRootPath) / "config.json";
 
     // Add dummy private section
     addPrivateSource(v2ipInputArray, usedSections);
@@ -133,7 +126,7 @@ bool saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray,
     configObj["input"] = v2ipInputArray;
     configObj["output"] = outputArray;
 
-    status = writeJsonToFile(configPath.string(), configObj);
+    const bool status = writeJsonToFile(configPath.string(), configObj);
 
     return status;
 }

@@ -33,9 +33,10 @@ static const BuildGeoListsCallback BuildGeoLists = [](const rglc::BuildGeoListsR
 
     response->set_release_notes_path(releases->releaseNotes);
 
+    // FIXME: Change scheme
     for (const auto& release : releases->packs) {
-        response->add_geoip_paths(release.listIP);
-        response->add_geosite_paths(release.listDomain);
+        response->add_geoip_paths(*release.listIP);
+        response->add_geosite_paths(*release.listDomain);
     }
 
     return grpc::Status::OK;
