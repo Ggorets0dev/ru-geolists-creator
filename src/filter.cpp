@@ -295,3 +295,49 @@ void filterDownloadsByWhitelist(const std::vector<DownloadedSourcePair>& downloa
         }
     }
 }
+
+bool extractDomainsInPlace(const std::string& filePath) {
+    if (!fs::exists(filePath)) {
+        LOG_ERROR("File does not exist: {}", filePath);
+        return false;
+    }
+
+    std::ifstream inputFile(filePath);
+    if (!inputFile.is_open()) {
+        LOG_ERROR("Failed to open file for reading: {}", filePath);
+        return false;
+    }
+
+    std::set<std::string> domains;
+    static const std::regex kDomainSearcher(R"(([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63})");
+
+    std::string line;
+    while (std::getline(inputFile, line)) {
+        if (line.empty() || line[0] == '!' || line[0] == '#') {
+            continue;
+        }
+
+        std::smatch match;
+        if (std::regex_search(line, match, kDomainSearcher)) {
+            std::string found = match.str();
+            std::transform(found.begin(), found.end(), found.begin(),
+                           [](unsigned char c){ return std::tolower(c); });
+            domains.insert(found);
+        }
+    }
+    inputFile.close();
+
+    std::ofstream outputFile(filePath, std::ios::trunc);
+    if (!outputFile.is_open()) {
+        LOG_ERROR("Failed to open file for writing: {}", filePath);
+        return false;
+    }
+
+    for (const auto& domain : domains) {
+        outputFile << domain << "\n";
+    }
+
+    LOG_INFO("Processing domain extraction complete. Path: {}, Unique domains: {}", filePath, domains.size());
+
+    return true;
+}

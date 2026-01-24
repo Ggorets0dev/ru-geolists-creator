@@ -58,12 +58,18 @@ public:
         INET_TYPE_UNKNOWN
     };
 
+    enum PreprocessingType {
+        EXTRACT_DOMAINS,
+        PREPROCESSING_TYPE_UNKNOWN
+    };
+
     SourceObjectId id;
     std::string section;
     std::string url;
 
     StorageType storageType;
     InetType inetType;
+    std::optional<PreprocessingType> preprocType;
 
     std::optional<std::vector<std::string>> assets; // For GitHub release
 };
@@ -103,6 +109,8 @@ Source::InetType sourceStringToInetType(std::string_view str);
 std::string sourceStorageTypeToString(Source::StorageType type);
 
 Source::StorageType sourceStringToStorageType(std::string_view str);
+
+Source::PreprocessingType sourceStringToPreprocType(std::string_view str);
 // ===============
 
 void joinSimilarSources(std::vector<DownloadedSourcePair>& downloadedSources);

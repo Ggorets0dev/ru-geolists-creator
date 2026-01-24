@@ -316,3 +316,4 @@ NetTypes::AddressType NetUtils::getAddressType(const std::string& input) {
         return NetTypes::AddressType::UNKNOWN;
     }
 }
+

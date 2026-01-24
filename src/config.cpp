@@ -98,11 +98,17 @@ bool readConfig(RgcConfig& config) {
         for (const auto& sourceJson : value["sources"]) {
             try {
                 Source source(sourceJson);
-                SourceObjectId sId = source.id;
 
-                config.sources.emplace(sId, std::move(source));
+                if (config.sources.find(source.id) != config.sources.end()) {
+                    LOG_ERROR("Failed to parse source, ID is not unique: {}", source.id);
+                    config = {};
+                    return false;
+                }
+
+                config.sources.emplace(source.id, std::move(source));
             } catch (const std::exception& e) {
                 LOG_ERROR("Failed to parse source: " + std::string(e.what()));
+                config = {};
                 return false;
             }
         }
@@ -114,13 +120,19 @@ bool readConfig(RgcConfig& config) {
 
             preset.label = JsonValidator::getRequired<std::string>(presetJson, "label");
 
+            if (config.presets.find(preset.label) != config.presets.end()) {
+                LOG_ERROR("Failed to parse preset, LABEL is not unique: {}", preset.label);
+                config = {};
+                return false;
+            }
+
             if (presetJson["source_ids"].isArray()) {
                 const Json::Value& ids = presetJson["source_ids"];
                 for (const auto& idJson : ids) {
                     auto sId = static_cast<SourceObjectId>(idJson.asUInt());
 
                     if (config.sources.find(sId) == config.sources.end()) {
-                        LOG_WARNING("Preset '{}' references unknown Source ID: {}", preset.label, sId);
+                        LOG_WARNING("Preset '{}' references unknown source ID: {}", preset.label, sId);
                     }
 
                     preset.sourceIds.emplace_front(sId);
@@ -137,9 +149,8 @@ bool readConfig(RgcConfig& config) {
 bool validateConfig(const RgcConfig& config) {
     for (const auto&[fst, snd] : config.presets) {
         for (const auto& sourceId : snd.sourceIds) {
-            auto sourceIter = config.sources.find(sourceId);
-
-            if (sourceIter == config.sources.end()) {
+            if (auto sourceIter = config.sources.find(sourceId); sourceIter == config.sources.end()) {
+                LOG_ERROR("Failed to validate config: preset {} requires source with ID {}, but it doesnt exist", fst, sourceId);
                 return false;
             }
         }

@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "config.hpp"
+#include "filter.hpp"
 #include "fs_utils_temp.hpp"
 #include "log.hpp"
 #include "url_handle.hpp"
@@ -14,6 +15,9 @@ Source::Source(const Json::Value& value) {
     this->url = JsonValidator::getRequired<std::string>(value, "url");
     this->storageType = sourceStringToStorageType(JsonValidator::getRequired<std::string>(value, "storage_type"));
     this->inetType = sourceStringToInetType(JsonValidator::getRequired<std::string>(value, "inet_type"));
+
+    auto preprocTypeStr = JsonValidator::getOptional<std::string>(value, "preproc_type");
+    this->preprocType = preprocTypeStr.has_value() ? sourceStringToPreprocType(preprocTypeStr.value()) : PREPROCESSING_TYPE_UNKNOWN;
 
     // GITHUB release requires extra fields
     if (this->storageType != GITHUB_RELEASE) {
@@ -45,6 +49,14 @@ Source::InetType sourceStringToInetType(const std::string_view str) {
     }
 
     return Source::InetType::INET_TYPE_UNKNOWN;
+}
+
+Source::PreprocessingType sourceStringToPreprocType(const std::string_view str) {
+    if (str == "extract_domains") {
+        return Source::PreprocessingType::EXTRACT_DOMAINS;
+    }
+
+    return Source::PreprocessingType::PREPROCESSING_TYPE_UNKNOWN;
 }
 
 std::string sourceStorageTypeToString(const Source::StorageType type) {
@@ -166,6 +178,7 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
     }
 
     LOG_INFO("Source with ID {} is collected", this->id);
+
     return true;
 }
 

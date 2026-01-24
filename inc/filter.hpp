@@ -17,4 +17,6 @@ bool isUrl(const std::string& str);
 
 void filterDownloadsByWhitelist(const std::vector<DownloadedSourcePair>& downloadedFiles);
 
+bool extractDomainsInPlace(const std::string& filePath);
+
 #endif // FILTER_HPP

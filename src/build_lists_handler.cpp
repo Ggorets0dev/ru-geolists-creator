@@ -1,5 +1,7 @@
 #include "build_lists_handler.hpp"
 
+#include <sys/stat.h>
+
 #include "build_tools.hpp"
 #include "log.hpp"
 #include "json_io.hpp"
@@ -14,6 +16,7 @@
 std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     bool status = validateParsedFormats(args);
     std::optional<fs::path> outGeoipPath, outGeositePath;
+    size_t builtPresetsCount = 0;
 
     GeoReleases releases = {
         .isEmpty = true
@@ -23,6 +26,8 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
         LOG_ERROR("Build could not be started because the requested formats do not match the supported formats");
         return std::nullopt;
     }
+
+    LOG_INFO("Lists building process is started");
 
     const auto config = getCachedConfig();
 
@@ -55,6 +60,25 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         if (!downloads.has_value()) {
             LOG_WARNING("Failed to download all sources for preset  \"{}\", aborting it's building", preset.label);
+            continue;
+        }
+
+        // Apply preprocessing
+        for (const auto&[fst, snd] : *downloads) {
+            const auto& src = config->sources.at(fst);
+
+            status = true;
+            if (src.preprocType == Source::EXTRACT_DOMAINS) {
+                status = extractDomainsInPlace(snd);
+            }
+
+            if (!status) {
+                break;
+            }
+        }
+
+        if (!status) {
+            LOG_ERROR("Failed to perform preprocessing for source ID {} while building preset \"{}\", aborting preset");
             continue;
         }
 
@@ -212,7 +236,11 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
                 for (const auto&[id, path] : *downloads) {
                     const auto& source = config->sources.at(id);
-                    const std::string filename = source.section + path.extension().string();
+
+                    const std::string filename = fmt::format("{}-{}{}",
+                        source.section,
+                        sourceInetTypeToString(source.inetType),
+                        path.extension().string());
 
                     fs::copy(path, componentsDirPath / filename, fs::copy_options::overwrite_existing);
                     LOG_INFO("Source with ID {} and filename {} copied to components in release folder", id, filename);
@@ -223,12 +251,21 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             addPresetToRelNotes(releaseNotesFile, preset);
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR("Filesystem error:" + std::string(e.what()));
+            releaseNotesFile.close();
             return std::nullopt;
         }
 
         LOG_INFO("Domain address list(s) successfully created for preset \"{}\"", preset.label);
         LOG_INFO("IP address list(s) successfully created for preset \"{}\"", preset.label);
         // !SECTION
+
+        ++builtPresetsCount;
+    }
+
+    if (!builtPresetsCount) {
+        LOG_ERROR("Failed to build any preset, release notes are empty");
+        releaseNotesFile.close();
+        return std::nullopt;
     }
 
     // SECTION - Add records to release notes
