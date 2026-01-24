@@ -55,6 +55,7 @@ void showPresets(const CmdArgs& args) {
 void checkUrlsAccess(const CmdArgs& args) {
     LOG_INFO("Check for all sources's URLs is requested");
 
+    size_t checkedPresetsCount = 0;
     const auto config = getCachedConfig();
     std::vector<SourceObjectId> checkedSourcesIds;
     checkedSourcesIds.reserve(config->sources.size());
@@ -64,6 +65,8 @@ void checkUrlsAccess(const CmdArgs& args) {
             // Preset is not requested for check
             continue;
         }
+
+        ++checkedPresetsCount;
 
         for (const auto& sourceId : snd.sourceIds) {
             bool isAccessed = false;
@@ -105,6 +108,10 @@ void checkUrlsAccess(const CmdArgs& args) {
             logUrlAccess(source.url, isAccessed);
             checkedSourcesIds.push_back(source.id);
         }
+    }
+
+    if (!checkedPresetsCount) {
+        LOG_WARNING("No existing presets were requested for check");
     }
 }
 

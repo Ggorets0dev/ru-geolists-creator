@@ -1,5 +1,6 @@
 #include "archive.hpp"
 #include "log.hpp"
+#include "fs_utils.hpp"
 
 #include <fstream>
 #include <archive.h>
@@ -8,8 +9,7 @@
 #define ARCHIVE_BUFFER_BYTES    10240u // 10 kb
 #define NEW_DIR_ACCESS_CODE     0755
 
-std::optional<std::string>
-extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
+std::optional<std::string> extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
     struct archive *a;
     struct archive_entry *entry;
     std::string rootDirPath;
@@ -77,4 +77,66 @@ extractTarGz(const std::string& archivePath, const std::string& destDirPath) {
     LOG_INFO("Successfully extracted the archive to the path: " + rootDirPath);
 
     return rootDirPath;
+}
+
+std::optional<std::string> createZipArchive(const std::string& folderPath, const std::string& archiveName) {
+    fs::path targetDir(folderPath);
+    if (!fs::exists(targetDir)) {
+        LOG_ERROR("Target path does not exist: {}", folderPath);
+        return std::nullopt;
+    }
+
+    std::string outputFilename = (targetDir / (archiveName + ".zip")).string();
+    LOG_INFO("Starting compression (ZIP): {}", outputFilename);
+
+    struct archive* a = archive_write_new();
+    archive_write_set_format_zip(a);
+
+    if (archive_write_open_filename(a, outputFilename.c_str()) != ARCHIVE_OK) {
+        LOG_ERROR("Failed to open output file: {}", archive_error_string(a));
+        archive_write_free(a);
+        return std::nullopt;
+    }
+
+    for (const auto& dirEntry : fs::recursive_directory_iterator(folderPath)) {
+        std::string currentPath = dirEntry.path().string();
+
+        // Skip the archive itself to avoid recursion
+        if (currentPath == outputFilename) continue;
+
+        // Skip directories for data writing, focus on files
+        if (fs::is_directory(dirEntry.path())) continue;
+
+        std::string relativePath = fs::relative(dirEntry.path(), folderPath).string();
+
+        struct archive_entry* entry = archive_entry_new();
+        archive_entry_set_pathname(entry, relativePath.c_str());
+        archive_entry_set_size(entry, fs::file_size(dirEntry.path()));
+        archive_entry_set_filetype(entry, AE_IFREG);
+        archive_entry_set_perm(entry, 0644);
+
+        if (archive_write_header(a, entry) < ARCHIVE_OK) {
+            LOG_WARNING("Could not write header for {}: {}", relativePath, archive_error_string(a));
+            archive_entry_free(entry);
+            continue;
+        }
+
+        std::ifstream fileStream(currentPath, std::ios::binary);
+        char buffer[8192];
+        while (fileStream.read(buffer, sizeof(buffer)) || fileStream.gcount() > 0) {
+            if (archive_write_data(a, buffer, fileStream.gcount()) < 0) {
+                LOG_ERROR("Error writing data for {}: {}", relativePath, archive_error_string(a));
+                break;
+            }
+        }
+
+        archive_entry_free(entry);
+    }
+
+    archive_write_close(a);
+    archive_write_free(a);
+
+    LOG_INFO("Archive (ZIP) created successfully at: {}", outputFilename);
+
+    return outputFilename;
 }

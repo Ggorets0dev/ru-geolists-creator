@@ -2,6 +2,7 @@
 
 #include <sys/stat.h>
 
+#include "archive.hpp"
 #include "build_tools.hpp"
 #include "log.hpp"
 #include "json_io.hpp"
@@ -12,6 +13,7 @@
 #include "handlers.hpp"
 #include "libnetwork_settings.hpp"
 #include "v2ip_toolchain.hpp"
+#include "time_tools.hpp"
 
 std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     bool status = validateParsedFormats(args);
@@ -274,6 +276,11 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
     releaseNotesFile.close();
     LOG_INFO("Release notes file is saved at path: {}", releases.releaseNotes.string());
+
+    // SECTION - Creating archive for deploy
+    const auto archiveName = fmt::format("rglc_release_{}", getCurrentUnixTimestamp());
+    createZipArchive(outDirPath, archiveName);
+    // !SECTION
 
     // Set special flag, mark that job done successfully
     releases.isEmpty = false;

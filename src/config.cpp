@@ -95,6 +95,11 @@ bool readConfig(RgcConfig& config) {
     config.bgpDumpPath = value["bgpDumpPath"].asString();
 
     if (value["sources"].isArray()) {
+        if (value["sources"].empty()) {
+            LOG_ERROR("No sources specified in config");
+            return false;
+        }
+
         for (const auto& sourceJson : value["sources"]) {
             try {
                 Source source(sourceJson);
@@ -115,10 +120,17 @@ bool readConfig(RgcConfig& config) {
     }
 
     if (value["presets"].isArray()) {
+        if (value["presets"].empty()) {
+            LOG_ERROR("No presets specified in config");
+            return false;
+        }
+
         for (const auto& presetJson : value["presets"]) {
             SourcePreset preset;
 
             preset.label = JsonValidator::getRequired<std::string>(presetJson, "label");
+
+            // TODO: Maybe create preset ctor?
 
             if (config.presets.find(preset.label) != config.presets.end()) {
                 LOG_ERROR("Failed to parse preset, LABEL is not unique: {}", preset.label);
@@ -127,6 +139,11 @@ bool readConfig(RgcConfig& config) {
             }
 
             if (presetJson["source_ids"].isArray()) {
+                if (presetJson["source_ids"].empty()) {
+                    LOG_ERROR("No sources specified for preset {}", preset.label);
+                    return false;
+                }
+
                 const Json::Value& ids = presetJson["source_ids"];
                 for (const auto& idJson : ids) {
                     auto sId = static_cast<SourceObjectId>(idJson.asUInt());
@@ -150,7 +167,7 @@ bool validateConfig(const RgcConfig& config) {
     for (const auto&[fst, snd] : config.presets) {
         for (const auto& sourceId : snd.sourceIds) {
             if (auto sourceIter = config.sources.find(sourceId); sourceIter == config.sources.end()) {
-                LOG_ERROR("Failed to validate config: preset {} requires source with ID {}, but it doesnt exist", fst, sourceId);
+                LOG_ERROR("Failed to validate config: preset {} requires source with ID {}, but it does not exist", fst, sourceId);
                 return false;
             }
         }
