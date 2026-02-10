@@ -26,17 +26,23 @@ static const BuildGeoListsCallback BuildGeoLists = [](const rglc::BuildGeoListsR
     }
 
     if (releases->isEmpty) {
-        response->set_is_empty(true);
         grpc::Status status(grpc::StatusCode::OK, "No need to build lists, no source update available");
         return status;
     }
 
     response->set_release_notes_path(releases->releaseNotes);
 
-    // FIXME: Change scheme
     for (const auto& release : releases->packs) {
-        response->add_geoip_paths(*release.listIP);
-        response->add_geosite_paths(*release.listDomain);
+        auto* pack_msg = response->add_packs();
+        pack_msg->set_preset_label(release.presetLabel);
+
+        if (release.listDomain.has_value()) {
+            pack_msg->set_list_domain(release.listDomain->string());
+        }
+
+        if (release.listIP.has_value()) {
+            pack_msg->set_list_ip(release.listIP->string());
+        }
     }
 
     return grpc::Status::OK;

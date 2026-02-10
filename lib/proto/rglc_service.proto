@@ -12,11 +12,15 @@ message BuildGeoListsRequest {
     string out_dir = 4;
 }
 
+message GeoReleasePack {
+  string preset_label = 1;
+  optional string list_domain = 2;
+  optional string list_ip = 3;
+}
+
 message BuildGeoListsResponse {
-    repeated string geoip_paths = 1;
-    repeated string geosite_paths = 2;
-    string release_notes_path = 3;
-    bool is_empty = 4;
+  repeated GeoReleasePack packs = 1;
+  string release_notes_path = 2;
 }
 
 service RGLC_Service {

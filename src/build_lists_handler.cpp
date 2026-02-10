@@ -278,7 +278,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     LOG_INFO("Release notes file is saved at path: {}", releases.releaseNotes.string());
 
     // SECTION - Creating archive for deploy
-    const auto archiveName = fmt::format("rglc_release_{}", getCurrentUnixTimestamp());
+    const auto archiveName = fmt::format("rglc_geofiles_release_{}", getCurrentUnixTimestamp());
     createZipArchive(outDirPath, archiveName);
     // !SECTION
 
