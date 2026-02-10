@@ -4,19 +4,7 @@
 
 ## Назначение
 
-Программное обеспечение для автоматизации сборки списков фильтрации XRay VPN. Язык CLI: **Английский**.
-
-## Источники
-
-В качестве источников для сборки списков используются следующие материалы:
-
-* [ReFilter](https://github.com/1andrevich/Re-filter-lists)
-
-* [V2Ray official](https://github.com/Loyalsoldier/v2ray-rules-dat)
-
-* [Ruadlist](https://github.com/easylist/ruadlist)
-
-* [Antifilter](https://antifilter.download/)
+Программное обеспечение для автоматизации сборки списков фильтрации XRay / SingBox VPN. Язык CLI: **Английский**.
 
 ## Системы сборки списков
 
@@ -34,10 +22,10 @@
 
 ## Автоматизация сборки
 
-Для автоматизации сборки проекта под различные архитектуры могут быть использованы следующие скрипты:
+Для автоматизации сборки проекта под могут быть использованы следующие скрипты:
 
 | Скрипт                                              | Назначение                                                 |
-|:----------------------------------------------------|------------------------------------------------------------|
+|:--------------------------------------------------- | ---------------------------------------------------------- |
 | build.sh [--deps] [--appimg ][--type=Debug/Release] | Сборка проекта с управлением зависимостями                 |
 | prepare_appimage.sh [exec] [dir]                    | Сборка пакета AppImage (отдельно)                          |
 | build_by_docker.sh                                  | Сборка программы и пакета AppImage с помощью docker образа |
@@ -50,57 +38,95 @@
 
 ### Пример файла конфигурации
 
-Автоматически сформированный файл конфигурации обладает всеми перечисленными на примере ключами, но изначально массив дополнительных источников **(extra)** пуст. 
+Автоматически сформированный файл конфигурации обладает всеми перечисленными на примере ключами, но изначально массивы дополнительных источников **(sources)** и пресетов **(presets)** пусты. 
 
 ```json
 {
   "apiToken" : "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",
-  "dlcRootPath" : ".//v2fly-domain-list-community-adcff6c/",
-  "extra" : 
-  [
-    {
-      "section" : "discord",
-      "type" : "ip",
-      "url" : "https://raw.githubusercontent.com/GhostRooter0953/discord-voice-ips/refs/heads/master/voice_domains/discord-voice-ip-list"
-    }
+  "bgpDumpPath" : null,
+  "dlcRootPath" : "/home/ggorets0/.local/lib/v2fly-dlc-toolchain",
+  "geoMgrBinaryPath" : "/home/ggorets0/.local/lib/geo-linux-amd64",
+  "presets" : [
+      {
+          "id": 1,
+          "label": "client",
+          "source_ids": [1, 2, 3]
+      },
+      {
+          "id": 2,
+          "label": "server",
+          "source_ids": [1, 4]
+      }
   ],
-  "refilterTime" : 1736426783,
-  "ruadlistTime" : 1754766886,
-  "v2ipRootPath" : ".//v2fly-geoip-9711ad4/",
-  "v2rayTime" : 1736449948,
-  "geoMgrBinaryPath" : "/home/uav/.local/lib/geo-linux-amd64",
-  "whitelistPath" : "/home/ggorets0/Projects/C++/ru-geolists-creator/garbage/whitelist.txt"
+  "sources" : [
+      {
+          "id": 1,
+          "storage_type": "file_loc",
+          "inet_type": "domain",
+          "url": "/home/user/RGLC/lists/gov.txt",
+          "section": "gov"
+      },
+      {
+            "id": 2,
+            "section": "refilter",
+            "storage_type": "github_release",
+            "inet_type": "domain",
+            "url": "https://github.com/1andrevich/Re-filter-lists",
+            "assets": ["domains_all.lst"]
+      },
+      {
+            "id": 3,
+            "section": "refilter",
+            "storage_type": "github_release",
+            "inet_type": "ip",
+            "url": "https://github.com/1andrevich/Re-filter-lists",
+            "assets": ["ipsum.lst"]
+      },
+      {
+            "id": 4,
+            "storage_type": "file_loc",
+            "inet_type": "domain",
+            "section": "google",
+            "url": "/home/user/RGLC/lists/google"
+      }
+  ],
+  "v2ipRootPath" : "/home/ggorets0/.local/lib/v2fly-v2ip-toolchain",
+  "whitelistPath" : null
 }
 ```
 
-### Добавление дополнительных источников
+### Добавление дополнительных пресетов/источников
 
-Дополнительные источники могут быть добавлены в файл конфигурации вручную или с помощью флага ```-a, --add``` при запуске ПО. Далее потребуется заполнить все свойства, присущие такому источнику.
+Дополнительные пресеты/источники могут быть добавлены в файл конфигурации вручную с помощью редактирования файла конфигурации. Далее потребуется заполнить все свойства, присущие такому пресету/источнику.
+
+Поддерживаются следующие виды источников:
+
+* Локальный файл *(file_loc)*
+
+* Удаленный файл *(file_remote)*
+
+* Фрагмент релиза GitHub репозитория *(github_release)*
+
+## Межпроцессное взаимодействие (IPC)
+
+Для IPC может быть использован режим **service**. В данном режиме ПО принимает входящие запросы по протоколу gRPC.
 
 ## Справка ПО (```--help```)
 
 ```
- @ggorets0  ./rglc-x86_64.AppImage --help
 RuGeolistsCreator - Software (service) in C++ for automatic assembly of geoip and geosite files for VPN server XRay / SingBox
-Usage: rglc [OPTIONS] [SUBCOMMAND]
+Usage: ./rglc [OPTIONS] [SUBCOMMAND]
 
 Options:
   -h,--help                   Print this help message and exit
-  --force                     Starts source download and build even if no updates are detected
   --about                     Display software information
-  --check                     Check access of all source's URLs from config
   --init                      Initialize software by creating config and downloading all dependencies
-  -a,--add                    Add extra source to download list
-  --whitelist                 Enable whitelist filtering for current session
-  --no-extra                  Disable adding extra sources to lists for current session
-  -f,--format TEXT ...        Formats of geolists to generate (v2ray, sing)
-  -r,--remove UINT            Remove extra source from download list
-  -o,--out TEXT [/home/ggorets0/Projects/C++/ru-geolists-creator/rglc_geofiles] 
-                              Path to out DIR with all lists to create
 
 Subcommands:
   service                     Settings for service mode
   show                        Display all extra sources from config files
+  build                       Build geofiles with selected presets
+  check                       Check access of all source's URLs from config
 ```
 
 ## Зависимости
