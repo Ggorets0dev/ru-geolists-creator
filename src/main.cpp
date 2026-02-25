@@ -85,6 +85,7 @@ int main(const int argc, char** argv) {
         if (status && fs::exists(releases->releaseNotes)) {
             if (std::ifstream fileStream(releases->releaseNotes, std::ios::in | std::ios::binary); fileStream.is_open()) {
                 loggerFlush();
+                sleep(1); // FIXME: Trouble with flush sometimes
                 std::cout << "\n==== CONTENTS OF RELEASE NOTES ====\n" << std::endl;
                 std::cout << fileStream.rdbuf();
                 std::cout << std::endl;

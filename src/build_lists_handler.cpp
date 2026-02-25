@@ -12,6 +12,7 @@
 #include "geo_manager.hpp"
 #include "handlers.hpp"
 #include "libnetwork_settings.hpp"
+#include "sing_box.hpp"
 #include "v2ip_toolchain.hpp"
 #include "time_tools.hpp"
 
@@ -144,7 +145,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             // ============
             // Build releases
             // ============
-            if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_V2RAY_CAPTION)) {
+            if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_DAT_CAPTION)) {
                 // Deploying V2Ray rules in .dat extension
                 const std::string geoipFilename = fmt::format("{}-{}.{}",
                     GEOIP_BASE_FILENAME,
@@ -172,17 +173,17 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 releases.packs.push_back(std::move(pack));
             }
 
-            if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_SING_CAPTION)) {
+            if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_DB_CAPTION)) {
                 // Deploying Sing rules in .db extension
                 const std::string geoipFilename = fmt::format("{}-{}.{}",
                      GEOIP_BASE_FILENAME,
                      preset.label,
-                     SING_FILES_EXT);
+                     SING_DB_FILES_EXT);
 
                 const std::string geositeFilename = fmt::format("{}-{}.{}",
                     GEOSITE_BASE_FILENAME,
                     preset.label,
-                    SING_FILES_EXT);
+                    SING_DB_FILES_EXT);
 
                 GeoReleasePack pack;
                 const fs::path singGeositePath = targetPath / geositeFilename;
@@ -193,13 +194,13 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 if (outGeositePath.has_value()) {
                     status = convertGeolist(config->geoMgrBinaryPath,
                         Source::InetType::DOMAIN,
-                        GEO_FORMAT_V2RAY_CAPTION,
-                        GEO_FORMAT_SING_CAPTION,
+                        GEO_FORMAT_DAT_CAPTION,
+                        GEO_FORMAT_DB_CAPTION,
                         *outGeositePath,
                         singGeositePath);
 
                     if (!status) {
-                        auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
+                        auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_DB_CAPTION);
                         LOG_WARNING(log);
                         continue;
                     }
@@ -210,13 +211,13 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 if (outGeoipPath.has_value()) {
                     status = convertGeolist(config->geoMgrBinaryPath,
                         Source::InetType::IP,
-                        GEO_FORMAT_V2RAY_CAPTION,
-                        GEO_FORMAT_SING_CAPTION,
+                        GEO_FORMAT_DAT_CAPTION,
+                        GEO_FORMAT_DB_CAPTION,
                         *outGeoipPath,
                         singGeoipPath);
 
                     if (!status) {
-                        auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_SING_CAPTION);
+                        auto log = std::string(GEO_FORMAT_CONVERT_FAIL_MSG) + std::string(GEO_FORMAT_DB_CAPTION);
                         LOG_WARNING(log);
                         continue;
                     }
@@ -225,6 +226,42 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 }
 
                 releases.packs.push_back(std::move(pack));
+            }
+
+            if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_SRS_CAPTION)) {
+                const std::string ruleSetJsonFilename = fmt::format("{}-{}.{}",
+                    RULESET_BASE_FILENAME,
+                    preset.label,
+                    "json");
+
+                const std::string ruleSetSrsFilename = fmt::format("{}-{}.{}",
+                    RULESET_BASE_FILENAME,
+                    preset.label,
+                    SING_RS_FILES_EXT);
+
+                const fs::path ruleSetJsonPath = targetPath / ruleSetJsonFilename;
+                const fs::path ruleSetSrsPath = targetPath / ruleSetSrsFilename;
+
+                status = generateSingBoxRuleSet(*downloads, ruleSetJsonPath);
+
+                if (status) {
+                    if (!config->singBoxBinaryPath.empty()) {
+                        status = compileSingBoxRuleSet(config->singBoxBinaryPath, ruleSetJsonPath, ruleSetSrsPath);
+
+                        if (status) {
+                            GeoReleasePack pack;
+                            pack.presetLabel = preset.label;
+                            pack.listRuleSet = ruleSetSrsFilename;
+                            releases.packs.push_back(std::move(pack));
+                        } else {
+                            LOG_WARNING("Failed to compile JSON file to SRS");
+                        }
+                    } else {
+                        LOG_WARNING("Impossible to create SRS file because path to sing-box binary is not specified in config");
+                    }
+                } else {
+                    LOG_ERROR("Failed to create RuleSet in JSON format before compilation");
+                }
             }
             // ============
 

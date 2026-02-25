@@ -43,6 +43,10 @@ static const BuildGeoListsCallback BuildGeoLists = [](const rglc::BuildGeoListsR
         if (release.listIP.has_value()) {
             pack_msg->set_list_ip(release.listIP->string());
         }
+
+        if (release.listRuleSet.has_value()) {
+            pack_msg->set_list_rs(release.listRuleSet->string());
+        }
     }
 
     return grpc::Status::OK;

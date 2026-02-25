@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "cli_args.hpp"
 #include "config.hpp"
 
 #define GEO_MANAGER_GITHUB_URL        "https://github.com/MetaCubeX/geo"
@@ -70,8 +71,10 @@ bool convertGeolist(const std::string& binPath, const Source::InetType type,
 
         suppressConsoleOutput();
 
+        const std::string outFormatCorrect = (outFormat == GEO_FORMAT_DB_CAPTION) ? "sing" : "unknown";
+
         execl(binPath.c_str(), fs::path(binPath).filename().string().c_str(), "convert", sourceType.c_str(), "-i", inFormat.c_str(),
-              "-o", outFormat.c_str(), "-f", outPath.c_str(), inPath.c_str(), nullptr);
+              "-o", outFormatCorrect.c_str(), "-f", outPath.c_str(), inPath.c_str(), nullptr);
 
         LOG_ERROR("Failed to run Geo manager for converting list");
         exit(1);

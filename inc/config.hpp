@@ -15,6 +15,7 @@ struct RgcConfig {
     std::string dlcRootPath;
     std::string v2ipRootPath;
     std::string geoMgrBinaryPath;
+    std::string singBoxBinaryPath;
 
     std::string apiToken;
 

@@ -12,7 +12,7 @@
 #define BUILD_SUBCMD_DESC                       "Build geofiles with selected presets"
 #define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
 #define PRESET_OPTION_DESCRIPTION               "Presets from config for check/build"
-#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing)"
+#define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing-db, sing-rs)"
 #define WHITELIST_OPTION_DESCRIPTION            "Enable whitelist filtering for current session"
 
 #define CHECK_SUBCMD_DESC                       "Check access of all source's URLs from config"
@@ -40,8 +40,9 @@ static const CLI::Range gkServicePortRange = { 49152, 65535 };
 static const CLI::Range gkServiceTimeoutRange = { 0, HOURS_TO_SEC(1) };
 
 static const std::vector<std::string> gkAvailableGeoFormats = {
-    GEO_FORMAT_V2RAY_CAPTION,
-    GEO_FORMAT_SING_CAPTION
+    GEO_FORMAT_DAT_CAPTION,
+    GEO_FORMAT_DB_CAPTION,
+    GEO_FORMAT_SRS_CAPTION,
 };
 
 static void setupCheckSubcommand(CLI::App& app) {

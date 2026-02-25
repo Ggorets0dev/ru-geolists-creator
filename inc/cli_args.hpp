@@ -7,8 +7,9 @@
 #include "service.hpp"
 #include "main_sources.hpp"
 
-#define GEO_FORMAT_V2RAY_CAPTION    "v2ray"
-#define GEO_FORMAT_SING_CAPTION     "sing"
+#define GEO_FORMAT_DAT_CAPTION    "v2ray"
+#define GEO_FORMAT_DB_CAPTION     "sing-db"
+#define GEO_FORMAT_SRS_CAPTION    "sing-rs"
 
 #define DEFAULT_GEOLISTS_OUT_PATH   (fs::current_path() / "rglc_geofiles")
 

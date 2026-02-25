@@ -24,6 +24,7 @@ bool writeConfig(const RgcConfig& config) {
     SET_NULL_IF_EMPTY(value["apiToken"], config.apiToken);
     SET_NULL_IF_EMPTY(value["whitelistPath"], config.whitelistPath);
     SET_NULL_IF_EMPTY(value["bgpDumpPath"], config.bgpDumpPath);
+    SET_NULL_IF_EMPTY(value["singBoxBinaryPath"], config.singBoxBinaryPath);
 
     Json::Value sourcesArray(Json::arrayValue);
     for (const auto& [id, source] : config.sources) {
@@ -93,6 +94,7 @@ bool readConfig(RgcConfig& config) {
     config.apiToken = value["apiToken"].asString();
     config.whitelistPath = value["whitelistPath"].asString();
     config.bgpDumpPath = value["bgpDumpPath"].asString();
+    config.singBoxBinaryPath = value["singBoxBinaryPath"].asString();
 
     if (value["sources"].isArray()) {
         if (value["sources"].empty()) {
