@@ -88,11 +88,70 @@ Source::StorageType sourceStringToStorageType(const std::string_view str) {
     return Source::StorageType::STORAGE_TYPE_UNKNOWN;
 }
 
+std::vector<DownloadedSourcePair> groupSourcesByInetType(std::vector<DownloadedSourcePair>& sources,
+                                                         std::unordered_map<SourceObjectId, Source>& sourcesStorage) {
+    if (sources.empty()) return {};
+
+    // ===============
+    // Create meta sources
+    // ===============
+    std::vector<DownloadedSourcePair> metaSources;
+    metaSources.reserve(2);
+
+    const FS::Utils::Temp::SessionTempFileRegistry registry;
+    const auto domainsFilePath = registry.createTempFileDetached("lst")->path;
+    const auto IpsFilePath = registry.createTempFileDetached("lst")->path;
+
+    Source metaJoinedDomains(META_SOURCE_ID_TO_NORMAL(META_SOURCE_GROUPED_DOMAINS_ID),
+        Source::InetType::DOMAIN,
+        "rglc");
+
+    sourcesStorage.emplace(metaJoinedDomains.id, metaJoinedDomains);
+    createEmptyFile(domainsFilePath);
+
+    Source metaJoinedIPs(META_SOURCE_ID_TO_NORMAL(META_SOURCE_GROUPED_IPS_ID),
+        Source::InetType::IP,
+        "rglc");
+
+    sourcesStorage.emplace(metaJoinedIPs.id, metaJoinedIPs);
+    createEmptyFile(IpsFilePath);
+    // ===============
+
+    size_t domainSourcesCount = 0;
+    size_t ipSourcesCount = 0;
+
+    for (const auto& [sourceId, filePath] : sources) {
+        const auto& sourceConfig = sourcesStorage.at(sourceId);
+
+        if (sourceConfig.inetType == Source::InetType::DOMAIN) {
+            joinTwoFiles(domainsFilePath, filePath);
+            ++domainSourcesCount;
+        } else { // Source::InetType::IP
+            joinTwoFiles(IpsFilePath, filePath);
+            ++ipSourcesCount;
+        }
+    }
+
+    if (domainSourcesCount) {
+        metaSources.emplace_back(metaJoinedDomains.id, domainsFilePath);
+    } else {
+        fs::remove(domainsFilePath);
+    }
+
+    if (ipSourcesCount) {
+        metaSources.emplace_back(metaJoinedIPs.id, IpsFilePath);
+    } else {
+        fs::remove(IpsFilePath);
+    }
+
+    return metaSources;
+}
+
 void joinSimilarSources(std::vector<DownloadedSourcePair>& sources) {
     std::vector<bool> removeMarkers(sources.size());
     const auto config = getCachedConfig();
 
-    for (size_t i(0); i < sources.size(); ++i) {
+    for (size_t i(0); i < sources.size() - 1; ++i) {
         const auto& parentSource = config->sources.at(sources[i].first);
 
         if (removeMarkers[i]) {
@@ -185,6 +244,38 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
 void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     const auto config = getCachedConfig();
 
+    TablePrinter table({"ID", "Section", "Storage", "Inet", "URL"});
+
+    stream << "PRESET: " << this->label;
+    if (isGrouped) {
+        stream << " [GROUPED]";
+    }
+    stream << "\n";
+
+    // GROUPED MODE
+    if (isGrouped) {
+        table.addRow({
+            "N/A",                  // ID not meaningful
+            "rglc (domain)",        // Section
+            "N/A",                  // Storage
+            "domain",               // Inet
+            "N/A"                   // URL
+        });
+
+        table.addRow({
+            "N/A",
+            "rglc (ip)",
+            "N/A",
+            "ip",
+            "N/A"
+        });
+
+        table.print(stream);
+        stream << "\n";
+        return;
+    }
+
+    // NORMAL MODE
     std::vector sourceIdsSorted(sourceIds.begin(), sourceIds.end());
     std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), [&](const SourceObjectId& a, const SourceObjectId& b) {
         const auto& sA = config->sources.at(a);
@@ -198,8 +289,6 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
         }
     });
 
-    TablePrinter table({"ID", "Section", "Storage", "Inet", "URL"});
-
     auto truncate = [](std::string s, const size_t width) -> std::string {
         if (s.length() > width) return s.substr(0, width - 3) + "...";
         return s;
@@ -208,7 +297,6 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     std::vector<size_t> widths = {8, 13, 18, 8, 70};
 
     for (const auto& sid : sourceIdsSorted) {
-        // Find width, which will support every section
         const Source& src = config->sources.at(sid);
         widths[1] = std::max(widths[1], src.section.size());
     }
@@ -225,7 +313,6 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
         });
     }
 
-    stream << "PRESET: " << this->label << "\n";
     table.print(stream);
     stream << "\n";
 }

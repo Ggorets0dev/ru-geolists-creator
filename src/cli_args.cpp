@@ -14,6 +14,7 @@
 #define PRESET_OPTION_DESCRIPTION               "Presets from config for check/build"
 #define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing-db, sing-rs)"
 #define WHITELIST_OPTION_DESCRIPTION            "Enable whitelist filtering for current session"
+#define GROUPING_OPTION_DESCRIPTION             "Enable creation of grouping preset (all sections in same inet type are joined)"
 
 #define CHECK_SUBCMD_DESC                       "Check access of all source's URLs from config"
 
@@ -56,6 +57,8 @@ static void setupBuildSubcommand(CLI::App& app) {
     gBuildSubCmd = app.add_subcommand("build", BUILD_SUBCMD_DESC);
 
     gBuildSubCmd->add_flag("--whitelist", gCmdArgs.isUseWhitelist, WHITELIST_OPTION_DESCRIPTION);
+
+    gBuildSubCmd->add_flag("-g, --group", gCmdArgs.isUseGrouping, GROUPING_OPTION_DESCRIPTION);
 
     gBuildSubCmd->add_option("-f,--format", gCmdArgs.formats, FORMATS_OPTION_DESCRIPTION)
         ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);

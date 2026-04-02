@@ -27,6 +27,7 @@ struct CmdArgs {
     bool isInit;
     bool isAddExtra;
     bool isUseWhitelist;
+    bool isUseGrouping;
 
     // ====== Extra sources show options
     bool isSortBySections;

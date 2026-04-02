@@ -97,12 +97,13 @@ std::optional<fs::path> runV2ipToolchain(const std::string& rootPath) {
     return outFilePath;
 }
 
-void addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray) {
+void addIPSource(const DownloadedSourcePair& source,
+                Json::Value& v2ipInputArray,
+                const std::unordered_map<SourceObjectId, Source>& sourcesStorage) {
+
     Json::Value objRoot, objArgs;
 
-    const auto config = getCachedConfig();
-
-    objArgs["name"] = config->sources.at(source.first).section;
+    objArgs["name"] = sourcesStorage.at(source.first).section;
     objArgs["uri"] = source.second.string();
 
     objRoot["type"] = "text";

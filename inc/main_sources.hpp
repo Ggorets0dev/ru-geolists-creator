@@ -3,25 +3,17 @@
 
 #include <string>
 #include <forward_list>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "fs_utils.hpp"
 #include "json_io.hpp"
 
-#define REFILTER_SECTION_NAME               "refilter"
-#define REFILTER_DOMAIN_ASSET_FILE_NAME     "domains_all.lst"
-#define REFILTER_IP_ASSET_FILE_NAME         "ipsum.lst"
-#define REFILTER_API_LAST_RELEASE_URL       "https://api.github.com/repos/1andrevich/Re-filter-lists/releases/latest"
+#define META_SOURCE_ID_TO_NORMAL(meta_id)        (std::numeric_limits<SourceObjectId>::max() - meta_id)
 
-#define XRAY_RULES_API_LAST_RELEASE_URL     "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest"
-#define XRAY_REJECT_SECTION_NAME            "v2ray_reject"
-
-#define RUADLIST_SECTION_NAME               "ruadlist"
-#define RUADLIST_API_MASTER_URL             "https://api.github.com/repos/easylist/ruadlist/branches/master"
-#define RUADLIST_ADSERVERS_URL              "https://raw.githubusercontent.com/easylist/ruadlist/refs/heads/master/advblock/adservers.txt"
-
-#define ANTIFILTER_SECTION_NAME             "antifilter"
-#define ANTIFILTER_AYN_IPS_URL              "https://antifilter.download/list/allyouneed.lst"
+#define META_SOURCE_GROUPED_DOMAINS_ID          1
+#define META_SOURCE_GROUPED_IPS_ID              2
 
 class Source;
 
@@ -40,11 +32,6 @@ public:
     //     "section": "ru-whitelist"
     // }
 
-    ~Source() = default;
-    Source(const Source& other) = default;
-    explicit Source(const Json::Value& value);
-    bool getData(std::vector<DownloadedSourcePair>& downloads) const;
-
     enum StorageType {
         REGULAR_FILE_LOCAL,
         REGULAR_FILE_REMOTE,
@@ -62,6 +49,14 @@ public:
         EXTRACT_DOMAINS,
         PREPROCESSING_TYPE_UNKNOWN
     };
+
+    Source(const SourceObjectId id, const InetType inetType, std::string  section) :
+        id(id), section(std::move(section)), inetType(inetType) {}
+
+    ~Source() = default;
+    Source(const Source& other) = default;
+    explicit Source(const Json::Value& value);
+    bool getData(std::vector<DownloadedSourcePair>& downloads) const;
 
     SourceObjectId id;
     std::string section;
@@ -93,6 +88,7 @@ public:
     ~SourcePreset() = default;
 
     std::string label;
+    bool isGrouped = false;
     std::forward_list<SourceObjectId> sourceIds;
 
     void print(std::ostream& stream, SortType sortType) const;
@@ -114,5 +110,8 @@ Source::PreprocessingType sourceStringToPreprocType(std::string_view str);
 // ===============
 
 void joinSimilarSources(std::vector<DownloadedSourcePair>& downloadedSources);
+
+std::vector<DownloadedSourcePair> groupSourcesByInetType(std::vector<DownloadedSourcePair>& sources,
+                                                         std::unordered_map<SourceObjectId, Source>& sourcesStorage);
 
 #endif // MAIN_SOURCES_HPP

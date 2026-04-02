@@ -14,7 +14,9 @@ std::optional<std::string> downloadV2ipSourceCode();
 
 std::optional<fs::path> runV2ipToolchain(const std::string& rootPath);
 
-void addIPSource(const DownloadedSourcePair& source, Json::Value& v2ipInputArray);
+void addIPSource(const DownloadedSourcePair& source,
+                Json::Value& v2ipInputArray,
+                const std::unordered_map<SourceObjectId, Source>& sourcesStorage);
 
 bool saveIPSources(const std::string& v2ipRootPath, Json::Value& v2ipInputArray, std::vector<std::string>& usedSections);
 

@@ -144,3 +144,9 @@ fs::path addPathPostfix(const fs::path& p, const std::string& postfix) {
 
     return result;
 }
+
+
+bool createEmptyFile(const fs::path& path) {
+    std::ofstream ofs(path, std::ios::out | std::ios::trunc);
+    return ofs.good();
+}

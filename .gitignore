@@ -6,6 +6,7 @@
 **/build-debug
 **/build-release
 **/rglc.AppDir
+**/venv
 **.deb
 **/sysroot
 **.AppImage

@@ -15,4 +15,6 @@ fs::path addPathPostfix(const fs::path& p, const std::string& postfix);
 
 void removePath(const std::string& path);
 
+bool createEmptyFile(const fs::path& path);
+
 #endif // FS_UTILS_H

@@ -1,5 +1,6 @@
 #include "build_lists_handler.hpp"
 
+#include <netdb.h>
 #include <sys/stat.h>
 
 #include "archive.hpp"
@@ -20,6 +21,8 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     bool status = validateParsedFormats(args);
     std::optional<fs::path> outGeoipPath, outGeositePath;
     size_t builtPresetsCount = 0;
+    std::forward_list<SourcePreset> reqPresets = {};
+    size_t reqPresetsCount = 0;
 
     GeoReleases releases = {
         .isEmpty = true
@@ -45,18 +48,44 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     releases.releaseNotes = outDirPath / RELEASE_NOTES_FILENAME;
     std::ofstream releaseNotesFile(releases.releaseNotes);
 
+    // ================
+    // Prepare presets (create grouped and etc)
+    // ================
     for (const auto& pair : config->presets) {
-        if (!args.presets.empty() && std::find(args.presets.begin(), args.presets.end(), pair.second.label) == args.presets.end()) {
-            // Preset is not requested for check
+        const bool isFound = args.presets.empty() || std::find(args.presets.begin(), args.presets.end(), pair.second.label) != args.presets.end();
+
+        if (!isFound) {
+            // Preset is not requested for build
             continue;
         }
 
+        if (args.isUseGrouping) {
+            auto groupingPreset = pair.second;
+            groupingPreset.isGrouped = true;
+            reqPresets.push_front(groupingPreset);
+        } else {
+            reqPresets.push_front(pair.second);
+        }
+
+        ++reqPresetsCount;
+    }
+    // ================
+
+    if (!reqPresetsCount) {
+        LOG_INFO("No presets found in config file for build");
+        return std::nullopt;
+    }
+
+    // ================
+    // Process requested presets
+    // ================
+    for (const auto& preset : reqPresets) {
         // ============ V2IP toolchain vars
         std::vector<std::string> v2ipSections;
         Json::Value v2ipInputRules(Json::arrayValue);
         // ============
 
-        const auto& preset = pair.second;
+        auto sourcesStorage = config->sources;
         auto downloads = preset.downloadSources();
 
         LOG_INFO("Build of preset \"{}\" is requested and started", preset.label);
@@ -68,7 +97,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         // Apply preprocessing
         for (const auto&[fst, snd] : *downloads) {
-            const auto& src = config->sources.at(fst);
+            const auto& src = sourcesStorage.at(fst);
 
             status = true;
             if (src.preprocType == Source::EXTRACT_DOMAINS) {
@@ -85,10 +114,15 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             continue;
         }
 
-        // Join similar sources if they exist
-        joinSimilarSources(*downloads);
-        if (args.isUseWhitelist) {
-            filterDownloadsByWhitelist(*downloads);
+        if (preset.isGrouped) {
+            *downloads = groupSourcesByInetType(*downloads, sourcesStorage);
+        } else {
+            // Join similar sources if they exist
+            joinSimilarSources(*downloads);
+
+            if (args.isUseWhitelist) {
+                filterDownloadsByWhitelist(*downloads);
+            }
         }
 
         // SECTION - Move sources to toolchains
@@ -98,11 +132,11 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
         uint8_t domainSrcAdded = 0;
 
         for (const auto& sourcePair : *downloads) {
-            if (const auto& source = config->sources.at(sourcePair.first); source.inetType == Source::InetType::DOMAIN) {
+            if (const auto& source = sourcesStorage.at(sourcePair.first); source.inetType == Source::InetType::DOMAIN) {
                 status &= addDomainSource(config->dlcRootPath, sourcePair.second, source.section);
                 ++domainSrcAdded;
             } else { // IP
-                addIPSource(sourcePair, v2ipInputRules);
+                addIPSource(sourcePair, v2ipInputRules, sourcesStorage);
                 v2ipSections.push_back(source.section);
                 ++ipSrcAdded;
             }
@@ -274,7 +308,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 fs::create_directories(componentsDirPath);
 
                 for (const auto&[id, path] : *downloads) {
-                    const auto& source = config->sources.at(id);
+                    const auto& source = sourcesStorage.at(id);
 
                     const std::string filename = fmt::format("{}-{}{}",
                         source.section,
@@ -300,6 +334,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         ++builtPresetsCount;
     }
+    // ========
 
     if (!builtPresetsCount) {
         LOG_ERROR("Failed to build any preset, release notes are empty");
