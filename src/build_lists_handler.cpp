@@ -115,10 +115,12 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
         }
 
         if (preset.isGrouped) {
-            *downloads = groupSourcesByInetType(*downloads, sourcesStorage);
+            groupSourcesByInetType(*downloads, sourcesStorage);
+        } else if (preset.isGroupRequested(sourcesStorage)) {
+            groupSourcesByGroups(*downloads, sourcesStorage);
         } else {
             // Join similar sources if they exist
-            joinSimilarSources(*downloads);
+            groupSourcesBySections(*downloads);
 
             if (args.isUseWhitelist) {
                 filterDownloadsByWhitelist(*downloads);

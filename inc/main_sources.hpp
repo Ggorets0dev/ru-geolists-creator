@@ -10,16 +10,15 @@
 #include "fs_utils.hpp"
 #include "json_io.hpp"
 
-#define META_SOURCE_ID_TO_NORMAL(meta_id)        (std::numeric_limits<SourceObjectId>::max() - meta_id)
-
-#define META_SOURCE_GROUPED_DOMAINS_ID          1
-#define META_SOURCE_GROUPED_IPS_ID              2
-
 class Source;
+class SourcePreset;
 
 // ID of source saved in configuration file
 using SourceObjectId = uint16_t;
 using DownloadedSourcePair = std::pair<SourceObjectId, fs::path>;
+
+using SourcesStorage = std::unordered_map<SourceObjectId, Source>;
+using SourcePresetsStorage = std::unordered_map<std::string, SourcePreset>;
 
 class Source final {
 public:
@@ -65,6 +64,7 @@ public:
     StorageType storageType;
     InetType inetType;
     std::optional<PreprocessingType> preprocType;
+    std::optional<std::string> group;
 
     std::optional<std::vector<std::string>> assets; // For GitHub release
 };
@@ -91,6 +91,7 @@ public:
     bool isGrouped = false;
     std::forward_list<SourceObjectId> sourceIds;
 
+    [[nodiscard]] bool isGroupRequested(const SourcesStorage& storage) const;
     void print(std::ostream& stream, SortType sortType) const;
     [[nodiscard]] std::optional<std::vector<DownloadedSourcePair>> downloadSources() const;
 };
@@ -109,9 +110,11 @@ Source::StorageType sourceStringToStorageType(std::string_view str);
 Source::PreprocessingType sourceStringToPreprocType(std::string_view str);
 // ===============
 
-void joinSimilarSources(std::vector<DownloadedSourcePair>& downloadedSources);
+void groupSourcesBySections(std::vector<DownloadedSourcePair>& downloadedSources);
 
-std::vector<DownloadedSourcePair> groupSourcesByInetType(std::vector<DownloadedSourcePair>& sources,
+void groupSourcesByInetType(std::vector<DownloadedSourcePair>& sources,
                                                          std::unordered_map<SourceObjectId, Source>& sourcesStorage);
+
+void groupSourcesByGroups(std::vector<DownloadedSourcePair>& sources, SourcesStorage& sourcesStorage);
 
 #endif // MAIN_SOURCES_HPP

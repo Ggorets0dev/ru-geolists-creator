@@ -19,8 +19,8 @@ struct RgcConfig {
 
     std::string apiToken;
 
-    std::unordered_map<std::string, SourcePreset> presets;
-    std::unordered_map<SourceObjectId, Source> sources;
+    SourcePresetsStorage presets;
+    SourcesStorage sources;
 
     std::string whitelistPath;
     std::string bgpDumpPath;
