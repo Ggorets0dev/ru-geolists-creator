@@ -346,7 +346,10 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
 
             if (it != groupMap.end()) {
                 GroupData& data = displayRows[it->second];
-                data.sections += ", " + src.section;
+                if (data.sections.find(src.section) == std::string::npos) {
+                    data.sections += ", " + src.section;
+                }
+
                 if (src.storageType != data.firstStorage) {
                     data.mixedStorage = true;
                 }

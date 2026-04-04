@@ -278,7 +278,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 const fs::path ruleSetJsonPath = targetPath / ruleSetJsonFilename;
                 const fs::path ruleSetSrsPath = targetPath / ruleSetSrsFilename;
 
-                status = generateSingBoxRuleSet(*downloads, ruleSetJsonPath);
+                status = generateSingBoxRuleSet(*downloads, ruleSetJsonPath, sourcesStorage);
 
                 if (status) {
                     if (!config->singBoxBinaryPath.empty()) {
@@ -320,10 +320,10 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                     fs::copy(path, componentsDirPath / filename, fs::copy_options::overwrite_existing);
                     LOG_INFO("Source with ID {} and filename {} copied to components in release folder", id, filename);
                 }
+
+                addPresetToRelNotes(releaseNotesFile, preset);
             }
             // ============
-
-            addPresetToRelNotes(releaseNotesFile, preset);
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR("Filesystem error:" + std::string(e.what()));
             releaseNotesFile.close();

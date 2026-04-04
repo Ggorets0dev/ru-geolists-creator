@@ -6,7 +6,8 @@
 
 bool generateSingBoxRuleSet(
     const std::vector<DownloadedSourcePair>& sources,
-    const fs::path& savePath
+    const fs::path& savePath,
+    const SourcesStorage& storage
 );
 
 bool compileSingBoxRuleSet(

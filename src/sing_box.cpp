@@ -8,11 +8,10 @@
 
 bool generateSingBoxRuleSet(
     const std::vector<DownloadedSourcePair>& sources,
-    const fs::path& savePath
+    const fs::path& savePath,
+    const SourcesStorage& storage
 ) {
     try {
-        auto config = getCachedConfig();
-
         Json::Value root;
         root["version"] = 1;
 
@@ -21,7 +20,7 @@ bool generateSingBoxRuleSet(
         std::set<std::string> uniqueIps;
 
         for (const auto&[fst, snd] : sources) {
-            const auto& source = config->sources.at(fst);
+            const auto& source = storage.at(fst);
             std::ifstream file(snd);
             if (!file.is_open()) continue;
 
