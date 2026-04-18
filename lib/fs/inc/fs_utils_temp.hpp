@@ -25,16 +25,21 @@ namespace FS::Utils::Temp {
         static constexpr size_t kDefaultSaltSize = 10;
 
         TempFilePtrW createTempFile(const std::string& ext);
-        TempFilePtrS createTempFileDetached(const std::string& ext) const;
+        [[nodiscard]] TempFilePtrS createTempFileDetached(const std::string& ext) const;
 
         void deleteTempFile(std::weak_ptr<SessionTempFile> file);
 
-        fs::path getTempDir() const { return m_dir; };
+        [[nodiscard]] fs::path getTempDir() const { return m_dir; };
 
-        explicit SessionTempFileRegistry(const fs::path& dir=getSessionTempDir(), const std::string& prefix = "noprefix", const size_t saltSize=kDefaultSaltSize) :
-            m_dir(dir), m_prefix(prefix), m_saltSize(saltSize) {}
+        // explicit SessionTempFileRegistry(const fs::path& dir=getSessionTempDir(), const std::string& prefix = "noprefix", const size_t saltSize=kDefaultSaltSize) :
+        //     m_dir(dir), m_prefix(prefix), m_saltSize(saltSize) {}
+
+        explicit SessionTempFileRegistry(const std::string& prefix = "noprefix") :
+            m_dir(getSessionTempDir()), m_prefix(prefix), m_saltSize(kDefaultSaltSize) {}
 
         ~SessionTempFileRegistry();
+
+        static std::string getBasePrefix(const fs::path& filePath);
 
     private:
         std::forward_list<std::shared_ptr<SessionTempFile>> m_sessionTempFiles;
@@ -42,7 +47,7 @@ namespace FS::Utils::Temp {
         std::string m_prefix;
         size_t m_saltSize;
 
-        std::string buildFilePath(const std::string& ext) const {
+        [[nodiscard]] std::string buildFilePath(const std::string& ext) const {
             return m_dir.string() + "/" + m_prefix + "_" + genRandomDigits(m_saltSize) + "." + ext;
         }
     };
@@ -52,7 +57,7 @@ namespace FS::Utils::Temp {
         SessionTempDirController(const fs::path& dir);
         ~SessionTempDirController();
 
-        fs::path getTempDir() const { return m_tempDir; };
+        [[nodiscard]] fs::path getTempDir() const { return m_tempDir; };
 
     private:
         fs::path m_dir;

@@ -20,16 +20,16 @@ struct GeoReleasePack {
         presetLabel = "";
         listDomain = std::nullopt;
         listIP = std::nullopt;
-        listRuleSet = std::nullopt;
+        listsRuleSet = std::nullopt;
     }
 
-    GeoReleasePack(std::string presetLabel, fs::path  listDomain, fs::path  listIP, fs::path  listRuleSet) :
-        presetLabel(std::move(presetLabel)), listDomain(std::move(listDomain)), listIP(std::move(listIP)), listRuleSet(std::move(listRuleSet)) {}
+    GeoReleasePack(std::string presetLabel, fs::path  listDomain, fs::path  listIP, std::vector<fs::path> listRuleSet) :
+        presetLabel(std::move(presetLabel)), listDomain(std::move(listDomain)), listIP(std::move(listIP)), listsRuleSet(std::move(listRuleSet)) {}
 
     std::string presetLabel;
     std::optional<fs::path> listDomain;
     std::optional<fs::path> listIP;
-    std::optional<fs::path> listRuleSet;
+    std::optional<std::vector<fs::path>> listsRuleSet;
 };
 
 struct GeoReleases {

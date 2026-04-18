@@ -127,6 +127,16 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             }
         }
 
+        // SECTION - Preprocessing for removing duplicates
+        for (const auto& pair : *downloads) {
+            try {
+                const size_t removedCount = removeDuplicateLines(pair.second.string());
+                LOG_INFO("Count of removed duplicates (file: {}): {}", pair.second.string(), removedCount);
+            } catch (std::ios_base::failure& e) {
+                LOG_WARNING("Failed to remove duplicates (file: {}): {}", pair.second.string(), std::string(e.what()));
+            }
+        }
+
         // SECTION - Move sources to toolchains
         clearDlcDataSection(config->dlcRootPath);
         v2ipSections.reserve(downloads->size());
@@ -265,29 +275,12 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
             }
 
             if (IS_FORMAT_REQUESTED(args, GEO_FORMAT_SRS_CAPTION)) {
-                const std::string ruleSetJsonFilename = fmt::format("{}-{}.{}",
-                    RULESET_BASE_FILENAME,
-                    preset.label,
-                    "json");
-
-                const std::string ruleSetSrsFilename = fmt::format("{}-{}.{}",
-                    RULESET_BASE_FILENAME,
-                    preset.label,
-                    SING_RS_FILES_EXT);
-
-                const fs::path ruleSetJsonPath = targetPath / ruleSetJsonFilename;
-                const fs::path ruleSetSrsPath = targetPath / ruleSetSrsFilename;
-
-                status = generateSingBoxRuleSet(*downloads, ruleSetJsonPath, sourcesStorage);
-
-                if (status) {
+                if (auto jsonRulesets = generateSingBoxRuleSets(*downloads, sourcesStorage)) {
                     if (!config->singBoxBinaryPath.empty()) {
-                        status = compileSingBoxRuleSet(config->singBoxBinaryPath, ruleSetJsonPath, ruleSetSrsPath);
-
-                        if (status) {
+                        if (const auto srsRulesets = compileSingBoxRuleSets(config->singBoxBinaryPath, targetPath, *jsonRulesets)) {
                             GeoReleasePack pack;
                             pack.presetLabel = preset.label;
-                            pack.listRuleSet = ruleSetSrsFilename;
+                            pack.listsRuleSet = srsRulesets;
                             releases.packs.push_back(std::move(pack));
                         } else {
                             LOG_WARNING("Failed to compile JSON file to SRS");
@@ -300,7 +293,6 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 }
             }
             // ============
-
 
             // ============
             // Save files if release folder

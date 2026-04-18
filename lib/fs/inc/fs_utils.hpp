@@ -9,6 +9,8 @@ size_t countLinesInFile(const fs::path& filePath);
 
 size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fileBPath);
 
+size_t removeDuplicateLines(const std::string& inputPath, const std::string* outputPath = nullptr);
+
 void joinTwoFiles(const std::string& fileAPath, const std::string& fileBPath);
 
 fs::path addPathPostfix(const fs::path& p, const std::string& postfix);

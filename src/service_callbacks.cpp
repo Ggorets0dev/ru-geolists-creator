@@ -44,8 +44,12 @@ static const BuildGeoListsCallback BuildGeoLists = [](const rglc::BuildGeoListsR
             pack_msg->set_list_ip(release.listIP->string());
         }
 
-        if (release.listRuleSet.has_value()) {
-            pack_msg->set_list_rs(release.listRuleSet->string());
+        if (!release.listsRuleSet) {
+            continue;
+        }
+
+        for (const auto& rs : *release.listsRuleSet) {
+            pack_msg->add_lists_rs(rs.string());
         }
     }
 

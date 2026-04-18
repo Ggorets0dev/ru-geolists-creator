@@ -48,6 +48,18 @@ Temp::SessionTempFileRegistry::TempFilePtrS Temp::SessionTempFileRegistry::creat
     return file;
 }
 
+std::string Temp::SessionTempFileRegistry::getBasePrefix(const fs::path& filePath) {
+    std::string filename = filePath.filename().string();
+
+    const size_t pos = filename.find('_');
+
+    if (pos != std::string::npos) {
+        return filename.substr(0, pos);
+    }
+
+    return filePath.stem().string();
+}
+
 void Temp::SessionTempFileRegistry::deleteTempFile(std::weak_ptr<Temp::SessionTempFile> file) {
     for (auto iter = m_sessionTempFiles.begin(); iter != m_sessionTempFiles.end(); ++iter) {
         if (file.lock() == *iter) {

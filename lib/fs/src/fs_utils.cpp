@@ -6,6 +6,8 @@
 #include "log.hpp"
 #include "fs_utils.hpp"
 
+#include <algorithm>
+
 using namespace FS::Utils::Temp;
 
 void removePath(const std::string& path) {
@@ -30,6 +32,42 @@ size_t countLinesInFile(const fs::path& filePath) {
     }
 
     return line_count;
+}
+
+size_t removeDuplicateLines(const std::string& inputPath, const std::string* outputPath) {
+    std::vector<std::string> lines;
+    std::string line;
+
+    std::ifstream in(inputPath);
+    if (!in.is_open()) throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + inputPath);
+
+    while (std::getline(in, line)) {
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
+    }
+    in.close();
+
+    size_t removedCount = lines.size();
+
+    std::sort(lines.begin(), lines.end());
+    lines.erase(std::unique(lines.begin(), lines.end()), lines.end());
+
+    std::string targetPath = (outputPath == nullptr) ? inputPath + ".tmp" : *outputPath;
+
+    removedCount -= lines.size();
+
+    std::ofstream out(targetPath);
+    for (const auto& l : lines) {
+        out << l << "\n";
+    }
+    out.close();
+
+    if (outputPath == nullptr) {
+        fs::rename(targetPath, inputPath);
+    }
+
+    return removedCount;
 }
 
 size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fileBPath) {

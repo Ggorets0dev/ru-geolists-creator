@@ -4,16 +4,15 @@
 #include <vector>
 #include "main_sources.hpp"
 
-bool generateSingBoxRuleSet(
+std::optional<std::vector<fs::path>> generateSingBoxRuleSets(
     const std::vector<DownloadedSourcePair>& sources,
-    const fs::path& savePath,
     const SourcesStorage& storage
 );
 
-bool compileSingBoxRuleSet(
+std::optional<std::vector<fs::path>> compileSingBoxRuleSets(
     const fs::path& binaryPath,
-    const fs::path& jsonPath,
-    const fs::path& srsPath
+    const fs::path& targetDir,
+    const std::vector<fs::path>& jsonPaths
 );
 
 #endif // SING_BOX_HPP
