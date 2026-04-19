@@ -20,6 +20,25 @@ static SourceObjectId getMetaSourceId(SourcesStorage& storage) {
     return 0;
 }
 
+static void getAsIpRangesUrls(const int asn, std::vector<std::string>& urls) {
+    static const std::string apiTemplate = "https://raw.githubusercontent.com/ipverse/as-ip-blocks/refs/heads/master/as/{}/{}";
+
+    const std::string urlv4 = fmt::format(apiTemplate, asn, "ipv4-aggregated.txt");
+    const std::string urlv6 = fmt::format(apiTemplate, asn, "ipv6-aggregated.txt");
+
+    if (NetUtils::tryAccessUrl(urlv4)) {
+        urls.push_back(urlv4);
+    } else {
+        LOG_INFO("Failed to access AS CIDR url: {} (IPv4)", urlv4);
+    }
+
+    if (NetUtils::tryAccessUrl(urlv6)) {
+        urls.push_back(urlv4);
+    } else {
+        LOG_INFO("Failed to access AS CIDR url: {} (IPv6)", urlv6);
+    }
+}
+
 Source::Source(const Json::Value& value) {
     this->id = JsonValidator::getRequired<int>(value, "id");
     this->section = JsonValidator::getRequired<std::string>(value, "section");
@@ -31,13 +50,16 @@ Source::Source(const Json::Value& value) {
     auto preprocTypeStr = JsonValidator::getOptional<std::string>(value, "preproc_type");
     this->preprocType = preprocTypeStr.has_value() ? sourceStringToPreprocType(preprocTypeStr.value()) : PREPROCESSING_TYPE_UNKNOWN;
 
-    // GITHUB release requires extra fields
-    if (this->storageType != GITHUB_RELEASE) {
+    if (this->storageType == GITHUB_RELEASE) {
+        // GITHUB release requires extra fields
+        this->assets = JsonValidator::getRequiredArray<std::string>(value, "assets");
+    } else if (this->storageType == AS_CIDR_LIST) {
+        // AS requires extra fields
+        this->asns = JsonValidator::getRequiredArray<int>(value, "asns");
+    } else {
         this->assets = std::nullopt;
-        return;
+        this->asns = std::nullopt;
     }
-
-    this->assets = JsonValidator::getRequiredArray<std::string>(value, "assets");
 }
 
 std::string sourceInetTypeToString(const Source::InetType type) {
@@ -85,17 +107,10 @@ std::string sourceStorageTypeToString(const Source::StorageType type) {
 }
 
 Source::StorageType sourceStringToStorageType(const std::string_view str) {
-    if (str == "file_loc") {
-        return Source::StorageType::REGULAR_FILE_LOCAL;
-    }
-
-    if (str == "file_remote") {
-        return Source::StorageType::REGULAR_FILE_REMOTE;
-    }
-
-    if (str == "github_release") {
-        return Source::StorageType::GITHUB_RELEASE;
-    }
+    if (str == "file_loc")          return Source::StorageType::REGULAR_FILE_LOCAL;
+    if (str == "file_remote")       return Source::StorageType::REGULAR_FILE_REMOTE;
+    if (str == "github_release")    return Source::StorageType::GITHUB_RELEASE;
+    if (str == "as")                return Source::StorageType::AS_CIDR_LIST;
 
     return Source::StorageType::STORAGE_TYPE_UNKNOWN;
 }
@@ -111,7 +126,7 @@ void groupSourcesByGroups(std::vector<DownloadedSourcePair>& sources, SourcesSto
     for (const auto& pair : sources) {
         const Source& source = sourcesStorage.at(pair.first);
         if (!source.group) {
-            // No grup, just add and conitnue
+            // No group, just add and continue
             groupedSources.push_back(pair);
             continue;
         }
@@ -270,14 +285,14 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
         LOG_INFO("Source with ID {} and URL {} was downloaded as regular file", this->id, this->url);
     } else if (this->storageType == GITHUB_RELEASE) {
         if (!this->assets.has_value()) {
-            LOG_WARNING("Failed to get data from remote GitHub source ID {}", this->id);
+            LOG_WARNING("Failed to get data from remote GitHub source ID {} (asset not specified)", this->id);
             return false;
         }
 
         const auto downloadsGithub = NetUtils::downloadGithubReleaseAssets(this->url, *this->assets, FS::Utils::Temp::getSessionTempDir(), getCachedConfig()->apiToken);
 
         if (downloadsGithub.size() != this->assets->size()) {
-            LOG_WARNING("Failed to get data from remote GitHub source ID {}", this->id);
+            LOG_WARNING("Failed to get data from remote GitHub source ID {} (network error)", this->id);
             return false;
         }
 
@@ -285,11 +300,47 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
             downloads.emplace_back(this->id, path);
             LOG_INFO("Asset {} of source with ID {} and URL {} was downloaded as regular file", path, this->id, this->url);
         });
+    } if (this->storageType == AS_CIDR_LIST) {
+        if (!this->asns.has_value()) {
+            LOG_WARNING("Failed to get data from AS source ID {} (ASN not specified)", this->id);
+            return false;
+        }
+
+        std::vector<std::string> urls;
+        urls.reserve(this->asns->size() * 2); // IPv4 and IPv6 per each ASN
+
+        for (const int asn : *this->asns) {
+            getAsIpRangesUrls(asn, urls);
+        }
+
+        if (urls.empty()) {
+            LOG_WARNING("Failed to get data from AS source ID {} (API didnt return any file)");
+            return false;
+        }
+
+        FS::Utils::Temp::SessionTempFileRegistry registry;
+        const auto baseFile = registry.createTempFileDetached("lst");
+        for (const auto& asUrl : urls) {
+            const auto file = registry.createTempFile("lst");
+
+            if (const bool status = NetUtils::tryDownloadFile(asUrl, file.lock()->path, nullptr); !status) {
+                LOG_WARNING("Failed to get AS CIDR list at url: {}", asUrl);
+                return false;
+            }
+
+            joinTwoFiles(baseFile->path, file.lock()->path);
+        }
+
+        downloads.emplace_back(this->id, baseFile->path);
     } else {
         return false;
     }
 
-    LOG_INFO("Source with ID {} is collected", this->id);
+    LOG_INFO("Source with ID {} is collected ({} / {} / {})",
+        this->id,
+        this->section,
+        sourceInetTypeToString(this->inetType),
+        sourceStorageTypeToString(this->storageType));
 
     return true;
 }

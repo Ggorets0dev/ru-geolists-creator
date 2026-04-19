@@ -21,9 +21,12 @@ std::optional<std::vector<fs::path>> generateSingBoxRuleSets(
         std::set<std::string> uniqueIps;
     };
 
-    std::map<std::string, SectionData> groupedData;
-
     try {
+        std::map<std::string, SectionData> groupedData;
+
+        // ===================
+        // FILL ARRAYS WITH SUBNETS AND DOMAINS
+        // ===================
         for (const auto& [sourceId, filePath] : sources) {
             const auto& source = storage.at(sourceId);
             auto& data = groupedData[source.section];
@@ -39,17 +42,21 @@ std::optional<std::vector<fs::path>> generateSingBoxRuleSets(
                 if (line.empty() || line[0] == '#') continue;
 
                 if (source.inetType == Source::InetType::DOMAIN) {
+                    data.fullDomains.insert(line);
+
                     if (std::count(line.begin(), line.end(), '.') == 1) {
                         data.suffixDomains.insert("." + line);
-                    } else {
-                        data.fullDomains.insert(line);
                     }
-                } else {
+                } else { // IP CIDR
                     data.uniqueIps.insert(line);
                 }
             }
         }
+        // ===================
 
+        // ===================
+        // CREATE JSON RULESET FILE WITH ARRAYS
+        // ===================
         for (const auto& [sectionName, data] : groupedData) {
             if (data.fullDomains.empty() && data.suffixDomains.empty() && data.uniqueIps.empty())
                 continue;
@@ -93,6 +100,7 @@ std::optional<std::vector<fs::path>> generateSingBoxRuleSets(
 
             rulesetsPaths.push_back(ruleSetJsonPath);
         }
+        // ===================
 
     } catch (...) {
         return std::nullopt;

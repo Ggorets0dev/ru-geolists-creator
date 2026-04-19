@@ -35,6 +35,7 @@ public:
         REGULAR_FILE_LOCAL,
         REGULAR_FILE_REMOTE,
         GITHUB_RELEASE,
+        AS_CIDR_LIST,
         STORAGE_TYPE_UNKNOWN
     };
 
@@ -59,6 +60,7 @@ public:
 
     SourceObjectId id;
     std::string section;
+
     std::string url;
 
     StorageType storageType;
@@ -67,6 +69,7 @@ public:
     std::optional<std::string> group;
 
     std::optional<std::vector<std::string>> assets; // For GitHub release
+    std::optional<std::vector<int>> asns; // For AS
 };
 
 class SourcePreset final {
