@@ -364,8 +364,33 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     }
     stream << "\n";
 
-    const std::vector sourceIdsSorted(sourceIds.begin(), sourceIds.end());
-    // ... (Keep your existing std::sort logic here) ...
+    std::vector sourceIdsSorted(sourceIds.begin(), sourceIds.end());
+
+    auto inetTypeCompare = [&config](const SourceObjectId a, const SourceObjectId b) {
+        const auto sourceA = config->sources.at(a);
+        const auto sourceB = config->sources.at(b);
+        return sourceA.inetType < sourceB.inetType;
+    };
+
+    auto storageTypeCompare = [&config](const SourceObjectId a, const SourceObjectId b) {
+        const auto sourceA = config->sources.at(a);
+        const auto sourceB = config->sources.at(b);
+        return sourceA.storageType < sourceB.storageType;
+    };
+
+    auto sectionCompare = [&config](const SourceObjectId a, const SourceObjectId b) {
+        const auto sourceA = config->sources.at(a);
+        const auto sourceB = config->sources.at(b);
+        return sourceA.section < sourceB.section;
+    };
+
+    if (sortType == SORT_BY_INET_TYPE) {
+        std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), inetTypeCompare);
+    } else if (sortType == SORT_BY_STORAGE_TYPE) {
+        std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), storageTypeCompare);
+    } else if (sortType == SORT_BY_SECTION) {
+        std::sort(sourceIdsSorted.begin(), sourceIdsSorted.end(), sectionCompare);
+    }
 
     struct GroupData {
         std::string name;
