@@ -61,13 +61,12 @@ public:
     SourceObjectId id;
     std::string section;
 
-    std::string url;
-
     StorageType storageType;
     InetType inetType;
     std::optional<PreprocessingType> preprocType;
     std::optional<std::string> group;
 
+    std::optional<std::string> url;
     std::optional<std::vector<std::string>> assets; // For GitHub release
     std::optional<std::vector<int>> asns; // For AS
 };

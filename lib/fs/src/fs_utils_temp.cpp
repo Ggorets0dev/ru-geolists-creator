@@ -60,7 +60,7 @@ std::string Temp::SessionTempFileRegistry::getBasePrefix(const fs::path& filePat
     return filePath.stem().string();
 }
 
-void Temp::SessionTempFileRegistry::deleteTempFile(std::weak_ptr<Temp::SessionTempFile> file) {
+void Temp::SessionTempFileRegistry::deleteTempFile(std::weak_ptr<SessionTempFile> file) {
     for (auto iter = m_sessionTempFiles.begin(); iter != m_sessionTempFiles.end(); ++iter) {
         if (file.lock() == *iter) {
             if (fs::exists((*iter)->path)) {

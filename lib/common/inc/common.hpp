@@ -4,6 +4,7 @@
 #include <forward_list>
 #include <unordered_set>
 #include <cstdint>
+#include <sstream>
 #include <string>
 
 template <typename T>
@@ -21,6 +22,23 @@ void removeListDuplicates(std::forward_list<T>& list) {
             ++curr;
         }
     }
+}
+
+template <typename Container>
+std::string containerToString(const Container& container, const std::string& delimiter) {
+    std::ostringstream oss;
+    auto it = std::begin(container);
+
+    if (it != std::end(container)) {
+        oss << *it;
+        ++it;
+    }
+
+    for (; it != std::end(container); ++it) {
+        oss << delimiter << *it;
+    }
+
+    return oss.str();
 }
 
 template <typename T>

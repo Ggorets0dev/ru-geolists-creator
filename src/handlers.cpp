@@ -16,6 +16,13 @@
         exit(1); \
     }
 
+static void logSourceAccess(const Source& source, const bool status) {
+    if (status)
+        LOG_INFO("Successfully accessed source [id({}) | section({})]", source.id, source.section);
+    else
+        LOG_WARNING("Failed to access source [id({}) | section({})]", source.id, source.section);
+}
+
 void printHelp(const CLI::App& app) {
     std::cout << app.help() << std::endl; // Standard help
     // TODO: Add some other info for usage
@@ -52,8 +59,8 @@ void showPresets(const CmdArgs& args) {
     }
 }
 
-void checkUrlsAccess(const CmdArgs& args) {
-    LOG_INFO("Check for all sources's URLs is requested");
+void checkSourcesAvailability(const CmdArgs& args) {
+    LOG_INFO("Check for all sources's availability is requested");
 
     size_t checkedPresetsCount = 0;
     const auto config = getCachedConfig();
@@ -89,23 +96,41 @@ void checkUrlsAccess(const CmdArgs& args) {
                     isAccessed = false;
                 } else {
                     try {
-                        isAccessed = NetUtils::tryAccessGithubReleaseAssets(source.url, *source.assets, config->apiToken);
+                        isAccessed = NetUtils::tryAccessGithubReleaseAssets(*source.url, *source.assets, config->apiToken);
                     } catch (...) {
                         isAccessed = false;
                     }
                 }
             } else if (source.storageType == Source::REGULAR_FILE_LOCAL) {
                 try {
-                    isAccessed = fs::exists(source.url);
+                    isAccessed = fs::exists(*source.url);
                 } catch (const fs::filesystem_error& e) {
                     LOG_ERROR("Filesystem error: " + std::string(e.what()));
                     isAccessed = false;
                 }
             } else if (source.storageType == Source::REGULAR_FILE_REMOTE) {
-                isAccessed = NetUtils::tryAccessUrl(source.url);
+                isAccessed = NetUtils::tryAccessUrl(*source.url);
+            } else if (source.storageType == Source::AS_CIDR_LIST) {
+                std::vector<std::string> urls;
+                size_t accessedCount = 0;
+
+                urls.reserve(source.asns->size() * 2);
+                for (const int asn : *source.asns) {
+                    const bool status = NetUtils::getAsIpRangesUrls(asn, urls);
+                    if (!status) {
+                        LOG_WARNING("Failed to retrieve CIDR URLs for ASN {}", asn);
+                        urls.clear();
+                        break;
+                    }
+                }
+                for (const auto& url : urls) {
+                    accessedCount += NetUtils::tryAccessUrl(url);
+                }
+
+                isAccessed = (accessedCount != 0);
             }
 
-            logUrlAccess(source.url, isAccessed);
+            logSourceAccess(source, isAccessed);
             checkedSourcesIds.push_back(source.id);
         }
     }

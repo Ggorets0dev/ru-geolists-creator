@@ -99,7 +99,7 @@ int main(const int argc, char** argv) {
 
     // Check access for URLs and close software
     if (app.got_subcommand(gCheckSubCmd)) {
-        checkUrlsAccess(gCmdArgs);
+        checkSourcesAvailability(gCmdArgs);
     }
 
     return exitCode;

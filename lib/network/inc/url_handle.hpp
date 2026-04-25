@@ -15,7 +15,7 @@ namespace NetUtils {
         const fs::path& dirPath,
         const std::string& apiToken);
 
-    bool tryAccessUrl(const std::string& url, const char* httpHeader = nullptr);
+    bool tryAccessUrl(const std::string& url, const char* httpHeader = nullptr, long* outResponseCode = nullptr);
 
     bool tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr);
 
@@ -24,6 +24,8 @@ namespace NetUtils {
     std::string convertToGithubApi(const std::string& repoUrl);
 
     bool tryDownloadFromGithub(const std::string& url, const std::string& filePath, const std::string& apiToken);
+
+    bool getAsIpRangesUrls(int asn, std::vector<std::string>& urls);
 }
 
 #endif //URL_HANDLE_HPP

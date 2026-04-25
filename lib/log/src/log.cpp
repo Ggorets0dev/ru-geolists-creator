@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <iomanip>
 #include <unistd.h>
 #include <fcntl.h>
 #include <filesystem>
@@ -75,15 +74,8 @@ void initLogging() {
 
 
 // ====================
-// Your old wrappers
+// Old wrappers
 // ====================
-
-void logUrlAccess(const std::string& url, const bool status) {
-    if (status)
-        LOG_INFO("Successfully accessed resource: {}", url);
-    else
-        LOG_WARNING("Failed to access resource: {}", url);
-}
 
 void logFilterCheckProgress(float progress) {
     static float prevProgress = 0.0f;

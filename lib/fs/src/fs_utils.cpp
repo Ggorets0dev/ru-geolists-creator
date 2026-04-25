@@ -76,7 +76,7 @@ size_t removeDuplicateLines(const std::string& fileAPath, const std::string& fil
     const std::string* fileForReplace;
     const std::string* fileForSearch;
     size_t lineCntA, lineCntB, dupeCnt;
-    SessionTempFileRegistry tfr(getSessionTempDir());
+    SessionTempFileRegistry tfr("remove_duplicates");
 
     const auto tempFile = tfr.createTempFile("txt");
 

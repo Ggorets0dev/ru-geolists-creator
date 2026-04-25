@@ -1,16 +1,17 @@
 #include "catch2/catch_all.hpp"
 #include <fstream>
+#include <iostream>
 
 #include "fs_utils.hpp"
+#include "fs_utils_temp.hpp"
 #include "log.hpp"
 
-fs::path createTempFile(const std::string& name, const std::vector<std::string>& lines) {
-    fs::path path = fs::temp_directory_path() / name;
+void createTempFile(const std::string& path, const std::vector<std::string>& lines) {
     std::ofstream f(path);
     for (const auto& line : lines) {
         f << line << '\n';
     }
-    return path;
+    std::cout << "Temp file created: " << path << '\n';
 }
 
 // RAII wrapper to auto-clean everything
@@ -29,20 +30,20 @@ struct TempFiles {
 
 TEST_CASE("countLinesInFile", "[fs]")
 {
-    TempFiles cleanup;
+    FS::Utils::Temp::SessionTempFileRegistry tfr("countLinesInFile_TEST");
 
     SECTION("normal file")
     {
-        auto p = createTempFile("lines_test1.txt", {"a", "bb", "ccc", ""});
-        cleanup.add(p);
-        REQUIRE(countLinesInFile(p) == 4);
+        auto filePathA = tfr.createTempFile("txt").lock()->path;
+        createTempFile(filePathA, {"a", "bb", "ccc"});
+        REQUIRE(countLinesInFile(filePathA) == 3);
     }
 
     SECTION("empty file")
     {
-        auto p = createTempFile("empty.txt", {});
-        cleanup.add(p);
-        REQUIRE(countLinesInFile(p) == 0);
+        auto filePathA = tfr.createTempFile("txt").lock()->path;
+        createTempFile(filePathA, {});
+        REQUIRE(countLinesInFile(filePathA) == 0);
     }
 
     SECTION("file does not exist -> throws")
@@ -54,63 +55,72 @@ TEST_CASE("countLinesInFile", "[fs]")
 
 TEST_CASE("removeDuplicateLines", "[fs]")
 {
-    TempFiles cleanup;
-
     SECTION("removes duplicates from larger file (A > B)")
     {
-        auto fileA = createTempFile("big.txt",   {"line1", "line2", "line3", "line2", "line4"});
-        auto fileB = createTempFile("small.txt", {"line2", "line4"});
-        cleanup.add(fileA);
-        cleanup.add(fileB);
+        FS::Utils::Temp::SessionTempFileRegistry tfr("removeDuplicateLines_TEST");
 
-        size_t removed = removeDuplicateLines(fileA.string(), fileB.string());
+        auto filePathA = tfr.createTempFile("txt").lock()->path;
+        auto filePathB = tfr.createTempFile("txt").lock()->path;
+
+        createTempFile(filePathA,   {"line1", "line2", "line3", "line2", "line4"});
+        createTempFile(filePathB, {"line2", "line4"});
+
+        size_t removed = removeDuplicateLines(filePathA, filePathB);
 
         REQUIRE(removed == 3);
 
-        std::ifstream f(fileA);
-        std::string content((std::istreambuf_iterator<char>(f)), {});
+        std::ifstream f(filePathA);
+        std::string content((std::istreambuf_iterator(f)), {});
         REQUIRE(content == "line1\nline3\n");
     }
 
     SECTION("removes duplicates from larger file (B > A)")
     {
-        auto fileA = createTempFile("small2.txt", {"dup", "unique"});
-        auto fileB = createTempFile("big2.txt",   {"dup", "dup", "other"});
-        cleanup.add(fileA);
-        cleanup.add(fileB);
+        FS::Utils::Temp::SessionTempFileRegistry tfr("removeDuplicateLines_TEST");
 
-        size_t removed = removeDuplicateLines(fileA.string(), fileB.string());
+        auto filePathA = tfr.createTempFile("txt").lock()->path;
+        auto filePathB = tfr.createTempFile("txt").lock()->path;
+
+        createTempFile(filePathA,   {"dup", "unique"});
+        createTempFile(filePathB, {"dup", "dup", "other"});
+
+        size_t removed = removeDuplicateLines(filePathA, filePathB);
 
         REQUIRE(removed == 2);
 
-        std::ifstream f(fileB);
+        std::ifstream f(filePathB);
         std::string content((std::istreambuf_iterator<char>(f)), {});
         REQUIRE(content == "other\n");
     }
 
     SECTION("no duplicates")
     {
-        auto a = createTempFile("a.txt", {"x", "y"});
-        auto b = createTempFile("b.txt", {"z"});
-        cleanup.add(a); cleanup.add(b);
+        FS::Utils::Temp::SessionTempFileRegistry tfr("removeDuplicateLines_TEST");
 
-        REQUIRE(removeDuplicateLines(a.string(), b.string()) == 0);
-        REQUIRE(countLinesInFile(a) == 2);
+        auto filePathA = tfr.createTempFile("txt").lock()->path;
+        auto filePathB = tfr.createTempFile("txt").lock()->path;
+
+        createTempFile(filePathA,   {"x", "y"});
+        createTempFile(filePathB, {"z"});
+
+        REQUIRE(removeDuplicateLines(filePathA, filePathB) == 0);
+        REQUIRE(countLinesInFile(filePathA) == 2);
     }
 }
 
 TEST_CASE("joinTwoFiles", "[fs]")
 {
-    TempFiles cleanup;
+    FS::Utils::Temp::SessionTempFileRegistry tfr("removeDuplicateLines_TEST");
 
-    auto fileA = createTempFile("target.txt", {"first part"});
-    auto fileB = createTempFile("source.txt", {"second part", "third part"});
-    cleanup.add(fileA);
-    cleanup.add(fileB);
+    auto filePathA = tfr.createTempFile("txt").lock()->path;
+    auto filePathB = tfr.createTempFile("txt").lock()->path;
 
-    joinTwoFiles(fileA.string(), fileB.string());
+    createTempFile(filePathA, {"first part"});
+    createTempFile(filePathB, {"second part", "third part"});
 
-    std::ifstream f(fileA);
+    joinTwoFiles(filePathA, filePathB);
+
+    std::ifstream f(filePathA);
     std::string content((std::istreambuf_iterator<char>(f)), {});
 
     // Note: stream copy via rdbuf() does NOT add extra newline between files

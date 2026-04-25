@@ -15,6 +15,6 @@ void deinitSoftware();
 
 void printHelp(const CLI::App& app);
 
-void checkUrlsAccess(const CmdArgs& args);
+void checkSourcesAvailability(const CmdArgs& args);
 
 #endif // HANDLERS_HPP

@@ -20,35 +20,21 @@ static SourceObjectId getMetaSourceId(SourcesStorage& storage) {
     return 0;
 }
 
-static void getAsIpRangesUrls(const int asn, std::vector<std::string>& urls) {
-    static const std::string apiTemplate = "https://raw.githubusercontent.com/ipverse/as-ip-blocks/refs/heads/master/as/{}/{}";
-
-    const std::string urlv4 = fmt::format(apiTemplate, asn, "ipv4-aggregated.txt");
-    const std::string urlv6 = fmt::format(apiTemplate, asn, "ipv6-aggregated.txt");
-
-    if (NetUtils::tryAccessUrl(urlv4)) {
-        urls.push_back(urlv4);
-    } else {
-        LOG_INFO("Failed to access AS CIDR url: {} (IPv4)", urlv4);
-    }
-
-    if (NetUtils::tryAccessUrl(urlv6)) {
-        urls.push_back(urlv4);
-    } else {
-        LOG_INFO("Failed to access AS CIDR url: {} (IPv6)", urlv6);
-    }
-}
-
 Source::Source(const Json::Value& value) {
     this->id = JsonValidator::getRequired<int>(value, "id");
     this->section = JsonValidator::getRequired<std::string>(value, "section");
-    this->url = JsonValidator::getRequired<std::string>(value, "url");
     this->storageType = sourceStringToStorageType(JsonValidator::getRequired<std::string>(value, "storage_type"));
     this->inetType = sourceStringToInetType(JsonValidator::getRequired<std::string>(value, "inet_type"));
     this->group = JsonValidator::getOptional<std::string>(value, "group");
 
     auto preprocTypeStr = JsonValidator::getOptional<std::string>(value, "preproc_type");
     this->preprocType = preprocTypeStr.has_value() ? sourceStringToPreprocType(preprocTypeStr.value()) : PREPROCESSING_TYPE_UNKNOWN;
+
+    if (this->storageType != AS_CIDR_LIST) {
+        this->url = JsonValidator::getRequired<std::string>(value, "url");
+    } else {
+        this->url = std::nullopt;
+    }
 
     if (this->storageType == GITHUB_RELEASE) {
         // GITHUB release requires extra fields
@@ -74,13 +60,8 @@ std::string sourceInetTypeToString(const Source::InetType type) {
 }
 
 Source::InetType sourceStringToInetType(const std::string_view str) {
-    if (str == "ip") {
-        return Source::InetType::IP;
-    }
-
-    if (str == "domain") { //  domain
-        return Source::InetType::DOMAIN;
-    }
+    if (str == "ip")        return Source::InetType::IP;
+    if (str == "domain")    return Source::InetType::DOMAIN;
 
     return Source::InetType::INET_TYPE_UNKNOWN;
 }
@@ -101,6 +82,8 @@ std::string sourceStorageTypeToString(const Source::StorageType type) {
             return "file_remote";
         case Source::StorageType::GITHUB_RELEASE:
             return "github_release";
+        case Source::StorageType::AS_CIDR_LIST:
+            return "as";
         default:
             return "NONE";
     }
@@ -255,9 +238,21 @@ std::optional<std::vector<DownloadedSourcePair>> SourcePreset::downloadSources()
         const auto source = config->sources.at(id);
 
         if (const bool status = source.getData(downloads); !status) {
+            LOG_WARNING("Failed to collect source [id({}) | section({}) | inet({}) | storage({})]",
+                source.id,
+                source.section,
+                sourceInetTypeToString(source.inetType),
+                sourceStorageTypeToString(source.storageType));
+
             LOG_WARNING("Failed to fully load the preset with label \"{}\"", this->label);
             return std::nullopt;
         }
+
+        LOG_INFO("Source is collected [id({}) | section({}) | inet({}) | storage({})]",
+            source.id,
+            source.section,
+            sourceInetTypeToString(source.inetType),
+            sourceStorageTypeToString(source.storageType));
     }
 
     LOG_INFO("Sources from preset \"{}\" are collected", this->label);
@@ -266,30 +261,30 @@ std::optional<std::vector<DownloadedSourcePair>> SourcePreset::downloadSources()
 
 bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
     if (this->storageType == REGULAR_FILE_LOCAL) {
-        if (!fs::exists(this->url)) {
+        if (!fs::exists(*this->url)) {
             LOG_WARNING("Failed to get data from local source ID {}", this->id);
             return false;
         }
 
-        downloads.emplace_back(this->id, this->url);
+        downloads.emplace_back(this->id, *this->url);
     } else if (this->storageType == REGULAR_FILE_REMOTE) {
         const FS::Utils::Temp::SessionTempFileRegistry registry;
         const auto file = registry.createTempFileDetached("lst");
 
-        if (const bool status = NetUtils::tryDownloadFile(this->url, file->path, nullptr); !status) {
+        if (const bool status = NetUtils::tryDownloadFile(*this->url, file->path, nullptr); !status) {
             LOG_WARNING("Failed to get data from remote source ID {}", this->id);
             return false;
         }
 
         downloads.emplace_back(this->id, file->path);
-        LOG_INFO("Source with ID {} and URL {} was downloaded as regular file", this->id, this->url);
+        LOG_INFO("Source with ID {} and URL {} was downloaded as regular file", this->id, *this->url);
     } else if (this->storageType == GITHUB_RELEASE) {
         if (!this->assets.has_value()) {
             LOG_WARNING("Failed to get data from remote GitHub source ID {} (asset not specified)", this->id);
             return false;
         }
 
-        const auto downloadsGithub = NetUtils::downloadGithubReleaseAssets(this->url, *this->assets, FS::Utils::Temp::getSessionTempDir(), getCachedConfig()->apiToken);
+        const auto downloadsGithub = NetUtils::downloadGithubReleaseAssets(*this->url, *this->assets, FS::Utils::Temp::getSessionTempDir(), getCachedConfig()->apiToken);
 
         if (downloadsGithub.size() != this->assets->size()) {
             LOG_WARNING("Failed to get data from remote GitHub source ID {} (network error)", this->id);
@@ -298,9 +293,9 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
 
         std::for_each(downloadsGithub.begin(), downloadsGithub.end(), [&](const auto& path) {
             downloads.emplace_back(this->id, path);
-            LOG_INFO("Asset {} of source with ID {} and URL {} was downloaded as regular file", path, this->id, this->url);
+            LOG_INFO("Asset {} of source with ID {} and URL {} was downloaded as regular file", path, this->id, *this->url);
         });
-    } if (this->storageType == AS_CIDR_LIST) {
+    } else if (this->storageType == AS_CIDR_LIST) {
         if (!this->asns.has_value()) {
             LOG_WARNING("Failed to get data from AS source ID {} (ASN not specified)", this->id);
             return false;
@@ -310,7 +305,7 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
         urls.reserve(this->asns->size() * 2); // IPv4 and IPv6 per each ASN
 
         for (const int asn : *this->asns) {
-            getAsIpRangesUrls(asn, urls);
+            NetUtils::getAsIpRangesUrls(asn, urls);
         }
 
         if (urls.empty()) {
@@ -323,24 +318,22 @@ bool Source::getData(std::vector<DownloadedSourcePair>& downloads) const {
         for (const auto& asUrl : urls) {
             const auto file = registry.createTempFile("lst");
 
+            LOG_INFO("Trying to download AS IP CIDR list via url: {}", asUrl);
+
             if (const bool status = NetUtils::tryDownloadFile(asUrl, file.lock()->path, nullptr); !status) {
                 LOG_WARNING("Failed to get AS CIDR list at url: {}", asUrl);
                 return false;
             }
 
             joinTwoFiles(baseFile->path, file.lock()->path);
+            LOG_INFO("Downloaded AS IP CIDR list via url: {}", asUrl);
         }
 
         downloads.emplace_back(this->id, baseFile->path);
     } else {
+        LOG_WARNING("Failed to determine collect algorithm for storage type: {}", std::to_string(this->storageType));
         return false;
     }
-
-    LOG_INFO("Source with ID {} is collected ({} / {} / {})",
-        this->id,
-        this->section,
-        sourceInetTypeToString(this->inetType),
-        sourceStorageTypeToString(this->storageType));
 
     return true;
 }
@@ -358,7 +351,7 @@ bool SourcePreset::isGroupRequested(const SourcesStorage& storage) const {
 
 void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     const auto config = getCachedConfig();
-    TablePrinter table({"ID", "Group/Section", "Storage", "Inet", "URL (Sections)"});
+    TablePrinter table({"ID", "Group/Section", "Storage", "Inet", "Details"});
 
     stream << "PRESET: " << this->label;
     if (isGrouped) {
@@ -371,12 +364,12 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
     }
     stream << "\n";
 
-    std::vector<SourceObjectId> sourceIdsSorted(sourceIds.begin(), sourceIds.end());
+    const std::vector sourceIdsSorted(sourceIds.begin(), sourceIds.end());
     // ... (Keep your existing std::sort logic here) ...
 
     struct GroupData {
         std::string name;
-        std::string sections;
+        std::string details;
         Source::StorageType firstStorage;
         Source::InetType inetType; // Track the inet type for this specific row
         bool mixedStorage = false;
@@ -397,8 +390,8 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
 
             if (it != groupMap.end()) {
                 GroupData& data = displayRows[it->second];
-                if (data.sections.find(src.section) == std::string::npos) {
-                    data.sections += ", " + src.section;
+                if (data.details.find(src.section) == std::string::npos) {
+                    data.details += ", " + src.section;
                 }
 
                 if (src.storageType != data.firstStorage) {
@@ -410,9 +403,21 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
             // New row for this specific Group + InetType combination
             groupMap[key] = displayRows.size();
             displayRows.push_back({gName, src.section, src.storageType, src.inetType, false, &src});
+        } else if (src.storageType == Source::AS_CIDR_LIST) {
+            // Standalone source - no group, always a unique row
+            displayRows.push_back({src.section,
+                containerToString(*src.asns, ", "),
+                src.storageType, src.inetType,
+                false,
+                &src});
         } else {
             // Standalone source - no group, always a unique row
-            displayRows.push_back({src.section, src.section, src.storageType, src.inetType, false, &src});
+            displayRows.push_back({src.section,
+                *src.url,
+                src.storageType,
+                src.inetType,
+                false,
+                &src});
         }
     }
 
@@ -431,7 +436,7 @@ void SourcePreset::print(std::ostream& stream, const SortType sortType) const {
             truncate(row.name, 20),
             truncate(storageStr, 18),
             truncate(sourceInetTypeToString(row.inetType), 8), // Uses row's specific inet type
-            truncate(row.sections, 70)
+            truncate(row.details, 70)
         });
     }
 

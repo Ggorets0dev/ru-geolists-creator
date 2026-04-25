@@ -26,87 +26,90 @@ static size_t writeToFileCallback(void* contents, size_t size, size_t nmemb, voi
     return totalSize;
 }
 
-static bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr) {
-	CURL *curl = curl_easy_init();
-    volatile uint32_t responseCode(0);
+// Curl guard (RAII)
+struct CurlResourceGuard {
+    CURL* curl;
+    curl_slist* headers;
 
+    CurlResourceGuard(CURL* c) : curl(c), headers(nullptr) {}
+    ~CurlResourceGuard() {
+        if (headers) curl_slist_free_all(headers);
+        if (curl) curl_easy_cleanup(curl);
+    }
+};
+
+static bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr, long* outResponseCode = nullptr) {
+    CURL* curl = curl_easy_init();
     if (!curl) {
-        curl_easy_cleanup(curl);
         throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
     }
 
+    CurlResourceGuard guard(curl);
+
+    long responseCode = 0;
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, gLibNetworkSettings.curlOperationTimeoutSec);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, gLibNetworkSettings.curlConnectionTimeoutSec);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
+
+    if (httpHeader && *httpHeader) {
+        guard.headers = curl_slist_append(guard.headers, httpHeader);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, guard.headers);
+    }
+
+    CURLcode res = curl_easy_perform(curl);
+
+    if (res == CURLE_OK) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
+    }
+
+    if (outResponseCode) {
+        *outResponseCode = responseCode;
+    }
+
+    return (res == CURLE_OK && responseCode >= 200 && responseCode < 400);
+}
+
+static void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr) {
+    std::ofstream outFile(filePath, std::ios::binary);
+    if (!outFile.is_open()) {
+        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + filePath);
+    }
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
+    }
+
+    CurlResourceGuard guard(curl);
+    long responseCode = 0;
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, gLibNetworkSettings.curlOperationTimeoutSec);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, gLibNetworkSettings.curlConnectionTimeoutSec);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
 
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
-
-    if (httpHeader != nullptr && strlen(httpHeader) > 0) {
-        curl_slist *header = nullptr;
-        header = curl_slist_append(header, httpHeader);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
+    if (httpHeader && *httpHeader) {
+        guard.headers = curl_slist_append(guard.headers, httpHeader);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, guard.headers);
     }
 
     const CURLcode res = curl_easy_perform(curl);
 
     if (res == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-    }
-
-    curl_easy_cleanup(curl);
-
-    return (res == CURLE_OK && responseCode >= 200 && responseCode < 400);
-}
-
-static void downloadFile(const std::string& url, const std::string& filePath, const char* httpHeader = nullptr) {
-    if (const bool isAccessed = NetUtils::tryAccessUrl(url, httpHeader); !isAccessed) {
-        throw CurlError("Failed to access URL in download handler", CURLE_COULDNT_CONNECT);
-    }
-
-    // Open file for write
-    std::ofstream outFile(filePath, std::ios::binary);
-    if (!outFile.is_open()) {
-        throw std::ios_base::failure(FILE_OPEN_ERROR_MSG + filePath);
-    }
-
-    if (CURL *curl = curl_easy_init()) {
-        // Set url settings
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
-
-        // Set callback for write
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
-
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, gLibNetworkSettings.curlOperationTimeoutSec);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, gLibNetworkSettings.curlConnectionTimeoutSec);
-
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); // Follow redirects
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
-
-        if (httpHeader != nullptr && strlen(httpHeader) > 0) {
-            curl_slist *header = nullptr;
-            header = curl_slist_append(header, httpHeader);
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
-        }
-
-        // Perform query
-        const CURLcode res = curl_easy_perform(curl);
-
-        curl_easy_cleanup(curl);
-        outFile.close();
-
-        // Check for errors
-        if (res != CURLE_OK) {
-            throw CurlError("Failed to download file", res);
-        }
     } else {
-        curl_easy_cleanup(curl);
-        outFile.close();
+        throw CurlError("Failed to download file", res);
+    }
 
-        throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
+    if (responseCode < 200 || responseCode >= 400) {
+        throw CurlError("HTTP error while downloading file", CURLE_HTTP_RETURNED_ERROR);
     }
 }
 
@@ -155,9 +158,9 @@ static std::string genGithubTokenHeader(const std::string& token) {
     return GITHUB_TOKEN_HEADER + token;
 }
 
-bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader) {
+bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader, long* outResponseCode) {
     for(unsigned int i(0); i < gLibNetworkSettings.connectAttemptsCount; ++i) {
-        if (isUrlAccessible(url, httpHeader)) {
+        if (isUrlAccessible(url, httpHeader, outResponseCode)) {
             return true;
         }
 
@@ -176,6 +179,32 @@ bool NetUtils::tryDownloadFromGithub(const std::string& url, const std::string& 
     }
 
     return tryDownloadFile(url, filePath);
+}
+
+bool NetUtils::getAsIpRangesUrls(const int asn, std::vector<std::string>& urls) {
+    static const std::string apiTemplate = "https://raw.githubusercontent.com/ipverse/as-ip-blocks/refs/heads/master/as/{}/{}";
+
+    const std::string urlv4 = fmt::format(apiTemplate, asn, "ipv4-aggregated.txt");
+    const std::string urlv6 = fmt::format(apiTemplate, asn, "ipv6-aggregated.txt");
+
+    long responseCode = 0;
+
+    bool status = isUrlAccessible(urlv4, nullptr, &responseCode);
+    if (status && responseCode == 200) {
+        urls.push_back(urlv4);
+    } else {
+        LOG_INFO("Failed to access AS CIDR url: {} (IPv4)", urlv4);
+        return false;
+    }
+
+    status = isUrlAccessible(urlv6, nullptr, &responseCode);
+    if (status && responseCode == 200) {
+        urls.push_back(urlv6);
+    } else {
+        LOG_INFO("Failed to access AS CIDR url: {} (IPv6)", urlv6);
+    }
+
+    return true;
 }
 
 std::vector<std::string> NetUtils::downloadGithubReleaseAssets(const std::string& url,

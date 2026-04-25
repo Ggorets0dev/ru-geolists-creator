@@ -336,3 +336,15 @@ TEST_CASE("lengthv6ToBitset produces correct mask", "[ipv6]") {
         REQUIRE(b.all());
     }
 }
+
+TEST_CASE("getAsIpRangesUrls", "[ipv4][ipv6][valid]") {
+    std::vector<std::string> urls;
+    bool status;
+
+    const int cloudflareASN = 13335;
+
+    status = NetUtils::getAsIpRangesUrls(cloudflareASN, urls);
+
+    REQUIRE(status == true);
+    REQUIRE(urls.size() == 2);
+}

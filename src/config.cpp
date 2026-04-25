@@ -32,7 +32,7 @@ bool writeConfig(const RgcConfig& config) {
 
         sourceObj["id"] = source.id; // Используем SourceObjectId
         sourceObj["section"] = source.section;
-        sourceObj["url"] = source.url;
+        sourceObj["url"] = *source.url;
         sourceObj["inet_type"] = sourceInetTypeToString(source.inetType);
         sourceObj["storage_type"] = sourceStorageTypeToString(source.storageType);
 

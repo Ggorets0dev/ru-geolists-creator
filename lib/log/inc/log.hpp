@@ -41,8 +41,6 @@ void initLogging();
 
 void loggerFlush();
 
-void logUrlAccess(const std::string& url, bool status);
-
 void logFilterCheckProgress(float progress);
 
 void suppressConsoleOutput();

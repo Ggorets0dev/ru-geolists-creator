@@ -10,7 +10,6 @@
 
 namespace FS::Utils::Temp {
     fs::path getSystemTempDir();
-
     fs::path getSessionTempDir();
 
     struct SessionTempFile {

@@ -129,11 +129,13 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
 
         // SECTION - Preprocessing for removing duplicates
         for (const auto& pair : *downloads) {
+            const auto& source = sourcesStorage.at(pair.first);
+            const auto& path = pair.second.string();
             try {
-                const size_t removedCount = removeDuplicateLines(pair.second.string());
-                LOG_INFO("Count of removed duplicates (file: {}): {}", pair.second.string(), removedCount);
+                const size_t removedCount = removeDuplicateLines(path);
+                LOG_INFO("Count of removed duplicates (id: {}, file: {}): {}", source.id, path, removedCount);
             } catch (std::ios_base::failure& e) {
-                LOG_WARNING("Failed to remove duplicates (file: {}): {}", pair.second.string(), std::string(e.what()));
+                LOG_WARNING("Failed to remove duplicates (id: {}, file: {}): {}", source.id, path, std::string(e.what()));
             }
         }
 
