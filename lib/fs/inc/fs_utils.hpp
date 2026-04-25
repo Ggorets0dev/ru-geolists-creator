@@ -19,4 +19,6 @@ void removePath(const std::string& path);
 
 bool createEmptyFile(const fs::path& path);
 
+bool isDirEmpty(const fs::path& p, bool allowNonExist);
+
 #endif // FS_UTILS_H

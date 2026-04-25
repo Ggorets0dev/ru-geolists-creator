@@ -43,6 +43,12 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     // ========
 
     const auto outDirPath = fs::path(args.outDirPath);
+
+    if (!isDirEmpty(outDirPath, true)) {
+        LOG_ERROR("Specified output path ({}) is not empty, files may be overwritten", outDirPath.string());
+        return std::nullopt;
+    }
+
     fs::create_directories(outDirPath);
 
     releases.releaseNotes = outDirPath / RELEASE_NOTES_FILENAME;

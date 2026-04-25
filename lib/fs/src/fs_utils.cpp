@@ -34,6 +34,15 @@ size_t countLinesInFile(const fs::path& filePath) {
     return line_count;
 }
 
+bool isDirEmpty(const fs::path& p, const bool allowNonExist) {
+    if (!fs::exists(p) || !fs::is_directory(p)) {
+        if (allowNonExist)  return true;
+        throw std::runtime_error("Path does not exist or is not a directory");
+    }
+
+    return fs::directory_iterator(p) == fs::directory_iterator();
+}
+
 size_t removeDuplicateLines(const std::string& inputPath, const std::string* outputPath) {
     std::vector<std::string> lines;
     std::string line;
