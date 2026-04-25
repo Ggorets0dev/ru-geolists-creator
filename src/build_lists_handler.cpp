@@ -23,6 +23,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     size_t builtPresetsCount = 0;
     std::forward_list<SourcePreset> reqPresets = {};
     size_t reqPresetsCount = 0;
+    BuildStats buildStats = {0};
 
     GeoReleases releases = {
         .isEmpty = true
@@ -148,8 +149,9 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
         // SECTION - Move sources to toolchains
         clearDlcDataSection(config->dlcRootPath);
         v2ipSections.reserve(downloads->size());
-        uint8_t ipSrcAdded = 0;
-        uint8_t domainSrcAdded = 0;
+
+        size_t ipSrcAdded = 0;
+        size_t domainSrcAdded = 0;
 
         for (const auto& sourcePair : *downloads) {
             if (const auto& source = sourcesStorage.at(sourcePair.first); source.inetType == Source::InetType::DOMAIN) {
@@ -312,6 +314,14 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
                 for (const auto&[id, path] : *downloads) {
                     const auto& source = sourcesStorage.at(id);
 
+                    if (source.inetType == Source::IP) {
+                        buildStats.subnetsCount += countLinesInFile(path);
+                        ++buildStats.subnetsFilesCount;
+                    } else {
+                        buildStats.domainsCount += countLinesInFile(path);
+                        ++buildStats.domainsFilesCount;
+                    }
+
                     const std::string filename = fmt::format("{}-{}{}",
                         source.section,
                         sourceInetTypeToString(source.inetType),
@@ -338,6 +348,12 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     }
     // ========
 
+    // ============
+    // Filling build stats
+    // ============
+    buildStats.formats = args.formats;
+    // ============
+
     if (!builtPresetsCount) {
         LOG_ERROR("Failed to build any preset, release notes are empty");
         releaseNotesFile.close();
@@ -345,7 +361,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     }
 
     // SECTION - Add records to release notes
-    setBuildInfoToRelNotes(releaseNotesFile);
+    setBuildInfoToRelNotes(releaseNotesFile, buildStats);
     // !SECTION
 
     releaseNotesFile.close();

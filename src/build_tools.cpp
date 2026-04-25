@@ -4,15 +4,15 @@
 #include "cli_draw.hpp"
 #include "log.hpp"
 #include "software_info.hpp"
+#include "common.hpp"
 
 #include <sys/stat.h>
 #include <csignal>
-
 #include <ctime>
 #include <vector>
 #include <fstream>
 
-bool setBuildInfoToRelNotes(std::ofstream& file) {
+bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats) {
     if (!file.is_open()) {
         return false;
     }
@@ -28,12 +28,21 @@ bool setBuildInfoToRelNotes(std::ofstream& file) {
     std::strftime(timeBuffer, sizeof(timeBuffer), "%d.%m.%Y %H:%M:%S", utcTime);
 
     const std::string softwareString = fmt::format("RGLC v{}", RGC_VERSION_STRING);
+    const std::string subnetsString = fmt::format("{} | {}",
+        std::to_string(stats.subnetsFilesCount),
+            std::to_string(stats.subnetsCount));
+    const std::string domainsString = fmt::format("{} | {}",
+        std::to_string(stats.domainsFilesCount),
+            std::to_string(stats.domainsCount));
 
     file << "Release Technical Information\n";
 
     TablePrinter table({"Parameter", "Value"});
     table.addRow({"Build DateTime (UTC)", timeBuffer});
     table.addRow({"Software", softwareString});
+    table.addRow({"Subnets (files/entries)", subnetsString});
+    table.addRow({"Domains (files/entries)", domainsString});
+    table.addRow({"Formats", containerToString(stats.formats, ", ")});
 
     table.print(file);
     file << "\n";

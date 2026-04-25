@@ -38,7 +38,15 @@ struct GeoReleases {
     bool isEmpty;
 };
 
-bool setBuildInfoToRelNotes(std::ofstream& file);
+struct BuildStats {
+    size_t subnetsFilesCount = 0;
+    size_t subnetsCount = 0;
+    size_t domainsFilesCount = 0;
+    size_t domainsCount = 0;
+    std::vector<std::string> formats;
+};
+
+bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats);
 
 bool addPresetToRelNotes(std::ofstream& file, const SourcePreset& preset);
 
