@@ -1,5 +1,7 @@
 # RuGeolistsCreator
 
+👉 [Версия на русском](README.md)
+
 ## Purpose
 
 Software for automating the assembly of XRay / SingBox VPN filtering lists. CLI
@@ -111,6 +113,7 @@ Supported source types:
 - Local file *(file_loc)*
 - Remote file *(file_remote)*
 - GitHub repository release fragment *(github_release)*
+- Autonomous system number (ASN) *(as)*
 
 ## Interprocess Communication (IPC)
 
@@ -137,8 +140,8 @@ Subcommands:
 
 ## Dependencies
 
-Main dependencies are listed in the Conan file (conanfile.txt).
+Main dependencies are listed in the Conan file [Conan](conanfile.txt).
 
 Dependencies that must be installed manually in the system:
 
-- libbgpdump
+* [libbgpdump](https://github.com/RIPE-NCC/bgpdump)
