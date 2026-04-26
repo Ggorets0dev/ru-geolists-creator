@@ -115,6 +115,19 @@ Supported source types:
 - GitHub repository release fragment *(github_release)*
 - Autonomous system number (ASN) *(as)*
 
+### Usage Examples
+
+```bash
+# Build the “node-in” preset in V2RAY, SING-DB, and SING-RS formats and save it to the “/home/user/RGLC/releases” directory
+./rglc-x86_64.AppImage build -p node-in -f v2ray -f sing-db -f sing-rs -o /home/user/RGLC/releases
+
+# Check the availability of sources in the “node-in” preset
+./rglc-x86_64.AppImage check -p node-in
+
+# Display the list of sources in all presets
+./rglc-x86_64.AppImage show
+```
+
 ## Interprocess Communication (IPC)
 
 The **service** mode can be used for IPC. In this mode the software

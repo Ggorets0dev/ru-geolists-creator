@@ -109,6 +109,19 @@
 
 * Номер автомноной сети (ASN) *(as)*
 
+### Примеры использования
+
+```bash
+# Собрать пресет "node-in" в форматах V2RAY, SING-DB, SING-RS и сохранить в папке "/home/user/RGLC/releases"
+./rglc-x86_64.AppImage build -p node-in -f v2ray -f sing-db -f sing-rs -o /home/user/RGLC/releases
+
+# Проверить доступность источников в пресете "node-in"
+./rglc-x86_64.AppImage check -p node-in
+
+# Отобразить список источников во всех пресетах
+./rglc-x86_64.AppImage show
+```
+
 ## Межпроцессное взаимодействие (IPC)
 
 Для IPC может быть использован режим **service**. В данном режиме ПО принимает входящие запросы по протоколу gRPC.

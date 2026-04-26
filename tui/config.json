@@ -1,0 +1,18 @@
+{
+  "apiToken": "",
+  "bgpDumpPath": null,
+  "dlcRootPath": "",
+  "geoMgrBinaryPath": "",
+  "singBoxBinaryPath": "",
+  "sources": [
+    {
+      "id": 23,
+      "section": "sda",
+      "url": "sad",
+      "storage_type": "file_loc",
+      "preproc_type": "extract_domains",
+      "inet_type": "domain"
+    }
+  ],
+  "presets": []
+}
