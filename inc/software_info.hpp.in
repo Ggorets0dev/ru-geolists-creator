@@ -7,7 +7,7 @@
 
 #define RGC_DEVELOPER       "Ggorets0dev"
 #define RGC_REPOSITORY      "https://github.com/Ggorets0dev/ru-geolists-creator"
-#define RGC_LICENSE         "MIT"
+#define RGC_LICENSE         "GPL 3.0"
 #define RGC_DESCRIPTION     "RuGeolistsCreator - Software (service) in C++ for automatic assembly of geoip and geosite files for VPN server XRay / SingBox"
 
 #endif // SOFTWARE_INFO_HPP

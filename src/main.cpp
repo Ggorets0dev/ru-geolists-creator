@@ -30,6 +30,12 @@ int main(const int argc, char** argv) {
     }
     // !SECTION
 
+    // If no args provided, just show help and exit
+    if (argc == 1) {
+        printHelp(app);
+        return 0;
+    }
+
     // Show about and close software
     if (gCmdArgs.isInit) {
         if (fs::exists(gkConfigPath)) {
