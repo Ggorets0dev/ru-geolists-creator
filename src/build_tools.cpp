@@ -12,7 +12,7 @@
 #include <vector>
 #include <fstream>
 
-bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats) {
+bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats, const std::string_view message = "") {
     if (!file.is_open()) {
         return false;
     }
@@ -45,7 +45,13 @@ bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats) {
     table.addRow({"Formats", containerToString(stats.formats, ", ")});
 
     table.print(file);
-    file << "\n";
+    file << std::endl;
+
+    if (!message.empty()) {
+        file << "Release description" << std::endl;
+        file << "-------------------" << std::endl;
+        file << message << std::endl;
+    }
 
     return true;
 }

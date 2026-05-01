@@ -1,5 +1,6 @@
 #include "build_lists_handler.hpp"
 
+#include <complex>
 #include <netdb.h>
 #include <sys/stat.h>
 
@@ -361,7 +362,7 @@ std::optional<GeoReleases> buildListsHandler(const CmdArgs& args) {
     }
 
     // SECTION - Add records to release notes
-    setBuildInfoToRelNotes(releaseNotesFile, buildStats);
+    setBuildInfoToRelNotes(releaseNotesFile, buildStats, args.buildMessage);
     // !SECTION
 
     releaseNotesFile.close();

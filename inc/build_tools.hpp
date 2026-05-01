@@ -13,7 +13,7 @@
 #define SING_DB_FILES_EXT            "db"
 #define SING_RS_FILES_EXT            "srs"
 
-#define RELEASE_NOTES_FILENAME      "release_notes.txt"
+#define RELEASE_NOTES_FILENAME       "release_notes.txt"
 
 struct GeoReleasePack {
     GeoReleasePack() {
@@ -46,7 +46,7 @@ struct BuildStats {
     std::vector<std::string> formats;
 };
 
-bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats);
+bool setBuildInfoToRelNotes(std::ofstream& file, const BuildStats& stats, std::string_view message);
 
 bool addPresetToRelNotes(std::ofstream& file, const SourcePreset& preset);
 

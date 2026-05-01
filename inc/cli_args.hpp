@@ -19,6 +19,7 @@
 struct CmdArgs {
     SourceObjectId extraSourceId;
     std::string outDirPath = DEFAULT_GEOLISTS_OUT_PATH;
+    std::string buildMessage;
     std::vector<std::string> formats;
     std::vector<std::string> presets;
 

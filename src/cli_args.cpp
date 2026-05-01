@@ -11,6 +11,7 @@
 
 #define BUILD_SUBCMD_DESC                       "Build geofiles with selected presets"
 #define OUT_DIR_OPTION_DESCRIPTION              "Path to out DIR with all lists to create"
+#define MESSAGE_OPTION_DESCRIPTION              "Release message to be included in release notes"
 #define PRESET_OPTION_DESCRIPTION               "Presets from config for check/build"
 #define FORMATS_OPTION_DESCRIPTION              "Formats of geolists to generate (v2ray, sing-db, sing-rs)"
 #define WHITELIST_OPTION_DESCRIPTION            "Enable whitelist filtering for current session"
@@ -18,7 +19,7 @@
 
 #define CHECK_SUBCMD_DESC                       "Check access of all source's URLs from config"
 
-#define SHOW_SUBCMD_DESC                        "Display all extra sources from config files"
+#define SHOW_SUBCMD_DESC                            "Display all extra sources from config files"
 #define SORT_SOURCES_BY_SECTION_DESCRIPTION         "Sort sources by section name"
 #define SORT_SOURCES_BY_STORAGE_TYPE_DESCRIPTION    "Sort sources by storage type"
 #define SORT_SOURCES_BY_INET_TYPE_DESCRIPTION       "Sort sources by inet type"
@@ -27,6 +28,8 @@
 #define SERVICE_ADDR_OPT_DESC                   "IP address for service"
 #define SERVICE_PORT_OPT_DESC                   "System port for service"
 #define SERVICE_TIMEOUT_OPT_DESC                "Timeout (sec) for service watchdog (leads to shutdown, 0 is infinite work)"
+
+#define BUILD_MESSAGE_MAX_SIZE                  500
 
 CmdArgs gCmdArgs = {};
 ServiceSettings gServiceSettings = {};
@@ -65,6 +68,12 @@ static void setupBuildSubcommand(CLI::App& app) {
 
     gBuildSubCmd->add_option("-o, --out", gCmdArgs.outDirPath, OUT_DIR_OPTION_DESCRIPTION)
         ->capture_default_str();
+
+    gBuildSubCmd->add_option("-m, --message", gCmdArgs.buildMessage, MESSAGE_OPTION_DESCRIPTION)
+        ->capture_default_str()
+        ->check([](const std::string &str) {
+        return str.size() <= BUILD_MESSAGE_MAX_SIZE ? "" : fmt::format("Message exceeds {} characters", BUILD_MESSAGE_MAX_SIZE);
+    });
 
     gBuildSubCmd->add_option("-p, --preset", gCmdArgs.presets, PRESET_OPTION_DESCRIPTION)
         ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
