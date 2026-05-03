@@ -72,15 +72,36 @@ case "$BUILD_TYPE" in
   debug)
     # Do something for debug
     ;;
+  relwithdebinfo)
+    # Do something for relwithdebinfo
+    ;;
   *)
     # Fallback if unknown build type
-    echo "[-] Unknown build type specified, available: (release, debug)"
+    echo "[-] Unknown build type specified, available: (debug, release, relwithdebinfo)"
     exit 1
     ;;
 esac
 
+# Convert Build type from lower case to normal
+case "$BUILD_TYPE" in
+    "relwithdebinfo")
+        BUILD_TYPE_TITLE="RelWithDebInfo"
+        ;;
+    "minsizerel")
+        BUILD_TYPE_TITLE="MinSizeRel"
+        ;;
+    "debug")
+        BUILD_TYPE_TITLE="Debug"
+        ;;
+    "release")
+        BUILD_TYPE_TITLE="Release"
+        ;;
+    *)
+        BUILD_TYPE_TITLE="$(tr '[:lower:]' '[:upper:]' <<< ${INPUT_TYPE:0:1})${INPUT_TYPE:1}"
+        ;;
+esac
+
 BUILD_FOLDER_NAME="build-$BUILD_TYPE"
-BUILD_TYPE_TITLE=$(to_title "$BUILD_TYPE")
 TARGET_BINARY_PATH="${BUILD_FOLDER_NAME}/rglc_${SI_PROJECT_VERSION}"
 
 echo "[?] Selected CMake build folder: ${BUILD_FOLDER_NAME}"

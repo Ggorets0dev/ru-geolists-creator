@@ -30,7 +30,7 @@ The following scripts can be used to automate the project build:
 
 | Script                                              | Purpose                                                 |
 |:---------------------------------------------------- | ---------------------------------------------------------- |
-| build.sh [--deps] [--appimg ][--type=Debug/Release] | Build the project with dependency management                 |
+| build.sh [--deps] [--appimg ][--type=debug/release/relwithdebinfo] | Build the project with dependency management                 |
 | prepare_appimage.sh [exec] [dir]                    | Build the AppImage package (separately)                          |
 | build_by_docker.sh                                  | Build the program and AppImage package using a Docker image |
 
