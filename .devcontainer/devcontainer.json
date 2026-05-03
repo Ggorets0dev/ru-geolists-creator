@@ -1,0 +1,26 @@
+{
+    "name": "RGLC Development",
+    "build": {
+        "context": "..",
+        "dockerfile": "../Dockerfile"
+    },
+
+    "workspaceFolder": "/src",
+
+    "workspaceMount": "source=${localWorkspaceFolder},target=/src,type=bind",
+
+    "mounts": [
+        "source=${localEnv:HOME}/.conan2,target=/root/.conan2,type=bind"
+    ],
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools"
+            ]
+        }
+    },
+
+    "postCreateCommand": "chmod +x /src/scripts/build.sh && /src/scripts/build.sh --deps --type=release"
+}

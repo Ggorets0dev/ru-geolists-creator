@@ -87,11 +87,24 @@ echo "[?] Selected CMake build folder: ${BUILD_FOLDER_NAME}"
 echo "[?] Selected CMake build title: ${BUILD_TYPE_TITLE}"
 
 if [[ "$INSTALL_DEPS" == "1" ]]; then
-  conan install . -of $BUILD_FOLDER_NAME -s build_type=$BUILD_TYPE_TITLE -b missing
+    if ! conan profile show -pr default >/dev/null 2>&1; then
+        echo "[!] Conan default profile not found. Detecting..."
+        conan profile detect --force
+    fi
+
+    echo "[!] Installing dependencies..."
+    conan install . \
+        -of "$BUILD_FOLDER_NAME" \
+        -s build_type="$BUILD_TYPE_TITLE" \
+        -b missing \
+        -c tools.cmake.cmaketoolchain:generator=Ninja
 fi
 
-cmake -S . -B $BUILD_FOLDER_NAME -DCMAKE_TOOLCHAIN_FILE="${BUILD_FOLDER_NAME}/build/${BUILD_TYPE_TITLE}/generators/conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=${BUILD_TYPE_TITLE} ${CMAKE_BUILD_FLAGS}
+cmake -S . -B $BUILD_FOLDER_NAME -DCMAKE_TOOLCHAIN_FILE="${BUILD_FOLDER_NAME}/build/${BUILD_TYPE_TITLE}/generators/conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=${BUILD_TYPE_TITLE} ${CMAKE_BUILD_FLAGS} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build $BUILD_FOLDER_NAME -j$(nproc)
+
+echo "[!] Updating compile_commands.json symlink..."
+ln -sf "${BUILD_FOLDER_NAME}/compile_commands.json" compile_commands.json
 
 mv "${BUILD_FOLDER_NAME}/rglc" $TARGET_BINARY_PATH
 

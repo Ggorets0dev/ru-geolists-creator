@@ -22,15 +22,34 @@ The following software is used to convert lists:
 
 - [Geo](https://github.com/MetaCubeX/geo) (GPL-3.0)
 
-## Build Automation
+## Build
 
-The following scripts can be used to automate project builds:
+### Script Descriptions
 
-| Script                                              | Purpose                                                     |
-|:--------------------------------------------------- | ----------------------------------------------------------- |
-| build.sh [--deps] [--appimg ][--type=Debug/Release] | Build the project with dependency management                |
-| prepare_appimage.sh [exec] [dir]                    | build the AppImage package separately                       |
-| build_by_docker.sh                                  | build the program and AppImage package using a Docker image |
+The following scripts can be used to automate the project build:
+
+| Script                                              | Purpose                                                 |
+|:---------------------------------------------------- | ---------------------------------------------------------- |
+| build.sh [--deps] [--appimg ][--type=Debug/Release] | Build the project with dependency management                 |
+| prepare_appimage.sh [exec] [dir]                    | Build the AppImage package (separately)                          |
+| build_by_docker.sh                                  | Build the program and AppImage package using a Docker image |
+
+### AppImage Package Build Process
+
+To build a package in the AppImage format, you need:
+
+```bash
+# Download appimagetool and add it to the PATH
+wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+
+# Create a Docker image for building
+docker build -t rglc-builder-dev .
+
+# Run the build
+./scripts/build_by_docker.sh
+```
+
+As a result, ```rglc-ARCH.AppImage``` will appear in the project root
 
 ## Configuration File
 

@@ -20,7 +20,9 @@
 
 * [Geo](https://github.com/MetaCubeX/geo) (GPL-3.0)
 
-## Автоматизация сборки
+## Сборка
+
+### Описание скриптов
 
 Для автоматизации сборки проекта под могут быть использованы следующие скрипты:
 
@@ -29,6 +31,23 @@
 | build.sh [--deps] [--appimg ][--type=Debug/Release] | Сборка проекта с управлением зависимостями                 |
 | prepare_appimage.sh [exec] [dir]                    | Сборка пакета AppImage (отдельно)                          |
 | build_by_docker.sh                                  | Сборка программы и пакета AppImage с помощью docker образа |
+
+### Алгоритм сборки AppImage пакета
+
+Для сборки пакета в формате AppImage требуется:
+
+```bash
+# Загрузить appimagetool и сделать его доступным в PATH
+wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+
+# Создать Docker образ для сборки
+docker build -t rglc-builder-dev .
+
+# Запустить сборку
+./scripts/build_by_docker.sh
+```
+
+В результате в корне проекта появится ```rglc-ARCH.AppImage```
 
 ## Файл конфигурации
 
