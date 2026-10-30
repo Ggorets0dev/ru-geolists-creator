@@ -1,13 +1,8 @@
 **/.vscode
 compile_commands.json
 **/build
+**/build-*
 **/.idea
-**/build-arm64
-**/build-amd64
-**/build-arm
-**/build-debug
-**/build-release
-**/build-relwithdebinfo
 **/rglc.AppDir
 **/venv
 **.deb

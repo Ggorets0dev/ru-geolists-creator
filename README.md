@@ -28,26 +28,23 @@
 
 | Скрипт                                              | Назначение                                                 |
 |:--------------------------------------------------- | ---------------------------------------------------------- |
-| build.sh [--deps] [--appimg ][--type=debug/release/relwithdebinfo] | Сборка проекта с управлением зависимостями                 |
-| prepare_appimage.sh [exec] [dir]                    | Сборка пакета AppImage (отдельно)                          |
-| build_by_docker.sh                                  | Сборка программы и пакета AppImage с помощью docker образа |
+| build.sh [--type=debug/release/relwithdebinfo] [--arch=amd64/arm64] [--deps] [--appimg] | Сборка проекта с управлением зависимостями и AppImage |
+| prepare_appimg.sh [exec] [dir]                      | Подготовка каталога AppDir для AppImage                    |
+| build_by_docker.sh [--arch=amd64/arm64] [--type=...] | Сборка программы и пакета AppImage через Docker (multi-arch)|
 
 ### Алгоритм сборки AppImage пакета
 
-Для сборки пакета в формате AppImage требуется:
+Для сборки автономного пакета AppImage под нужную архитектуру достаточно вызвать скрипт (он сам подготовит Docker-образ с зависимостями и упакует AppImage):
 
 ```bash
-# Загрузить appimagetool и сделать его доступным в PATH
-wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+# Сборка под x86_64 (amd64)
+./scripts/build_by_docker.sh --arch=amd64
 
-# Создать Docker образ для сборки
-docker build -t rglc-builder-dev .
-
-# Запустить сборку
-./scripts/build_by_docker.sh
+# Сборка под aarch64 (arm64)
+./scripts/build_by_docker.sh --arch=arm64
 ```
 
-В результате в корне проекта появится ```rglc-ARCH.AppImage```
+В результате в корне проекта появится `rglc-1.2.0-x86_64.AppImage` или `rglc-1.2.0-aarch64.AppImage`.
 
 ## Файл конфигурации
 

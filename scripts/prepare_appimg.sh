@@ -6,6 +6,13 @@ set -euo pipefail
 # and packaged with appimagetool by a normal user on the host
 # =============================================================================
 
+# Change to project root if executed from scripts directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_DIR="$(pwd)"
+if [ "$CURRENT_DIR" = "$SCRIPT_DIR" ]; then
+  cd ..
+fi
+
 APPNAME="$1"
 BINARY_PATH="$2"
 
@@ -19,7 +26,7 @@ APPDIR="${APPNAME}.AppDir"
 rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib"
 
-echo "Creating AppDir for $APPNAME ..."
+echo "Creating AppDir for $APPNAME from $BINARY_PATH ..."
 
 # 1. Copy binary
 cp -a "$BINARY_PATH" "$APPDIR/usr/bin/$APPNAME"
@@ -34,7 +41,7 @@ mapfile -t LIBS < <(
     done | sort -u
 )
 
-BLACKLIST='^/lib.*/(ld-linux.*|libc\.so|libm\.so|libpthread\.so|librt\.so|libdl\.so|libcrypt\.so|libresolv\.so|libutil\.so|libnsl\.so|libgcc_s\.so|libstdc++\.so)'
+BLACKLIST='^/(usr/)?lib.*/(ld-linux.*|libc\.so|libm\.so|libpthread\.so|librt\.so|libdl\.so|libcrypt\.so|libresolv\.so|libutil\.so|libnsl\.so|libgcc_s\.so|libstdc\+\+\.so)'
 
 for lib in "${LIBS[@]}"; do
     [[ -f "$lib" ]] || continue
@@ -48,12 +55,12 @@ for lib in "${LIBS[@]}"; do
         -exec cp -a -- {} "$APPDIR/usr/lib/" \; 2>/dev/null || true
 done
 
-# 3. Patch RPATH (recommended)
+# 3. Patch RPATH
 if command -v patchelf >/dev/null 2>&1; then
     patchelf --force-rpath --set-rpath '$ORIGIN/../lib' "$APPDIR/usr/bin/$APPNAME"
 fi
 
-# 4. AppRun — the trick: write it already with the correct name (no sed needed)
+# 4. AppRun
 cat > "$APPDIR/AppRun" << EOF
 #!/bin/bash
 HERE="\$(dirname "\$(readlink -f "\${0}")")"
@@ -73,26 +80,20 @@ Categories=Utility;
 Terminal=false
 EOF
 
-# 6. Icon (appimagetool loves exactly this name)
-cp img/rglc.png "$APPDIR/${APPNAME}.png"   # ← change this path if your icon is elsewhere
+# 6. Icons
+if [[ -f "img/rglc.png" ]]; then
+    cp img/rglc.png "$APPDIR/${APPNAME}.png"
+    cp img/rglc.png "$APPDIR/.DirIcon"
+fi
 
 # =============================================================================
-# Make the directory fully usable by a regular host user (even if built as root)
+# Permissions setup
 # =============================================================================
 chmod -R a+rX "$APPDIR"
 chmod -R go-w "$APPDIR"
-rm -f "$APPDIR/.DirIcon" 2>/dev/null || true   # remove if exists
-
-# allow host user to delete/overwrite everything without sudo
 chmod 777 "$APPDIR" 2>/dev/null || true
 chmod 666 "$APPDIR"/*.png "$APPDIR"/*.desktop 2>/dev/null || true
 
-echo
 echo "AppDir ready: $APPDIR"
 echo "Bundled libraries: $(find "$APPDIR/usr/lib" -name "*.so*" | wc -l)"
-echo
-echo "Now run on the host (as normal user):"
-echo "   appimagetool $APPDIR"
-echo "→ No warnings, perfect icon, works every time."
-
 exit 0
