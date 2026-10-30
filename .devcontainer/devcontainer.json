@@ -1,26 +1,33 @@
 {
-    "name": "RGLC Development",
-    "build": {
-        "context": "..",
-        "dockerfile": "../Dockerfile"
-    },
+    "name": "RGLC Development (ARM64)",
+    "image": "rglc-builder:arm64",
+
+    "runArgs": [
+        "--platform=linux/arm64"
+    ],
 
     "workspaceFolder": "/src",
-
     "workspaceMount": "source=${localWorkspaceFolder},target=/src,type=bind",
 
     "mounts": [
-        "source=${localEnv:HOME}/.conan2,target=/root/.conan2,type=bind"
+        "source=rglc-conan-cache-arm64,target=/root/.conan2,type=volume"
     ],
 
     "customizations": {
         "vscode": {
             "extensions": [
                 "ms-vscode.cpptools",
-                "ms-vscode.cmake-tools"
-            ]
+                "ms-vscode.cmake-tools",
+                "twxs.cmake"
+            ],
+            "settings": {
+                "cmake.buildDirectory": "${workspaceFolder}/build-release-aarch64",
+                "cmake.configureSettings": {
+                    "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/build-release-aarch64/build/Release/generators/conan_toolchain.cmake"
+                }
+            }
         }
     },
 
-    "postCreateCommand": "chmod +x /src/scripts/build.sh && /src/scripts/build.sh --deps --type=release"
+    "postCreateCommand": "chmod +x /src/scripts/*.sh"
 }

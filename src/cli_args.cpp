@@ -24,24 +24,14 @@
 #define SORT_SOURCES_BY_STORAGE_TYPE_DESCRIPTION    "Sort sources by storage type"
 #define SORT_SOURCES_BY_INET_TYPE_DESCRIPTION       "Sort sources by inet type"
 
-#define SERVICE_SUBCMD_DESC                     "Settings for service mode"
-#define SERVICE_ADDR_OPT_DESC                   "IP address for service"
-#define SERVICE_PORT_OPT_DESC                   "System port for service"
-#define SERVICE_TIMEOUT_OPT_DESC                "Timeout (sec) for service watchdog (leads to shutdown, 0 is infinite work)"
-
 #define BUILD_MESSAGE_MAX_SIZE                  500
 
 CmdArgs gCmdArgs = {};
-ServiceSettings gServiceSettings = {};
 
-CLI::App* gServiceSubCmd;
 CLI::App* gBuildSubCmd;
 CLI::App* gCheckSubCmd;
 CLI::App* gShowSubCmd;
 CLI::Option* gOutPathOption;
-
-static const CLI::Range gkServicePortRange = { 49152, 65535 };
-static const CLI::Range gkServiceTimeoutRange = { 0, HOURS_TO_SEC(1) };
 
 static const std::vector<std::string> gkAvailableGeoFormats = {
     GEO_FORMAT_DAT_CAPTION,
@@ -79,21 +69,6 @@ static void setupBuildSubcommand(CLI::App& app) {
         ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll);
 }
 
-static void setupServiceSubcommand(CLI::App& app) {
-    gServiceSubCmd = app.add_subcommand("service", SERVICE_SUBCMD_DESC);
-
-    gServiceSubCmd->add_option("-a,--addr", gServiceSettings.addr, SERVICE_ADDR_OPT_DESC)
-               ->capture_default_str();
-
-    gServiceSubCmd->add_option("-p,--port", gServiceSettings.port, SERVICE_PORT_OPT_DESC)
-               ->check(gkServicePortRange) // Extra port validation
-               ->capture_default_str();
-
-    gServiceSubCmd->add_option("-t,--timeout", gServiceSettings.timeout_sec, SERVICE_TIMEOUT_OPT_DESC)
-                   ->check(gkServiceTimeoutRange) // Extra timeout validation
-                   ->capture_default_str();
-}
-
 static void setupShowSubcommand(CLI::App& app) {
     gShowSubCmd = app.add_subcommand("show", SHOW_SUBCMD_DESC);
 
@@ -124,7 +99,6 @@ static void setupShowSubcommand(CLI::App& app) {
 void prepareCmdArgs(CLI::App& app) {
     app.description(RGC_DESCRIPTION);
 
-    setupServiceSubcommand(app);
     setupShowSubcommand(app);
     setupBuildSubcommand(app);
     setupCheckSubcommand(app);

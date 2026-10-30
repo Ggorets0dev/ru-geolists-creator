@@ -147,15 +147,10 @@ Supported source types:
 ./rglc-x86_64.AppImage show
 ```
 
-## Interprocess Communication (IPC)
-
-The **service** mode can be used for IPC. In this mode the software
-accepts incoming requests via gRPC.
-
 ## Software Help (--help)
 
 ```
-RuGeolistsCreator - Software (service) in C++ for automatic assembly of geoip and geosite files for VPN server XRay / SingBox
+RuGeolistsCreator - Software in C++ for automatic assembly of geoip and geosite files for VPN server XRay / SingBox
 Usage: ./rglc [OPTIONS] [SUBCOMMAND]
 
 Options:
@@ -164,7 +159,6 @@ Options:
  --init Initialize software by creating config and downloading all dependencies
 
 Subcommands:
- service Settings for service mode
  show Display all extra sources from config files
  build Build geofiles with selected presets
  check Check access of all source's URLs from config

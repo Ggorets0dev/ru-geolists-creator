@@ -4,7 +4,6 @@
 // Third-party imports (LICENSES are included)
 #include "CLI11.hpp"
 
-#include "service.hpp"
 #include "main_sources.hpp"
 
 #define GEO_FORMAT_DAT_CAPTION    "v2ray"
@@ -38,11 +37,9 @@ struct CmdArgs {
 };
 
 extern CmdArgs gCmdArgs;
-extern ServiceSettings gServiceSettings;
 
 extern CLI::App* gBuildSubCmd;
 extern CLI::App* gCheckSubCmd;
-extern CLI::App* gServiceSubCmd;
 extern CLI::App* gShowSubCmd;
 extern CLI::Option* gOutPathOption;
 

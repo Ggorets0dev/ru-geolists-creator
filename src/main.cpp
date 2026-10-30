@@ -1,9 +1,9 @@
+#include <unistd.h>
 #include "handlers.hpp"
 #include "config.hpp"
 #include "cli_args.hpp"
 #include "log.hpp"
 #include "dlc_toolchain.hpp"
-#include "service_callbacks.hpp"
 
 int main(const int argc, char** argv) {
     CLI::App app;
@@ -68,11 +68,6 @@ int main(const int argc, char** argv) {
     if (!initSoftwareConfig()) {
         LOG_ERROR("Failed to initialize software configuration");
         return 1;
-    }
-
-    if (app.got_subcommand(gServiceSubCmd)) {
-        fillServiceCallbacks(gServiceCallbacks);
-        runService(gServiceSettings, gServiceCallbacks);
     }
 
     // Show all extra sources
