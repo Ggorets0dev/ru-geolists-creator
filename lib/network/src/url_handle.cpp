@@ -41,7 +41,7 @@ struct CurlResourceGuard {
 static bool isUrlAccessible(const std::string& url, const char* httpHeader = nullptr, long* outResponseCode = nullptr) {
     CURL* curl = curl_easy_init();
     if (!curl) {
-        throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
+        throw CurlError(fmt::format("Failed to initialize cURL handle for URL '{}'", url), CURLE_FAILED_INIT);
     }
 
     CurlResourceGuard guard(curl);
@@ -80,7 +80,7 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
 
     CURL* curl = curl_easy_init();
     if (!curl) {
-        throw CurlError("Failed to initialize cURL handle", CURLE_FAILED_INIT);
+        throw CurlError(fmt::format("Failed to initialize cURL handle for URL '{}'", url), CURLE_FAILED_INIT);
     }
 
     CurlResourceGuard guard(curl);
@@ -105,11 +105,15 @@ static void downloadFile(const std::string& url, const std::string& filePath, co
     if (res == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
     } else {
-        throw CurlError("Failed to download file", res);
+        throw CurlError(fmt::format("Failed to download file from '{}' to '{}'", url, filePath), res);
     }
 
     if (responseCode < 200 || responseCode >= 400) {
-        throw CurlError("HTTP error while downloading file", CURLE_HTTP_RETURNED_ERROR);
+        throw CurlError(
+            fmt::format("HTTP error {} while downloading file from '{}' to '{}'", responseCode, url, filePath),
+            CURLE_HTTP_RETURNED_ERROR,
+            responseCode
+        );
     }
 }
 
@@ -142,11 +146,18 @@ static bool tryAccessGhAssetsReq(const Json::Value& value, const std::vector<std
     if (value.isMember("assets") && value["assets"].isArray()) {
         const Json::Value& assets = value["assets"];
         for (const auto& asset : assets) {
-            if (std::find(fileNames.begin(), fileNames.end(), asset["name"].asString()) == fileNames.end()) {
+            const std::string assetName = asset["name"].asString();
+            if (std::find(fileNames.begin(), fileNames.end(), assetName) == fileNames.end()) {
                 continue;
             }
 
-            isAccessed &= isUrlAccessible(asset["browser_download_url"].asString());
+            const std::string downloadUrl = asset["browser_download_url"].asString();
+            long responseCode = 0;
+            if (!isUrlAccessible(downloadUrl, nullptr, &responseCode)) {
+                LOG_WARNING("GitHub release asset '{}' at '{}' is inaccessible (HTTP {})",
+                            assetName, downloadUrl, responseCode);
+                isAccessed = false;
+            }
             ++checksCount;
         }
     }
@@ -159,15 +170,37 @@ static std::string genGithubTokenHeader(const std::string& token) {
 }
 
 bool NetUtils::tryAccessUrl(const std::string& url, const char* httpHeader, long* outResponseCode) {
-    for(unsigned int i(0); i < gLibNetworkSettings.connectAttemptsCount; ++i) {
-        if (isUrlAccessible(url, httpHeader, outResponseCode)) {
+    long responseCode = 0;
+    for (unsigned int i = 0; i < gLibNetworkSettings.connectAttemptsCount; ++i) {
+        if (isUrlAccessible(url, httpHeader, &responseCode)) {
+            if (outResponseCode) {
+                *outResponseCode = responseCode;
+            }
             return true;
         }
 
-        LOG_WARNING("Failed to access URL, performing another attempt...");
-        std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.connectAttemptDelaySec));
+        const unsigned int attempt = i + 1;
+        const unsigned int maxAttempts = gLibNetworkSettings.connectAttemptsCount;
+
+        if (responseCode > 0) {
+            LOG_WARNING("Access attempt {}/{} failed for URL '{}' (HTTP {})",
+                attempt, maxAttempts, url, responseCode);
+        } else {
+            LOG_WARNING("Access attempt {}/{} failed for URL '{}'",
+                attempt, maxAttempts, url);
+        }
+
+        if (attempt < maxAttempts) {
+            LOG_WARNING("Retrying in {}s...", gLibNetworkSettings.connectAttemptDelaySec);
+            std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.connectAttemptDelaySec));
+        }
     }
 
+    if (outResponseCode) {
+        *outResponseCode = responseCode;
+    }
+
+    LOG_ERROR("Failed to access URL '{}' after {} attempts", url, gLibNetworkSettings.connectAttemptsCount);
     return false;
 }
 
@@ -193,7 +226,7 @@ bool NetUtils::getAsIpRangesUrls(const int asn, std::vector<std::string>& urls) 
     if (status && responseCode == 200) {
         urls.push_back(urlv4);
     } else {
-        LOG_INFO("Failed to access AS CIDR url: {} (IPv4)", urlv4);
+        LOG_WARNING("Failed to access AS CIDR url: {} (IPv4)", urlv4);
         return false;
     }
 
@@ -201,7 +234,7 @@ bool NetUtils::getAsIpRangesUrls(const int asn, std::vector<std::string>& urls) 
     if (status && responseCode == 200) {
         urls.push_back(urlv6);
     } else {
-        LOG_INFO("Failed to access AS CIDR url: {} (IPv6)", urlv6);
+        LOG_WARNING("Failed to access AS CIDR url: {} (IPv6)", urlv6);
     }
 
     return true;
@@ -264,7 +297,11 @@ bool NetUtils::tryAccessGithubReleaseAssets(const std::string& url, const std::v
         }
 
         return tryAccessGhAssetsReq(value, assets);
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception while accessing GitHub release assets for '{}': {}", url, e.what());
+        return false;
     } catch (...) {
+        LOG_ERROR("Unknown error while accessing GitHub release assets for '{}'", url);
         return false;
     }
 }
@@ -287,20 +324,27 @@ std::string NetUtils::convertToGithubApi(const std::string& repoUrl) {
 }
 
 bool NetUtils::tryDownloadFile(const std::string& url, const std::string& filePath, const char* httpHeader) {
-    for(unsigned int i(0); i < gLibNetworkSettings.downloadAttemptCount; ++i) {
+    for (unsigned int i = 0; i < gLibNetworkSettings.downloadAttemptCount; ++i) {
         try {
             downloadFile(url, filePath, httpHeader);
-        }  catch (std::exception& e) {
-            LOG_ERROR(e.what());
-            LOG_WARNING("Failed to download requested file, performing another attempt...");
+            return true;
+        } catch (const std::exception& e) {
+            const unsigned int attempt = i + 1;
+            const unsigned int maxAttempts = gLibNetworkSettings.downloadAttemptCount;
 
-            std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.downloadAttemptDelaySec));
+            LOG_WARNING("Download attempt {}/{} failed for '{}': {}", attempt, maxAttempts, url, e.what());
 
-            continue;
+            if (attempt < maxAttempts) {
+                LOG_WARNING("Retrying in {}s...", gLibNetworkSettings.downloadAttemptDelaySec);
+                std::this_thread::sleep_for(std::chrono::seconds(gLibNetworkSettings.downloadAttemptDelaySec));
+            }
         }
-
-        return true;
     }
+
+    LOG_ERROR("Failed to download requested file from '{}' after {} attempts", url, gLibNetworkSettings.downloadAttemptCount);
+
+    std::error_code ec;
+    fs::remove(filePath, ec);
 
     return false;
 }
